@@ -23,19 +23,14 @@
 #include <app/ConcreteAttributePath.h>
 #include <app/ConcreteEventPath.h>
 #include <app/InteractionModelEngine.h>
-#include <app/tests/AppTestContext.h>
 #include <app/util/mock/Constants.h>
 #include <app/util/mock/Functions.h>
 #include <controller/ReadInteraction.h>
 #include <lib/core/ErrorStr.h>
-#include <lib/support/UnitTestContext.h>
-#include <lib/support/UnitTestRegistration.h>
 #include <lib/support/logging/CHIPLogging.h>
 #include <messaging/tests/MessagingContext.h>
-#include <nlunit-test.h>
+#include <gtest/gtest.h>
 #include <protocols/interaction_model/Constants.h>
-
-using TestContext = chip::Test::AppContext;
 
 using namespace chip;
 using namespace chip::app;
@@ -109,8 +104,10 @@ CHIP_ERROR ReadSingleClusterData(const Access::SubjectDescriptor & aSubjectDescr
             // Use an incorrect attribute id for some of the responses.
             path.mAttributeId =
                 static_cast<AttributeId>(path.mAttributeId + (i / 2) + (responseDirective == kSendManyDataResponsesWrongPath));
-            AttributeEncodeState state(apEncoderState);
-            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor, path, kDataVersion, aIsFabricFiltered, state);
+            AttributeEncodeState state =
+                (apEncoderState == nullptr ? AttributeEncodeState() : *apEncoderState);
+            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor.fabricIndex, path,
+                                               kDataVersion /* data version */, aIsFabricFiltered, state);
             ReturnErrorOnFailure(valueEncoder.Encode(true));
         }
 
@@ -122,9 +119,10 @@ CHIP_ERROR ReadSingleClusterData(const Access::SubjectDescriptor & aSubjectDescr
         if (aPath.mClusterId == app::Clusters::UnitTesting::Id &&
             aPath.mAttributeId == app::Clusters::UnitTesting::Attributes::ListFabricScoped::Id)
         {
-            AttributeEncodeState state(apEncoderState);
-            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor, aPath, kDataVersion, aIsFabricFiltered,
-                                               state);
+            AttributeEncodeState state =
+                (apEncoderState == nullptr ? AttributeEncodeState() : *apEncoderState);
+            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor.fabricIndex, aPath,
+                                               kDataVersion /* data version */, aIsFabricFiltered, state);
 
             return valueEncoder.EncodeList([aSubjectDescriptor](const auto & encoder) -> CHIP_ERROR {
                 app::Clusters::UnitTesting::Structs::TestFabricScoped::Type val;
@@ -138,18 +136,19 @@ CHIP_ERROR ReadSingleClusterData(const Access::SubjectDescriptor & aSubjectDescr
         if (aPath.mClusterId == app::Clusters::UnitTesting::Id &&
             aPath.mAttributeId == app::Clusters::UnitTesting::Attributes::Int16u::Id)
         {
-            AttributeEncodeState state(apEncoderState);
-            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor, aPath, kDataVersion, aIsFabricFiltered,
-                                               state);
+            AttributeEncodeState state =
+                (apEncoderState == nullptr ? AttributeEncodeState() : *apEncoderState);
+            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor.fabricIndex, aPath,
+                                               kDataVersion /* data version */, aIsFabricFiltered, state);
 
             return valueEncoder.Encode(++totalReadCount);
         }
         if (aPath.mClusterId == kPerpetualClusterId ||
             (aPath.mClusterId == app::Clusters::UnitTesting::Id && aPath.mAttributeId == kPerpetualAttributeid))
         {
-            AttributeEncodeState state;
-            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor, aPath, kDataVersion, aIsFabricFiltered,
-                                               state);
+            AttributeEncodeState state = AttributeEncodeState();
+            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor.fabricIndex, aPath,
+                                               kDataVersion /* data version */, aIsFabricFiltered, state);
 
             CHIP_ERROR err = valueEncoder.EncodeList([](const auto & encoder) -> CHIP_ERROR {
                 encoder.Encode(static_cast<uint8_t>(1));
@@ -170,9 +169,10 @@ CHIP_ERROR ReadSingleClusterData(const Access::SubjectDescriptor & aSubjectDescr
         if (aPath.mClusterId == app::Clusters::IcdManagement::Id &&
             aPath.mAttributeId == app::Clusters::IcdManagement::Attributes::OperatingMode::Id)
         {
-            AttributeEncodeState state(apEncoderState);
-            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor, aPath, kDataVersion, aIsFabricFiltered,
-                                               state);
+            AttributeEncodeState state =
+                (apEncoderState == nullptr ? AttributeEncodeState() : *apEncoderState);
+            AttributeValueEncoder valueEncoder(aAttributeReports, aSubjectDescriptor.fabricIndex, aPath,
+                                               kDataVersion /* data version */, aIsFabricFiltered, state);
 
             return valueEncoder.Encode(isLitIcd ? Clusters::IcdManagement::OperatingModeEnum::kLit
                                                 : Clusters::IcdManagement::OperatingModeEnum::kSit);
@@ -259,56 +259,42 @@ Protocols::InteractionModel::Status CheckEventSupportStatus(const ConcreteEventP
 
 namespace {
 
-class TestReadInteraction : public app::ReadHandler::ApplicationCallback
+class TestReadInteraction : public app::ReadHandler::ApplicationCallback, public ::testing::Test
 {
 public:
     TestReadInteraction() {}
 
-    static void TestReadAttributeResponse(nlTestSuite * apSuite, void * apContext);
-    static void TestReadAttributeError(nlTestSuite * apSuite, void * apContext);
-    static void TestReadAttributeTimeout(nlTestSuite * apSuite, void * apContext);
-    static void TestSubscribeAttributeTimeout(nlTestSuite * apSuite, void * apContext);
-    static void TestResubscribeAttributeTimeout(nlTestSuite * apSuite, void * apContext);
-    static void TestReadEventResponse(nlTestSuite * apSuite, void * apContext);
-    static void TestReadFabricScopedWithoutFabricFilter(nlTestSuite * apSuite, void * apContext);
-    static void TestReadFabricScopedWithFabricFilter(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_MultipleSubscriptions(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_SubscriptionAppRejection(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_MultipleReads(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_OneSubscribeMultipleReads(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_TwoSubscribesMultipleReads(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_MultipleSubscriptionsWithDataVersionFilter(nlTestSuite * apSuite, void * apContext);
-#if CHIP_CONFIG_ENABLE_ICD_SERVER != 1
-    static void TestReadHandler_SubscriptionReportingIntervalsTest1(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_SubscriptionReportingIntervalsTest2(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_SubscriptionReportingIntervalsTest3(nlTestSuite * apSuite, void * apContext);
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-    static void TestReadHandler_SubscriptionReportingIntervalsTest4(nlTestSuite * apSuite, void * apContext);
-#if CHIP_CONFIG_ENABLE_ICD_SERVER != 1
-    static void TestReadHandler_SubscriptionReportingIntervalsTest5(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_SubscriptionReportingIntervalsTest6(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_SubscriptionReportingIntervalsTest7(nlTestSuite * apSuite, void * apContext);
-#endif // CHIP_CONFIG_ENABLE_ICD_SERVER
-    static void TestReadHandler_SubscriptionReportingIntervalsTest8(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_SubscriptionReportingIntervalsTest9(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandlerResourceExhaustion_MultipleReads(nlTestSuite * apSuite, void * apContext);
-    static void TestReadSubscribeAttributeResponseWithCache(nlTestSuite * apSuite, void * apContext);
-    static void TestReadSubscribeAttributeResponseWithVersionOnlyCache(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_KillOldestSubscriptions(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_ParallelReads(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_TooManyPaths(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_TwoParallelReadsSecondTooManyPaths(nlTestSuite * apSuite, void * apContext);
-    static void TestReadAttribute_ManyDataValues(nlTestSuite * apSuite, void * apContext);
-    static void TestReadAttribute_ManyDataValuesWrongPath(nlTestSuite * apSuite, void * apContext);
-    static void TestReadAttribute_ManyErrors(nlTestSuite * apSuite, void * apContext);
-    static void TestSubscribeAttributeDeniedNotExistPath(nlTestSuite * apSuite, void * apContext);
-    static void TestReadHandler_KeepSubscriptionTest(nlTestSuite * apSuite, void * apContext);
-    static void TestSubscribe_OnActiveModeNotification(nlTestSuite * apSuite, void * apContext);
-    static void TestSubscribe_ImmediatelyResubscriptionForLIT(nlTestSuite * apSuite, void * apContext);
-    static void TestSubscribe_DynamicLITSubscription(nlTestSuite * apSuite, void * apContext);
+    static void SetUpTestSuite()
+    {
+        //++++ make sure we're getting into this function.
+        ASSERT_EQ(chip::Platform::MemoryInit(), CHIP_NO_ERROR);
+        ASSERT_EQ(mLoopbackTransportManager.Init(), CHIP_NO_ERROR);
+    }
 
-private:
+    static void TearDownTestSuite()
+    {
+        //++++ make sure we're getting into this function.
+        mLoopbackTransportManager.Shutdown();
+        chip::Platform::MemoryShutdown();
+    }
+
+    void SetUp() override
+    {
+        //++++ make sure we're getting into this function.
+        ASSERT_EQ(mContext.Init(&mLoopbackTransportManager.GetTransportMgr(), &mLoopbackTransportManager.GetIOContext()), CHIP_NO_ERROR);
+    }
+
+    void TearDown() override
+    {
+        //++++ make sure we're getting into this function.
+        mContext.Shutdown();
+    }
+
+protected:
+    static chip::Test::LoopbackTransportManager mLoopbackTransportManager;
+    chip::Test::MessagingContext mContext;
+
+public:  //++++ was private
     static uint16_t mMaxInterval;
 
     CHIP_ERROR OnSubscriptionRequested(app::ReadHandler & aReadHandler, Transport::SecureSession & aSecureSession)
@@ -328,16 +314,16 @@ private:
 
     // Issue the given number of reads in parallel and wait for them all to
     // succeed.
-    static void MultipleReadHelper(nlTestSuite * apSuite, TestContext & aCtx, size_t aReadCount);
+    static void MultipleReadHelper(size_t aReadCount);
 
     // Helper for MultipleReadHelper that does not spin the event loop, so we
     // don't end up with nested event loops.
-    static void MultipleReadHelperInternal(nlTestSuite * apSuite, TestContext & aCtx, size_t aReadCount,
+    static void MultipleReadHelperInternal(size_t aReadCount,
                                            uint32_t & aNumSuccessCalls, uint32_t & aNumFailureCalls);
 
     // Establish the given number of subscriptions, then issue the given number
     // of reads in parallel and wait for them all to succeed.
-    static void SubscribeThenReadHelper(nlTestSuite * apSuite, TestContext & aCtx, size_t aSubscribeCount, size_t aReadCount);
+    static void SubscribeThenReadHelper(chip::Test::MessagingContext * ctx, size_t aSubscribeCount, size_t aReadCount);
 
     // Compute the amount of time it would take a subscription with a given
     // max-interval to time out.
@@ -347,6 +333,7 @@ private:
     int32_t mNumActiveSubscriptions  = 0;
     bool mAlterSubscriptionIntervals = false;
 };
+chip::Test::LoopbackTransportManager TestReadInteraction::mLoopbackTransportManager;
 
 uint16_t TestReadInteraction::mMaxInterval = 66;
 
@@ -401,29 +388,28 @@ public:
     CHIP_ERROR mError         = CHIP_NO_ERROR;
 };
 
-void TestReadInteraction::TestReadAttributeResponse(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadAttributeResponse)
 {
-    TestContext & ctx       = *static_cast<TestContext *>(apContext);
-    auto sessionHandle      = ctx.GetSessionBobToAlice();
+    auto sessionHandle      = mContext.GetSessionBobToAlice();
     bool onSuccessCbInvoked = false, onFailureCbInvoked = false;
 
     responseDirective = kSendDataResponse;
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &onSuccessCbInvoked](const app::ConcreteDataAttributePath & attributePath,
+    auto onSuccessCb = [&onSuccessCbInvoked](const app::ConcreteDataAttributePath & attributePath,  //+++ removed 1st arg.
                                                       const auto & dataResponse) {
         uint8_t i = 0;
-        NL_TEST_ASSERT(apSuite, attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
+        EXPECT_TRUE(attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
         auto iter = dataResponse.begin();
         while (iter.Next())
         {
             auto & item = iter.GetValue();
-            NL_TEST_ASSERT(apSuite, item.member1 == i);
+            EXPECT_EQ(item.member1, i);
             i++;
         }
-        NL_TEST_ASSERT(apSuite, i == 4);
-        NL_TEST_ASSERT(apSuite, iter.GetStatus() == CHIP_NO_ERROR);
+        EXPECT_EQ(i, 4);
+        EXPECT_EQ(iter.GetStatus(), CHIP_NO_ERROR);
         onSuccessCbInvoked = true;
     };
 
@@ -434,19 +420,18 @@ void TestReadInteraction::TestReadAttributeResponse(nlTestSuite * apSuite, void 
     };
 
     Controller::ReadAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-        &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb);
+        &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, onSuccessCbInvoked && !onFailureCbInvoked);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_TRUE(onSuccessCbInvoked && !onFailureCbInvoked);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadSubscribeAttributeResponseWithCache)
 {
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
     CHIP_ERROR err    = CHIP_NO_ERROR;
     responseDirective = kSendDataResponse;
 
@@ -461,7 +446,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         eventPathParam.mEventId    = 0;
     }
 
-    chip::app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+    chip::app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
     readPrepareParams.mMinIntervalFloorSeconds   = 0;
     readPrepareParams.mMaxIntervalCeilingSeconds = 4;
     //
@@ -477,7 +462,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams1[3];
         attributePathParams1[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -495,15 +480,15 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams.mAttributePathParamsListSize = 3;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 6);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 6);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version1.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_FALSE(version1.HasValue());
         delegate.mNumAttributeResponse = 0;
     }
 
@@ -512,7 +497,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams1[3];
         attributePathParams1[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -530,48 +515,48 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams.mAttributePathParamsListSize = 3;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 3);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 3);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version1.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_FALSE(version1.HasValue());
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         delegate.mNumAttributeResponse = 0;
@@ -583,7 +568,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams1[3];
         attributePathParams1[0].mEndpointId  = kInvalidEndpointId;
@@ -601,45 +586,45 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams.mAttributePathParamsListSize = 3;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 2);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 2);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version1.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_FALSE(version1.HasValue());
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint1, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) != CHIP_NO_ERROR);
+            EXPECT_NE(cache.Get(attributePath, reader), CHIP_NO_ERROR);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse = 0;
     }
@@ -649,7 +634,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams2[2];
         attributePathParams2[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -662,59 +647,59 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams2;
         readPrepareParams.mAttributePathParamsListSize = 2;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
         // There are supported 2 global and 3 non-global attributes in E2C2A* and  1 E3C2A2
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 6);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        EXPECT_EQ(delegate.mNumAttributeResponse, 6);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 0));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 0));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint64_t receivedAttribute3;
             reader.Get(receivedAttribute3);
-            NL_TEST_ASSERT(apSuite, receivedAttribute3 == expectedAttribute3);
+            EXPECT_EQ(receivedAttribute3, expectedAttribute3);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse = 0;
     }
@@ -724,7 +709,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams1[3];
         attributePathParams1[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -742,48 +727,48 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams.mAttributePathParamsListSize = 3;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 1);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 1);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 0));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 0));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse = 0;
     }
@@ -793,7 +778,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams2[2];
         attributePathParams2[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -806,58 +791,58 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams2;
         readPrepareParams.mAttributePathParamsListSize = 2;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 1);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 1);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 0));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 0));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint64_t receivedAttribute3;
             reader.Get(receivedAttribute3);
-            NL_TEST_ASSERT(apSuite, receivedAttribute3 == expectedAttribute3);
+            EXPECT_EQ(receivedAttribute3, expectedAttribute3);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse = 0;
     }
@@ -870,7 +855,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams1[3];
         attributePathParams1[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -888,48 +873,48 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams.mAttributePathParamsListSize = 3;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 3);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 3);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version1.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_FALSE(version1.HasValue());
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse = 0;
     }
@@ -939,7 +924,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams1[3];
         attributePathParams1[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -957,48 +942,48 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams.mAttributePathParamsListSize = 3;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 3);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 3);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version1.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_FALSE(version1.HasValue());
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse = 0;
     }
@@ -1008,7 +993,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams2[2];
         attributePathParams2[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -1021,58 +1006,58 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams2;
         readPrepareParams.mAttributePathParamsListSize = 2;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 6);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 6);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 1));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 1));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint64_t receivedAttribute3;
             reader.Get(receivedAttribute3);
-            NL_TEST_ASSERT(apSuite, receivedAttribute3 == expectedAttribute3);
+            EXPECT_EQ(receivedAttribute3, expectedAttribute3);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse = 0;
     }
@@ -1083,7 +1068,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams2[2];
         attributePathParams2[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -1104,58 +1089,58 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mEventPathParamsListSize = 75;
 
         err = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 6);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 6);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 1));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 1));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint64_t receivedAttribute3;
             reader.Get(receivedAttribute3);
-            NL_TEST_ASSERT(apSuite, receivedAttribute3 == expectedAttribute3);
+            EXPECT_EQ(receivedAttribute3, expectedAttribute3);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse             = 0;
         readPrepareParams.mpEventPathParamsList    = nullptr;
@@ -1169,7 +1154,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
 
         chip::app::AttributePathParams attributePathParams3[3];
@@ -1188,82 +1173,82 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mAttributePathParamsListSize = 3;
 
         err = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
         // E1C2A* has 3 attributes and E2C3A* has 5 attributes and E2C2A* has 4 attributes
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 12);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        EXPECT_EQ(delegate.mNumAttributeResponse, 12);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 2));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 2));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version2.HasValue() && (version2.Value() == 2));
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_TRUE(version2.HasValue() && (version2.Value() == 2));
         Optional<DataVersion> version3;
         app::ConcreteClusterPath clusterPath3(chip::Test::kMockEndpoint1, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath3, version3) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version3.HasValue() && (version3.Value() == 2));
+        EXPECT_EQ(cache.GetVersion(clusterPath3, version3), CHIP_NO_ERROR);
+        EXPECT_TRUE(version3.HasValue() && (version3.Value() == 2));
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint1, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint64_t receivedAttribute3;
             reader.Get(receivedAttribute3);
-            NL_TEST_ASSERT(apSuite, receivedAttribute3 == expectedAttribute3);
+            EXPECT_EQ(receivedAttribute3, expectedAttribute3);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         delegate.mNumAttributeResponse = 0;
@@ -1276,7 +1261,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
 
         chip::app::AttributePathParams attributePathParams3[3];
@@ -1300,82 +1285,82 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         static_assert(73 <= ArraySize(eventPathParams));
         readPrepareParams.mEventPathParamsListSize = 73;
         err                                        = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 7);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 7);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 2));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 2));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version2.HasValue() && (version2.Value() == 2));
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_TRUE(version2.HasValue() && (version2.Value() == 2));
         Optional<DataVersion> version3;
         app::ConcreteClusterPath clusterPath3(chip::Test::kMockEndpoint1, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath3, version3) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version3.HasValue() && (version3.Value() == 2));
+        EXPECT_EQ(cache.GetVersion(clusterPath3, version3), CHIP_NO_ERROR);
+        EXPECT_TRUE(version3.HasValue() && (version3.Value() == 2));
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint1, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint64_t receivedAttribute3;
             reader.Get(receivedAttribute3);
-            NL_TEST_ASSERT(apSuite, receivedAttribute3 == expectedAttribute3);
+            EXPECT_EQ(receivedAttribute3, expectedAttribute3);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
         delegate.mNumAttributeResponse             = 0;
         readPrepareParams.mpEventPathParamsList    = nullptr;
@@ -1387,7 +1372,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
     {
         testId++;
         ChipLogProgress(DataManagement, "\t -- Running Read with ClusterStateCache Test ID %d", testId);
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams1[1];
         attributePathParams1[0].mEndpointId = chip::Test::kMockEndpoint3;
@@ -1396,73 +1381,72 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithCache(nlTestSuit
         readPrepareParams.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams.mAttributePathParamsListSize = 1;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 6);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        mLoopbackTransportManager.DrainAndServiceIO();
+        EXPECT_EQ(delegate.mNumAttributeResponse, 6);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
 
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(1));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             bool receivedAttribute1;
             reader.Get(receivedAttribute1);
-            NL_TEST_ASSERT(apSuite, receivedAttribute1 == expectedAttribute1);
+            EXPECT_EQ(receivedAttribute1, expectedAttribute1);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             int16_t receivedAttribute2;
             reader.Get(receivedAttribute2);
-            NL_TEST_ASSERT(apSuite, receivedAttribute2 == expectedAttribute2);
+            EXPECT_EQ(receivedAttribute2, expectedAttribute2);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint64_t receivedAttribute3;
             reader.Get(receivedAttribute3);
-            NL_TEST_ASSERT(apSuite, receivedAttribute3 == expectedAttribute3);
+            EXPECT_EQ(receivedAttribute3, expectedAttribute3);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(4));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) == CHIP_NO_ERROR);
+            EXPECT_EQ(cache.Get(attributePath, reader), CHIP_NO_ERROR);
             uint8_t receivedAttribute4[256];
             reader.GetBytes(receivedAttribute4, 256);
-            NL_TEST_ASSERT(apSuite, memcmp(receivedAttribute4, expectedAttribute4, 256));
+            EXPECT_TRUE(memcmp(receivedAttribute4, expectedAttribute4, 256));
         }
         delegate.mNumAttributeResponse = 0;
     }
 
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadSubscribeAttributeResponseWithVersionOnlyCache(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadSubscribeAttributeResponseWithVersionOnlyCache)
 {
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
     CHIP_ERROR err    = CHIP_NO_ERROR;
     responseDirective = kSendDataResponse;
 
     MockInteractionModelApp delegate;
     chip::app::ClusterStateCache cache(delegate, Optional<EventNumber>::Missing(), false /*cachedData*/);
 
-    chip::app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+    chip::app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
     //
     // Test the application callback as well to ensure we get the right number of SubscriptionEstablishment/Termination
     // callbacks.
@@ -1471,7 +1455,7 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithVersionOnlyCache
 
     // read of E2C2A* and E3C2A2. Expect cache E2C2 version
     {
-        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(),
+        app::ReadClient readClient(chip::app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(),
                                    cache.GetBufferedCallback(), chip::app::ReadClient::InteractionType::Read);
         chip::app::AttributePathParams attributePathParams2[2];
         attributePathParams2[0].mEndpointId  = chip::Test::kMockEndpoint2;
@@ -1484,59 +1468,57 @@ void TestReadInteraction::TestReadSubscribeAttributeResponseWithVersionOnlyCache
         readPrepareParams.mpAttributePathParamsList    = attributePathParams2;
         readPrepareParams.mAttributePathParamsListSize = 2;
         err                                            = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
         // There are supported 2 global and 3 non-global attributes in E2C2A* and  1 E3C2A2
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 6);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
+        EXPECT_EQ(delegate.mNumAttributeResponse, 6);
+        EXPECT_FALSE(delegate.mReadError);
         Optional<DataVersion> version1;
         app::ConcreteClusterPath clusterPath1(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath1, version1) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, version1.HasValue() && (version1.Value() == 0));
+        EXPECT_EQ(cache.GetVersion(clusterPath1, version1), CHIP_NO_ERROR);
+        EXPECT_TRUE(version1.HasValue() && (version1.Value() == 0));
         Optional<DataVersion> version2;
         app::ConcreteClusterPath clusterPath2(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2));
-        NL_TEST_ASSERT(apSuite, cache.GetVersion(clusterPath2, version2) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, !version2.HasValue());
+        EXPECT_EQ(cache.GetVersion(clusterPath2, version2), CHIP_NO_ERROR);
+        EXPECT_FALSE(version2.HasValue());
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) != CHIP_NO_ERROR);
+            EXPECT_NE(cache.Get(attributePath, reader), CHIP_NO_ERROR);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint2, chip::Test::MockClusterId(3),
                                                      chip::Test::MockAttributeId(3));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) != CHIP_NO_ERROR);
+            EXPECT_NE(cache.Get(attributePath, reader), CHIP_NO_ERROR);
         }
 
         {
             app::ConcreteAttributePath attributePath(chip::Test::kMockEndpoint3, chip::Test::MockClusterId(2),
                                                      chip::Test::MockAttributeId(2));
             TLV::TLVReader reader;
-            NL_TEST_ASSERT(apSuite, cache.Get(attributePath, reader) != CHIP_NO_ERROR);
+            EXPECT_NE(cache.Get(attributePath, reader), CHIP_NO_ERROR);
         }
         delegate.mNumAttributeResponse = 0;
     }
 
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadEventResponse(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadEventResponse)
 {
-    TestContext & ctx       = *static_cast<TestContext *>(apContext);
-    auto sessionHandle      = ctx.GetSessionBobToAlice();
+    auto sessionHandle      = mContext.GetSessionBobToAlice();
     bool onSuccessCbInvoked = false, onFailureCbInvoked = false, onDoneCbInvoked = false;
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &onSuccessCbInvoked](const app::EventHeader & eventHeader, const auto & EventResponse) {
+    auto onSuccessCb = [&onSuccessCbInvoked](const app::EventHeader & eventHeader, const auto & EventResponse) {  //+++ removed 1st arg.
         // TODO: Need to add check when IM event server integration completes
-        IgnoreUnusedVariable(apSuite);
         onSuccessCbInvoked = true;
     };
 
@@ -1549,22 +1531,21 @@ void TestReadInteraction::TestReadEventResponse(nlTestSuite * apSuite, void * ap
     auto onDoneCb = [&onDoneCbInvoked](app::ReadClient * apReadClient) { onDoneCbInvoked = true; };
 
     Controller::ReadEvent<Clusters::UnitTesting::Events::TestEvent::DecodableType>(
-        &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, onDoneCb);
+        &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, onDoneCb);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, !onFailureCbInvoked);
-    NL_TEST_ASSERT(apSuite, onDoneCbInvoked);
+    EXPECT_FALSE(onFailureCbInvoked);
+    EXPECT_TRUE(onDoneCbInvoked);
 
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadAttributeError(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadAttributeError)
 {
-    TestContext & ctx       = *static_cast<TestContext *>(apContext);
-    auto sessionHandle      = ctx.GetSessionBobToAlice();
+    auto sessionHandle      = mContext.GetSessionBobToAlice();
     bool onSuccessCbInvoked = false, onFailureCbInvoked = false;
 
     responseDirective = kSendDataError;
@@ -1577,26 +1558,25 @@ void TestReadInteraction::TestReadAttributeError(nlTestSuite * apSuite, void * a
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onFailureCb = [&onFailureCbInvoked, apSuite](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {
-        NL_TEST_ASSERT(apSuite, aError.IsIMStatus() && app::StatusIB(aError).mStatus == Protocols::InteractionModel::Status::Busy);
+    auto onFailureCb = [&onFailureCbInvoked](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {  //+++removed 2nd arg.
+        EXPECT_TRUE(aError.IsIMStatus() && app::StatusIB(aError).mStatus == Protocols::InteractionModel::Status::Busy);
         onFailureCbInvoked = true;
     };
 
     Controller::ReadAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-        &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb);
+        &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, !onSuccessCbInvoked && onFailureCbInvoked);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_TRUE(!onSuccessCbInvoked && onFailureCbInvoked);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadAttributeTimeout(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadAttributeTimeout)
 {
-    TestContext & ctx       = *static_cast<TestContext *>(apContext);
-    auto sessionHandle      = ctx.GetSessionBobToAlice();
+    auto sessionHandle      = mContext.GetSessionBobToAlice();
     bool onSuccessCbInvoked = false, onFailureCbInvoked = false;
 
     responseDirective = kSendDataError;
@@ -1609,38 +1589,38 @@ void TestReadInteraction::TestReadAttributeTimeout(nlTestSuite * apSuite, void *
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onFailureCb = [&onFailureCbInvoked, apSuite](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {
-        NL_TEST_ASSERT(apSuite, aError == CHIP_ERROR_TIMEOUT);
+    auto onFailureCb = [&onFailureCbInvoked](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {  //+++removed 2nd arg.
+        EXPECT_EQ(aError, CHIP_ERROR_TIMEOUT);
         onFailureCbInvoked = true;
     };
 
     Controller::ReadAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-        &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb);
+        &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb);
 
-    ctx.ExpireSessionAliceToBob();
+    mContext.ExpireSessionAliceToBob();
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 1);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 1);
 
-    ctx.ExpireSessionBobToAlice();
+    mContext.ExpireSessionBobToAlice();
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, !onSuccessCbInvoked && onFailureCbInvoked);
+    EXPECT_TRUE(!onSuccessCbInvoked && onFailureCbInvoked);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
 
     //
     // Let's put back the sessions so that the next tests (which assume a valid initialized set of sessions)
     // can function correctly.
     //
-    ctx.CreateSessionAliceToBob();
-    ctx.CreateSessionBobToAlice();
+    mContext.CreateSessionAliceToBob();
+    mContext.CreateSessionBobToAlice();
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
 class TestResubscriptionCallback : public app::ReadClient::Callback
@@ -1699,21 +1679,20 @@ public:
 // TODO: This does not validate the CASE establishment pathways since we're limited by the PASE-centric TestContext.
 //
 //
-void TestReadInteraction::TestResubscribeAttributeTimeout(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestResubscribeAttributeTimeout)
 {
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
 
     {
         TestResubscriptionCallback callback;
-        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), callback,
+        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), callback,
                                    app::ReadClient::InteractionType::Subscribe);
 
         callback.SetReadClient(&readClient);
 
-        app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+        app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
 
         // Read full wildcard paths, repeat twice to ensure chunking.
         app::AttributePathParams attributePathParams[1];
@@ -1728,16 +1707,16 @@ void TestReadInteraction::TestResubscribeAttributeTimeout(nlTestSuite * apSuite,
         readPrepareParams.mMaxIntervalCeilingSeconds = maxIntervalCeilingSeconds;
 
         auto err = readClient.SendAutoResubscribeRequest(std::move(readPrepareParams));
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount >= 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 0);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 0);
 
         chip::app::ReadHandler * readHandler = app::InteractionModelEngine::GetInstance()->ActiveHandlerAt(0);
 
@@ -1749,55 +1728,54 @@ void TestReadInteraction::TestResubscribeAttributeTimeout(nlTestSuite * apSuite,
         // Disable packet transmission, and drive IO till we have reported a re-subscription attempt.
         //
         //
-        ctx.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
-        ctx.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
                                         [&]() { return callback.mOnResubscriptionsAttempted > 0; });
 
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_ERROR_TIMEOUT);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_ERROR_TIMEOUT);
 
-        ctx.GetLoopback().mNumMessagesToDrop = 0;
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = 0;
         callback.ClearCounters();
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount == 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
 
         //
         // With re-sub enabled, we shouldn't have encountered any errors
         //
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnDone == 0);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnDone, 0u);
     }
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
 //
 // This validates a vanilla subscription with re-susbcription disabled timing out correctly on the client
 // side and triggering the OnError callback with the right error code.
 //
-void TestReadInteraction::TestSubscribeAttributeTimeout(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestSubscribeAttributeTimeout)
 {
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
 
     {
         TestResubscriptionCallback callback;
-        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), callback,
+        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), callback,
                                    app::ReadClient::InteractionType::Subscribe);
 
         callback.SetReadClient(&readClient);
 
-        app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+        app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
 
         app::AttributePathParams attributePathParams[1];
         readPrepareParams.mpAttributePathParamsList    = attributePathParams;
@@ -1813,19 +1791,19 @@ void TestReadInteraction::TestSubscribeAttributeTimeout(nlTestSuite * apSuite, v
         readPrepareParams.mMaxIntervalCeilingSeconds = maxIntervalCeilingSeconds;
 
         auto err = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount >= 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
 
         //
         // Request we drop all further messages.
         //
-        ctx.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
 
         chip::app::ReadHandler * readHandler = app::InteractionModelEngine::GetInstance()->ActiveHandlerAt(0);
 
@@ -1838,26 +1816,25 @@ void TestReadInteraction::TestSubscribeAttributeTimeout(nlTestSuite * apSuite, v
         // by the liveness timer firing once we hit our max-interval plus
         // retransmit timeouts.
         //
-        ctx.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
                                         [&]() { return callback.mOnError >= 1; });
 
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_ERROR_TIMEOUT);
-        NL_TEST_ASSERT(apSuite, callback.mOnDone == 1);
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 0);
+        EXPECT_EQ(callback.mOnError, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_ERROR_TIMEOUT);
+        EXPECT_EQ(callback.mOnDone, 1u);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 0);
     }
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
-    ctx.GetLoopback().mNumMessagesToDrop = 0;
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
+    mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = 0;
 }
 
-void TestReadInteraction::TestReadHandler_MultipleSubscriptions(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_MultipleSubscriptions)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
 
@@ -1871,11 +1848,11 @@ void TestReadInteraction::TestReadHandler_MultipleSubscriptions(nlTestSuite * ap
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onFailureCb = [&apSuite](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {
+    auto onFailureCb = [](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {  //+++removed 1st arg.
         //
         // We shouldn't be encountering any failures in this test.
         //
-        NL_TEST_ASSERT(apSuite, false);
+        ASSERT_TRUE(false);
     };
 
     auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,
@@ -1896,37 +1873,34 @@ void TestReadInteraction::TestReadHandler_MultipleSubscriptions(nlTestSuite * ap
     //
     for (size_t i = 0; i < (app::InteractionModelEngine::kReadHandlerPoolSize + 1); i++)
     {
-        NL_TEST_ASSERT(apSuite,
-                       Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                           &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 20,
-                           onSubscriptionEstablishedCb, nullptr, false, true) == CHIP_NO_ERROR);
+        EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                           &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 20,
+                           onSubscriptionEstablishedCb, nullptr, false, true), CHIP_NO_ERROR);
     }
 
     // There are too many messages and the test (gcc_debug, which includes many sanity checks) will be quite slow. Note: report
     // engine is using ScheduleWork which cannot be handled by DrainAndServiceIO correctly.
-    ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60), [&]() {
+    mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60), [&]() {
         return numSuccessCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1) &&
             numSubscriptionEstablishedCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1);
     });
 
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
-    NL_TEST_ASSERT(apSuite,
-                   gTestReadInteraction.mNumActiveSubscriptions == (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
+    EXPECT_EQ(numSuccessCalls, (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
+    EXPECT_EQ(numSubscriptionEstablishedCalls, (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
 }
 
-void TestReadInteraction::TestReadHandler_SubscriptionAppRejection(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionAppRejection)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -1961,26 +1935,25 @@ void TestReadInteraction::TestReadHandler_SubscriptionAppRejection(nlTestSuite *
     //
     gTestReadInteraction.mEmitSubscriptionError = true;
 
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
-                       onSubscriptionEstablishedCb, nullptr, false, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
+                       onSubscriptionEstablishedCb, nullptr, false, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == 0);
+    EXPECT_EQ(numSuccessCalls, 0);
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 0);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(numFailureCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mEmitSubscriptionError = false;
@@ -1990,10 +1963,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionAppRejection(nlTestSuite *
 
 // Subscriber sends the request with particular max-interval value:
 // Max interval equal to client-requested min-interval.
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest1(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest1)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2012,16 +1984,16 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest1(nl
         numFailureCalls++;
     };
 
-    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, &apSuite](const app::ReadClient & readClient,
+    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,  //+++removed 2nd arg.
                                                                                     chip::SubscriptionId aSubscriptionId) {
         uint16_t minInterval = 0, maxInterval = 0;
 
         CHIP_ERROR err = readClient.GetReportingIntervals(minInterval, maxInterval);
 
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        NL_TEST_ASSERT(apSuite, minInterval == 5);
-        NL_TEST_ASSERT(apSuite, maxInterval == 5);
+        EXPECT_EQ(minInterval, 5);
+        EXPECT_EQ(maxInterval, 5);
 
         numSubscriptionEstablishedCalls++;
     };
@@ -2037,27 +2009,26 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest1(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
 
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 5, 5,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 5, 5,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls != 0);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 1);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 1);
+    EXPECT_NE(numSuccessCalls, 0);
+    EXPECT_EQ(numFailureCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 1);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 1);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2066,10 +2037,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest1(nl
 // Subscriber sends the request with particular max-interval value:
 // Max interval greater than client-requested min-interval but lower than 60m:
 // With no server adjustment.
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest2(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest2)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2088,16 +2058,16 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest2(nl
         numFailureCalls++;
     };
 
-    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, &apSuite](const app::ReadClient & readClient,
+    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,  //+++removed 2nd arg.
                                                                                     chip::SubscriptionId aSubscriptionId) {
         uint16_t minInterval = 0, maxInterval = 0;
 
         CHIP_ERROR err = readClient.GetReportingIntervals(minInterval, maxInterval);
 
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        NL_TEST_ASSERT(apSuite, minInterval == 0);
-        NL_TEST_ASSERT(apSuite, maxInterval == 10);
+        EXPECT_EQ(minInterval, 0);
+        EXPECT_EQ(maxInterval, 10);
 
         numSubscriptionEstablishedCalls++;
     };
@@ -2113,27 +2083,26 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest2(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
 
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls != 0);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 1);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 1);
+    EXPECT_NE(numSuccessCalls, 0);
+    EXPECT_EQ(numFailureCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 1);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 1);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2142,10 +2111,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest2(nl
 // Subscriber sends the request with particular max-interval value:
 // Max interval greater than client-requested min-interval but lower than 60m:
 // With server adjustment to a value greater than client-requested, but less than 60m (allowed).
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest3(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest3)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2164,16 +2132,16 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest3(nl
         numFailureCalls++;
     };
 
-    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, &apSuite](const app::ReadClient & readClient,
+    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,  //+++removed 2nd arg.
                                                                                     chip::SubscriptionId aSubscriptionId) {
         uint16_t minInterval = 0, maxInterval = 0;
 
         CHIP_ERROR err = readClient.GetReportingIntervals(minInterval, maxInterval);
 
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        NL_TEST_ASSERT(apSuite, minInterval == 0);
-        NL_TEST_ASSERT(apSuite, maxInterval == 3000);
+        EXPECT_EQ(minInterval, 0);
+        EXPECT_EQ(maxInterval, 3000);
 
         numSubscriptionEstablishedCalls++;
     };
@@ -2189,27 +2157,26 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest3(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = true;
     gTestReadInteraction.mMaxInterval                = 3000;
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls != 0);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 1);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 1);
+    EXPECT_NE(numSuccessCalls, 0);
+    EXPECT_EQ(numFailureCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 1);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 1);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2220,10 +2187,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest3(nl
 // Subscriber sends the request with particular max-interval value:
 // Max interval greater than client-requested min-interval but lower than 60m:
 // server adjustment to a value greater than client-requested, but greater than 60 (not allowed).
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest4(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest4)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2258,26 +2224,25 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest4(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = true;
     gTestReadInteraction.mMaxInterval                = 3700;
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 0);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(numSuccessCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2288,10 +2253,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest4(nl
 // Subscriber sends the request with particular max-interval value:
 // Max interval greater than client-requested min-interval but greater than 60m:
 // With no server adjustment.
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest5(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest5)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2310,16 +2274,16 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest5(nl
         numFailureCalls++;
     };
 
-    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, &apSuite](const app::ReadClient & readClient,
+    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,  //+++removed 2nd arg.
                                                                                     chip::SubscriptionId aSubscriptionId) {
         uint16_t minInterval = 0, maxInterval = 0;
 
         CHIP_ERROR err = readClient.GetReportingIntervals(minInterval, maxInterval);
 
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        NL_TEST_ASSERT(apSuite, minInterval == 0);
-        NL_TEST_ASSERT(apSuite, maxInterval == 4000);
+        EXPECT_EQ(minInterval, 0);
+        EXPECT_EQ(maxInterval, 4000);
 
         numSubscriptionEstablishedCalls++;
     };
@@ -2335,27 +2299,26 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest5(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
 
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls != 0);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 1);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 1);
+    EXPECT_NE(numSuccessCalls, 0);
+    EXPECT_EQ(numFailureCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 1);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 1);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2364,10 +2327,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest5(nl
 // Subscriber sends the request with particular max-interval value:
 // Max interval greater than client-requested min-interval but greater than 60m:
 // With server adjustment to a value lower than 60m. Allowed
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest6(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest6)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2386,16 +2348,16 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest6(nl
         numFailureCalls++;
     };
 
-    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, &apSuite](const app::ReadClient & readClient,
+    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,  //+++removed 2nd arg.
                                                                                     chip::SubscriptionId aSubscriptionId) {
         uint16_t minInterval = 0, maxInterval = 0;
 
         CHIP_ERROR err = readClient.GetReportingIntervals(minInterval, maxInterval);
 
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        NL_TEST_ASSERT(apSuite, minInterval == 0);
-        NL_TEST_ASSERT(apSuite, maxInterval == 3000);
+        EXPECT_EQ(minInterval, 0);
+        EXPECT_EQ(maxInterval, 3000);
 
         numSubscriptionEstablishedCalls++;
     };
@@ -2411,27 +2373,26 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest6(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = true;
     gTestReadInteraction.mMaxInterval                = 3000;
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls != 0);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 1);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 1);
+    EXPECT_NE(numSuccessCalls, 0);
+    EXPECT_EQ(numFailureCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 1);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 1);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2440,10 +2401,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest6(nl
 // Subscriber sends the request with particular max-interval value:
 // Max interval greater than client-requested min-interval but greater than 60m:
 // With server adjustment to a value larger than 60m, but less than max interval. Allowed
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest7(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest7)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2462,16 +2422,16 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest7(nl
         numFailureCalls++;
     };
 
-    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, &apSuite](const app::ReadClient & readClient,
+    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,  //+++removed 2nd arg.
                                                                                     chip::SubscriptionId aSubscriptionId) {
         uint16_t minInterval = 0, maxInterval = 0;
 
         CHIP_ERROR err = readClient.GetReportingIntervals(minInterval, maxInterval);
 
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        NL_TEST_ASSERT(apSuite, minInterval == 0);
-        NL_TEST_ASSERT(apSuite, maxInterval == 3700);
+        EXPECT_EQ(minInterval, 0);
+        EXPECT_EQ(maxInterval, 3700);
 
         numSubscriptionEstablishedCalls++;
     };
@@ -2486,27 +2446,26 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest7(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = true;
     gTestReadInteraction.mMaxInterval                = 3700;
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls != 0);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 1);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 1);
+    EXPECT_NE(numSuccessCalls, 0);
+    EXPECT_EQ(numFailureCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 1);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 1);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2517,10 +2476,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest7(nl
 // Subscriber sends the request with particular max-interval value:
 // Max interval greater than client-requested min-interval but greater than 60m:
 // With server adjustment to a value larger than 60m, but larger than max interval. Disallowed
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest8(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest8)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2554,26 +2512,25 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest8(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = true;
     gTestReadInteraction.mMaxInterval                = 4100;
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 4000,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 0);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(numSuccessCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2581,10 +2538,9 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest8(nl
 
 // Subscriber sends the request with particular max-interval value:
 // Validate client is not requesting max-interval < min-interval.
-void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest9(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_SubscriptionReportingIntervalsTest9)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numFailureCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
@@ -2619,24 +2575,23 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest9(nl
     //
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
 
-    NL_TEST_ASSERT(apSuite,
-                   Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 5, 4,
-                       onSubscriptionEstablishedCb, nullptr, true) == CHIP_ERROR_INVALID_ARGUMENT);
+    EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 5, 4,
+                       onSubscriptionEstablishedCb, nullptr, true), CHIP_ERROR_INVALID_ARGUMENT);
 
     //
     // Failures won't get routed to us here since re-subscriptions are enabled by default in the Controller::SubscribeAttribute
     // implementation.
     //
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == 0);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == 0);
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(numSuccessCalls, 0);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, gTestReadInteraction.mNumActiveSubscriptions == 0);
+    EXPECT_EQ(gTestReadInteraction.mNumActiveSubscriptions, 0);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->UnregisterReadHandlerAppCallback();
     gTestReadInteraction.mAlterSubscriptionIntervals = false;
@@ -2646,22 +2601,21 @@ void TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest9(nl
  * When the liveness timeout of a subscription to ICD is reached, the subscription will enter "InactiveICDSubscription" state, the
  * client should call "OnActiveModeNotification" to re-activate it again when the check-in message is received from the ICD.
  */
-void TestReadInteraction::TestSubscribe_OnActiveModeNotification(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestSubscribe_OnActiveModeNotification)
 {
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
 
     {
         TestResubscriptionCallback callback;
-        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), callback,
+        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), callback,
                                    app::ReadClient::InteractionType::Subscribe);
 
         callback.mScheduleLITResubscribeImmediately = false;
         callback.SetReadClient(&readClient);
 
-        app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+        app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
 
         // Read full wildcard paths, repeat twice to ensure chunking.
         app::AttributePathParams attributePathParams[1];
@@ -2677,16 +2631,16 @@ void TestReadInteraction::TestSubscribe_OnActiveModeNotification(nlTestSuite * a
         readPrepareParams.mIsPeerLIT                 = true;
 
         auto err = readClient.SendAutoResubscribeRequest(std::move(readPrepareParams));
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount >= 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 0);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 0);
         chip::app::ReadHandler * readHandler = app::InteractionModelEngine::GetInstance()->ActiveHandlerAt(0);
 
         uint16_t minInterval;
@@ -2699,52 +2653,51 @@ void TestReadInteraction::TestSubscribe_OnActiveModeNotification(nlTestSuite * a
         // WakeUp() is called.
         //
         //
-        ctx.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
-        ctx.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)), [&]() { return false; });
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_ERROR_LIT_SUBSCRIBE_INACTIVE_TIMEOUT);
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)), [&]() { return false; });
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_ERROR_LIT_SUBSCRIBE_INACTIVE_TIMEOUT);
 
-        ctx.GetLoopback().mNumMessagesToDrop = 0;
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = 0;
         callback.ClearCounters();
         app::InteractionModelEngine::GetInstance()->OnActiveModeNotification(
             ScopedNodeId(readClient.GetPeerNodeId(), readClient.GetFabricIndex()));
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_ERROR_TIMEOUT);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_ERROR_TIMEOUT);
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount == 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
 
         //
         // With re-sub enabled, we shouldn't have encountered any errors
         //
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnDone == 0);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnDone, 0u);
     }
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
 /**
  * When the liveness timeout of a subscription to ICD is reached, the subscription will enter "InactiveICDSubscription" state, the
  * client should call "OnActiveModeNotification" to re-activate it again when the check-in message is received from the ICD.
  */
-void TestReadInteraction::TestSubscribe_DynamicLITSubscription(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestSubscribe_DynamicLITSubscription)
 {
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
 
     {
         TestResubscriptionCallback callback;
-        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), callback,
+        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), callback,
                                    app::ReadClient::InteractionType::Subscribe);
 
         responseDirective                           = kSendDataResponse;
@@ -2752,7 +2705,7 @@ void TestReadInteraction::TestSubscribe_DynamicLITSubscription(nlTestSuite * apS
         callback.SetReadClient(&readClient);
         isLitIcd = false;
 
-        app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+        app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
 
         // Read full wildcard paths, repeat twice to ensure chunking.
         app::AttributePathParams attributePathParams[1];
@@ -2768,16 +2721,16 @@ void TestReadInteraction::TestSubscribe_DynamicLITSubscription(nlTestSuite * apS
         readPrepareParams.mIsPeerLIT                 = true;
 
         auto err = readClient.SendAutoResubscribeRequest(std::move(readPrepareParams));
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount >= 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 0);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 0);
         chip::app::ReadHandler * readHandler = app::InteractionModelEngine::GetInstance()->ActiveHandlerAt(0);
 
         uint16_t minInterval;
@@ -2793,27 +2746,27 @@ void TestReadInteraction::TestSubscribe_DynamicLITSubscription(nlTestSuite * apS
         //
         // Even if we set the peer type to LIT before, the report indicates that the peer is a SIT now, it will just bahve as
         // normal, non-LIT subscriptions.
-        ctx.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
-        ctx.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
                                         [&]() { return callback.mOnResubscriptionsAttempted != 0; });
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_ERROR_TIMEOUT);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_ERROR_TIMEOUT);
 
-        ctx.GetLoopback().mNumMessagesToDrop = 0;
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = 0;
         callback.ClearCounters();
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount == 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
 
         //
         // With re-sub enabled, we shouldn't have encountered any errors
         //
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnDone == 0);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnDone, 0u);
 
         // Part 2. SIT -> LIT
 
@@ -2826,24 +2779,24 @@ void TestReadInteraction::TestSubscribe_DynamicLITSubscription(nlTestSuite * apS
             app::InteractionModelEngine::GetInstance()->GetReportingEngine().SetDirty(path);
         }
         callback.ClearCounters();
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60), [&]() {
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60), [&]() {
             return app::InteractionModelEngine::GetInstance()->GetNumDirtySubscriptions() == 0;
         });
 
         // When we received the update that OperatingMode becomes LIT, we automatically set the inner peer type to LIT ICD.
-        ctx.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
-        ctx.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)), [&]() { return false; });
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_ERROR_LIT_SUBSCRIBE_INACTIVE_TIMEOUT);
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)), [&]() { return false; });
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_ERROR_LIT_SUBSCRIBE_INACTIVE_TIMEOUT);
 
-        ctx.GetLoopback().mNumMessagesToDrop = 0;
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = 0;
         callback.ClearCounters();
     }
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     isLitIcd = false;
 }
@@ -2852,22 +2805,21 @@ void TestReadInteraction::TestSubscribe_DynamicLITSubscription(nlTestSuite * apS
  * When the liveness timeout of a subscription to ICD is reached, the app can issue resubscription immediately
  * if they know the peer is active.
  */
-void TestReadInteraction::TestSubscribe_ImmediatelyResubscriptionForLIT(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestSubscribe_ImmediatelyResubscriptionForLIT)
 {
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
 
     {
         TestResubscriptionCallback callback;
-        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), callback,
+        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), callback,
                                    app::ReadClient::InteractionType::Subscribe);
 
         callback.mScheduleLITResubscribeImmediately = true;
         callback.SetReadClient(&readClient);
 
-        app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+        app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
 
         // Read full wildcard paths, repeat twice to ensure chunking.
         app::AttributePathParams attributePathParams[1];
@@ -2883,16 +2835,16 @@ void TestReadInteraction::TestSubscribe_ImmediatelyResubscriptionForLIT(nlTestSu
         readPrepareParams.mIsPeerLIT                 = true;
 
         auto err = readClient.SendAutoResubscribeRequest(std::move(readPrepareParams));
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount >= 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 0);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 0);
         chip::app::ReadHandler * readHandler = app::InteractionModelEngine::GetInstance()->ActiveHandlerAt(0);
 
         uint16_t minInterval;
@@ -2905,83 +2857,76 @@ void TestReadInteraction::TestSubscribe_ImmediatelyResubscriptionForLIT(nlTestSu
         // WakeUp() is called.
         //
         //
-        ctx.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
-        ctx.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = chip::Test::LoopbackTransport::kUnlimitedMessageCount;
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(ComputeSubscriptionTimeout(System::Clock::Seconds16(maxInterval)),
                                         [&]() { return callback.mLastError == CHIP_ERROR_LIT_SUBSCRIBE_INACTIVE_TIMEOUT; });
-        NL_TEST_ASSERT(apSuite, callback.mOnResubscriptionsAttempted == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_ERROR_LIT_SUBSCRIBE_INACTIVE_TIMEOUT);
+        EXPECT_EQ(callback.mOnResubscriptionsAttempted, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_ERROR_LIT_SUBSCRIBE_INACTIVE_TIMEOUT);
 
-        ctx.GetLoopback().mNumMessagesToDrop = 0;
+        mLoopbackTransportManager.GetLoopback().mNumMessagesToDrop = 0;
         callback.ClearCounters();
 
         //
         // Drive servicing IO till we have established a subscription.
         //
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Milliseconds32(2000),
                                         [&]() { return callback.mOnSubscriptionEstablishedCount == 1; });
-        NL_TEST_ASSERT(apSuite, callback.mOnSubscriptionEstablishedCount == 1);
+        EXPECT_EQ(callback.mOnSubscriptionEstablishedCount, 1);
 
         //
         // With re-sub enabled, we shouldn't have encountered any errors
         //
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 0);
-        NL_TEST_ASSERT(apSuite, callback.mOnDone == 0);
+        EXPECT_EQ(callback.mOnError, 0);
+        EXPECT_EQ(callback.mOnDone, 0u);
     }
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadHandler_MultipleReads(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_MultipleReads)
 {
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
-
     static_assert(CHIP_IM_MAX_REPORTS_IN_FLIGHT <= app::InteractionModelEngine::kReadHandlerPoolSize,
                   "How can we have more reports in flight than read handlers?");
 
-    MultipleReadHelper(apSuite, ctx, CHIP_IM_MAX_REPORTS_IN_FLIGHT);
+    MultipleReadHelper(CHIP_IM_MAX_REPORTS_IN_FLIGHT);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 }
 
-void TestReadInteraction::TestReadHandler_OneSubscribeMultipleReads(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_OneSubscribeMultipleReads)
 {
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
-
     static_assert(CHIP_IM_MAX_REPORTS_IN_FLIGHT <= app::InteractionModelEngine::kReadHandlerPoolSize,
                   "How can we have more reports in flight than read handlers?");
     static_assert(CHIP_IM_MAX_REPORTS_IN_FLIGHT > 1, "We won't do any reads");
 
-    SubscribeThenReadHelper(apSuite, ctx, 1, CHIP_IM_MAX_REPORTS_IN_FLIGHT - 1);
+    SubscribeThenReadHelper(&mContext, 1, CHIP_IM_MAX_REPORTS_IN_FLIGHT - 1);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 }
 
-void TestReadInteraction::TestReadHandler_TwoSubscribesMultipleReads(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_TwoSubscribesMultipleReads)
 {
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
-
     static_assert(CHIP_IM_MAX_REPORTS_IN_FLIGHT <= app::InteractionModelEngine::kReadHandlerPoolSize,
                   "How can we have more reports in flight than read handlers?");
     static_assert(CHIP_IM_MAX_REPORTS_IN_FLIGHT > 2, "We won't do any reads");
 
-    SubscribeThenReadHelper(apSuite, ctx, 2, CHIP_IM_MAX_REPORTS_IN_FLIGHT - 2);
+    SubscribeThenReadHelper(&mContext, 2, CHIP_IM_MAX_REPORTS_IN_FLIGHT - 2);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 }
 
-void TestReadInteraction::SubscribeThenReadHelper(nlTestSuite * apSuite, TestContext & aCtx, size_t aSubscribeCount,
-                                                  size_t aReadCount)
+void TestReadInteraction::SubscribeThenReadHelper(chip::Test::MessagingContext * ctx, size_t aSubscribeCount, size_t aReadCount)
 {
-    auto sessionHandle                       = aCtx.GetSessionBobToAlice();
+    auto sessionHandle                       = ctx->GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
 
@@ -2998,90 +2943,87 @@ void TestReadInteraction::SubscribeThenReadHelper(nlTestSuite * apSuite, TestCon
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onFailureCb = [&apSuite](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {
+    auto onFailureCb = [](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {  //+++removed 1st arg.
         //
         // We shouldn't be encountering any failures in this test.
         //
-        NL_TEST_ASSERT(apSuite, false);
+        ASSERT_TRUE(false);
     };
 
-    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, &apSuite, &aCtx, aSubscribeCount, aReadCount,
+    auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls, aSubscribeCount, aReadCount,  //+++ removed 2nd arg.
                                         &numReadSuccessCalls, &numReadFailureCalls](const app::ReadClient & readClient,
                                                                                     chip::SubscriptionId aSubscriptionId) {
         numSubscriptionEstablishedCalls++;
         if (numSubscriptionEstablishedCalls == aSubscribeCount)
         {
-            MultipleReadHelperInternal(apSuite, aCtx, aReadCount, numReadSuccessCalls, numReadFailureCalls);
+            MultipleReadHelperInternal(aReadCount, numReadSuccessCalls, numReadFailureCalls);
         }
     };
 
     for (size_t i = 0; i < aSubscribeCount; ++i)
     {
-        NL_TEST_ASSERT(apSuite,
-                       Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                           &aCtx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
-                           onSubscriptionEstablishedCb, nullptr, false, true) == CHIP_NO_ERROR);
+        EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                           &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
+                           onSubscriptionEstablishedCb, nullptr, false, true), CHIP_NO_ERROR);
     }
 
-    aCtx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == aSubscribeCount);
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == aSubscribeCount);
-    NL_TEST_ASSERT(apSuite, numReadSuccessCalls == aReadCount);
-    NL_TEST_ASSERT(apSuite, numReadFailureCalls == 0);
+    EXPECT_EQ(numSuccessCalls, aSubscribeCount);
+    EXPECT_EQ(numSubscriptionEstablishedCalls, aSubscribeCount);
+    EXPECT_EQ(numReadSuccessCalls, aReadCount);
+    EXPECT_EQ(numReadFailureCalls, 0);
 }
 
 // The guts of MultipleReadHelper which take references to the success/failure
 // counts to modify and assume the consumer will be spinning the event loop.
-void TestReadInteraction::MultipleReadHelperInternal(nlTestSuite * apSuite, TestContext & aCtx, size_t aReadCount,
+void TestReadInteraction::MultipleReadHelperInternal(size_t aReadCount,
                                                      uint32_t & aNumSuccessCalls, uint32_t & aNumFailureCalls)
 {
-    NL_TEST_ASSERT(apSuite, aNumSuccessCalls == 0);
-    NL_TEST_ASSERT(apSuite, aNumFailureCalls == 0);
+    EXPECT_EQ(aNumSuccessCalls, 0);
+    EXPECT_EQ(aNumFailureCalls, 0);
 
-    auto sessionHandle = aCtx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
     responseDirective = kSendDataResponse;
 
     uint16_t firstExpectedResponse = totalReadCount + 1;
 
-    auto onFailureCb = [apSuite, &aNumFailureCalls](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {
+    auto onFailureCb = [&aNumFailureCalls](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {  //+++ removed 1st arg.
         aNumFailureCalls++;
 
-        NL_TEST_ASSERT(apSuite, attributePath == nullptr);
+        EXPECT_EQ(attributePath, nullptr);
     };
 
     for (size_t i = 0; i < aReadCount; ++i)
     {
-        auto onSuccessCb = [&aNumSuccessCalls, apSuite, firstExpectedResponse,
+        auto onSuccessCb = [&aNumSuccessCalls, firstExpectedResponse,  //+++ removed 2nd arg.
                             i](const app::ConcreteDataAttributePath & attributePath, const auto & dataResponse) {
-            NL_TEST_ASSERT(apSuite, dataResponse == firstExpectedResponse + i);
+            EXPECT_EQ(dataResponse, firstExpectedResponse + i);
             aNumSuccessCalls++;
         };
 
-        NL_TEST_ASSERT(apSuite,
-                       Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Int16u::TypeInfo>(
-                           &aCtx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb) == CHIP_NO_ERROR);
+        EXPECT_EQ(Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Int16u::TypeInfo>(
+                           &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb), CHIP_NO_ERROR);
     }
 }
 
-void TestReadInteraction::MultipleReadHelper(nlTestSuite * apSuite, TestContext & aCtx, size_t aReadCount)
+void TestReadInteraction::MultipleReadHelper(size_t aReadCount)
 {
     uint32_t numSuccessCalls = 0;
     uint32_t numFailureCalls = 0;
 
-    MultipleReadHelperInternal(apSuite, aCtx, aReadCount, numSuccessCalls, numFailureCalls);
+    MultipleReadHelperInternal(aReadCount, numSuccessCalls, numFailureCalls);
 
-    aCtx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == aReadCount);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 0);
+    EXPECT_EQ(numSuccessCalls, aReadCount);
+    EXPECT_EQ(numFailureCalls, 0);
 }
 
-void TestReadInteraction::TestReadHandler_MultipleSubscriptionsWithDataVersionFilter(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_MultipleSubscriptionsWithDataVersionFilter)
 {
-    TestContext & ctx                        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle                       = ctx.GetSessionBobToAlice();
+    auto sessionHandle                       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls                 = 0;
     uint32_t numSubscriptionEstablishedCalls = 0;
 
@@ -3089,19 +3031,19 @@ void TestReadInteraction::TestReadHandler_MultipleSubscriptionsWithDataVersionFi
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &numSuccessCalls](const app::ConcreteDataAttributePath & attributePath,
+    auto onSuccessCb = [&numSuccessCalls](const app::ConcreteDataAttributePath & attributePath,  //+++ removed 1st arg.
                                                    const auto & dataResponse) {
-        NL_TEST_ASSERT(apSuite, attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
+        EXPECT_TRUE(attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
         numSuccessCalls++;
     };
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onFailureCb = [&apSuite](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {
+    auto onFailureCb = [](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {  //+++removed 1st arg.
         //
         // We shouldn't be encountering any failures in this test.
         //
-        NL_TEST_ASSERT(apSuite, false);
+        ASSERT_TRUE(false);
     };
 
     auto onSubscriptionEstablishedCb = [&numSubscriptionEstablishedCalls](const app::ReadClient & readClient,
@@ -3117,15 +3059,14 @@ void TestReadInteraction::TestReadHandler_MultipleSubscriptionsWithDataVersionFi
     chip::Optional<chip::DataVersion> dataVersion(1);
     for (size_t i = 0; i < (app::InteractionModelEngine::kReadHandlerPoolSize + 1); i++)
     {
-        NL_TEST_ASSERT(apSuite,
-                       Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                           &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
-                           onSubscriptionEstablishedCb, nullptr, false, true, dataVersion) == CHIP_NO_ERROR);
+        EXPECT_EQ(Controller::SubscribeAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                           &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, 0, 10,
+                           onSubscriptionEstablishedCb, nullptr, false, true, dataVersion), CHIP_NO_ERROR);
     }
 
     // There are too many messages and the test (gcc_debug, which includes many sanity checks) will be quite slow. Note: report
     // engine is using ScheduleWork which cannot be handled by DrainAndServiceIO correctly.
-    ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(30), [&]() {
+    mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(30), [&]() {
         return numSubscriptionEstablishedCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1) &&
             numSuccessCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1);
     });
@@ -3134,17 +3075,16 @@ void TestReadInteraction::TestReadHandler_MultipleSubscriptionsWithDataVersionFi
                  numSuccessCalls, uint32_t(app::InteractionModelEngine::kReadHandlerPoolSize + 1), numSubscriptionEstablishedCalls,
                  uint32_t(app::InteractionModelEngine::kReadHandlerPoolSize + 1));
 
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
-    NL_TEST_ASSERT(apSuite, numSubscriptionEstablishedCalls == (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
+    EXPECT_EQ(numSuccessCalls, (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
+    EXPECT_EQ(numSubscriptionEstablishedCalls, (app::InteractionModelEngine::kReadHandlerPoolSize + 1));
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadHandlerResourceExhaustion_MultipleReads(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandlerResourceExhaustion_MultipleReads)
 {
-    TestContext & ctx        = *static_cast<TestContext *>(apContext);
-    auto sessionHandle       = ctx.GetSessionBobToAlice();
+    auto sessionHandle       = mContext.GetSessionBobToAlice();
     uint32_t numSuccessCalls = 0;
     uint32_t numFailureCalls = 0;
 
@@ -3158,33 +3098,32 @@ void TestReadInteraction::TestReadHandlerResourceExhaustion_MultipleReads(nlTest
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onFailureCb = [&apSuite, &numFailureCalls](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {
+    auto onFailureCb = [&numFailureCalls](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) {  //+++ removed 1st arg.
         numFailureCalls++;
 
-        NL_TEST_ASSERT(apSuite, aError == CHIP_IM_GLOBAL_STATUS(Busy));
-        NL_TEST_ASSERT(apSuite, attributePath == nullptr);
+        EXPECT_EQ(aError, CHIP_IM_GLOBAL_STATUS(Busy));
+        EXPECT_EQ(attributePath, nullptr);
     };
 
     app::InteractionModelEngine::GetInstance()->SetHandlerCapacityForReads(0);
     app::InteractionModelEngine::GetInstance()->SetForceHandlerQuota(true);
 
-    NL_TEST_ASSERT(apSuite,
-                   Controller::ReadAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
-                       &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb) == CHIP_NO_ERROR);
+    EXPECT_EQ(Controller::ReadAttribute<Clusters::UnitTesting::Attributes::ListStructOctetString::TypeInfo>(
+                       &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     app::InteractionModelEngine::GetInstance()->SetHandlerCapacityForReads(-1);
     app::InteractionModelEngine::GetInstance()->SetForceHandlerQuota(false);
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
 
-    NL_TEST_ASSERT(apSuite, numSuccessCalls == 0);
-    NL_TEST_ASSERT(apSuite, numFailureCalls == 1);
+    EXPECT_EQ(numSuccessCalls, 0);
+    EXPECT_EQ(numFailureCalls, 1);
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadFabricScopedWithoutFabricFilter(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadFabricScopedWithoutFabricFilter)
 {
     /**
      *  TODO: we cannot implement the e2e read tests w/ fabric filter since the test session has only one session, and the
@@ -3196,20 +3135,19 @@ void TestReadInteraction::TestReadFabricScopedWithoutFabricFilter(nlTestSuite * 
      * encoder.
      *   - When a fabric filtered read request is received, the response encoder is able to encode the attribute correctly.
      */
-    TestContext & ctx       = *static_cast<TestContext *>(apContext);
-    auto sessionHandle      = ctx.GetSessionBobToAlice();
+    auto sessionHandle      = mContext.GetSessionBobToAlice();
     bool onSuccessCbInvoked = false, onFailureCbInvoked = false;
 
     responseDirective = kSendDataResponse;
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &onSuccessCbInvoked](const app::ConcreteDataAttributePath & attributePath,
-                                                      const auto & dataResponse) {
+    auto onSuccessCb = [&onSuccessCbInvoked](const app::ConcreteDataAttributePath & attributePath,
+                                                      const auto & dataResponse) {  //+++ removed 1st arg.
         size_t len = 0;
 
-        NL_TEST_ASSERT(apSuite, dataResponse.ComputeSize(&len) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, len > 1);
+        EXPECT_EQ(dataResponse.ComputeSize(&len), CHIP_NO_ERROR);
+        EXPECT_GT(len, 1);
 
         onSuccessCbInvoked = true;
     };
@@ -3221,17 +3159,17 @@ void TestReadInteraction::TestReadFabricScopedWithoutFabricFilter(nlTestSuite * 
     };
 
     Controller::ReadAttribute<Clusters::UnitTesting::Attributes::ListFabricScoped::TypeInfo>(
-        &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, false /* fabric filtered */);
+        &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, false /* fabric filtered */);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, onSuccessCbInvoked && !onFailureCbInvoked);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_TRUE(onSuccessCbInvoked && !onFailureCbInvoked);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadFabricScopedWithFabricFilter(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadFabricScopedWithFabricFilter)
 {
     /**
      *  TODO: we cannot implement the e2e read tests w/ fabric filter since the test session has only one session, and the
@@ -3243,20 +3181,19 @@ void TestReadInteraction::TestReadFabricScopedWithFabricFilter(nlTestSuite * apS
      * encoder.
      *   - When a fabric filtered read request is received, the response encoder is able to encode the attribute correctly.
      */
-    TestContext & ctx       = *static_cast<TestContext *>(apContext);
-    auto sessionHandle      = ctx.GetSessionBobToAlice();
+    auto sessionHandle      = mContext.GetSessionBobToAlice();
     bool onSuccessCbInvoked = false, onFailureCbInvoked = false;
 
     responseDirective = kSendDataResponse;
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &onSuccessCbInvoked](const app::ConcreteDataAttributePath & attributePath,
+    auto onSuccessCb = [&onSuccessCbInvoked](const app::ConcreteDataAttributePath & attributePath,  //+++ removed 1st arg.
                                                       const auto & dataResponse) {
         size_t len = 0;
 
-        NL_TEST_ASSERT(apSuite, dataResponse.ComputeSize(&len) == CHIP_NO_ERROR);
-        NL_TEST_ASSERT(apSuite, len == 1);
+        EXPECT_EQ(dataResponse.ComputeSize(&len), CHIP_NO_ERROR);
+        EXPECT_EQ(len, 1);
 
         // TODO: Uncomment the following code after we have fabric support in unit tests.
         /*
@@ -3264,7 +3201,7 @@ void TestReadInteraction::TestReadFabricScopedWithFabricFilter(nlTestSuite * apS
         if (iter.Next())
         {
             auto & item = iter.GetValue();
-            NL_TEST_ASSERT(apSuite, item.fabricIndex == 1);
+            EXPECT_EQ(item.fabricIndex, 1);
         }
         */
         onSuccessCbInvoked = true;
@@ -3277,14 +3214,14 @@ void TestReadInteraction::TestReadFabricScopedWithFabricFilter(nlTestSuite * apS
     };
 
     Controller::ReadAttribute<Clusters::UnitTesting::Attributes::ListFabricScoped::TypeInfo>(
-        &ctx.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, true /* fabric filtered */);
+        &mContext.GetExchangeManager(), sessionHandle, kTestEndpointId, onSuccessCb, onFailureCb, true /* fabric filtered */);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, onSuccessCbInvoked && !onFailureCbInvoked);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_TRUE(onSuccessCbInvoked && !onFailureCbInvoked);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
 namespace SubscriptionPathQuotaHelpers {
@@ -3356,7 +3293,7 @@ public:
     int32_t reportsReceived = 0;
 };
 
-void EstablishReadOrSubscriptions(nlTestSuite * apSuite, const SessionHandle & sessionHandle, size_t numSubs, size_t pathPerSub,
+void EstablishReadOrSubscriptions(const SessionHandle & sessionHandle, size_t numSubs, size_t pathPerSub,
                                   app::AttributePathParams path, app::ReadClient::InteractionType type,
                                   app::ReadClient::Callback * callback, std::vector<std::unique_ptr<app::ReadClient>> & readClients)
 {
@@ -3376,26 +3313,25 @@ void EstablishReadOrSubscriptions(nlTestSuite * apSuite, const SessionHandle & s
         std::unique_ptr<app::ReadClient> readClient =
             std::make_unique<app::ReadClient>(app::InteractionModelEngine::GetInstance(),
                                               app::InteractionModelEngine::GetInstance()->GetExchangeManager(), *callback, type);
-        NL_TEST_ASSERT(apSuite, readClient->SendRequest(readParams) == CHIP_NO_ERROR);
+        EXPECT_EQ(readClient->SendRequest(readParams), CHIP_NO_ERROR);
         readClients.push_back(std::move(readClient));
     }
 }
 
 } // namespace SubscriptionPathQuotaHelpers
 
-void TestReadInteraction::TestSubscribeAttributeDeniedNotExistPath(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestSubscribeAttributeDeniedNotExistPath)
 {
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kResponsive);
 
     {
         SubscriptionPathQuotaHelpers::TestReadCallback callback;
-        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), callback,
+        app::ReadClient readClient(app::InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), callback,
                                    app::ReadClient::InteractionType::Subscribe);
 
-        app::ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+        app::ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
 
         app::AttributePathParams attributePathParams[1];
         readPrepareParams.mpAttributePathParamsList    = attributePathParams;
@@ -3409,30 +3345,29 @@ void TestReadInteraction::TestSubscribeAttributeDeniedNotExistPath(nlTestSuite *
         readPrepareParams.mMaxIntervalCeilingSeconds = 1;
 
         auto err = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
 
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_IM_GLOBAL_STATUS(InvalidAction));
-        NL_TEST_ASSERT(apSuite, callback.mOnDone == 1);
+        EXPECT_EQ(callback.mOnError, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_IM_GLOBAL_STATUS(InvalidAction));
+        EXPECT_EQ(callback.mOnDone, 1u);
     }
 
-    ctx.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
+    mContext.SetMRPMode(chip::Test::MessagingContext::MRPMode::kDefault);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_KillOverQuotaSubscriptions)
 {
-    // Note: We cannot use ctx.DrainAndServiceIO() since the perpetual read will make DrainAndServiceIO never return.
+    // Note: We cannot use mLoopbackTransportManager.DrainAndServiceIO() since the perpetual read will make DrainAndServiceIO never return.
     using namespace SubscriptionPathQuotaHelpers;
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
     const auto kExpectedParallelSubs =
-        app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric * ctx.GetFabricTable().FabricCount();
+        app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric * mContext.GetFabricTable().FabricCount();
     const auto kExpectedParallelPaths = kExpectedParallelSubs * app::InteractionModelEngine::kMinSupportedPathsPerSubscription;
 
     app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(&gTestReadInteraction);
@@ -3444,18 +3379,17 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
     TestPerpetualListReadCallback perpetualReadCallback;
     std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-    EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+    EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1, 1,
                                  app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, kPerpetualAttributeid),
                                  app::ReadClient::InteractionType::Read, &perpetualReadCallback, readClients);
-    EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+    EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                  app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, kPerpetualAttributeid),
                                  app::ReadClient::InteractionType::Read, &perpetualReadCallback, readClients);
-    ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+    mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
         return app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) == 2;
     });
     // Ensure our read transactions are established.
-    NL_TEST_ASSERT(apSuite,
-                   app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) ==
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read),
                        2);
 
     // Intentially establish subscriptions using exceeded resources.
@@ -3468,29 +3402,28 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
     //
     // Subscription A
     EstablishReadOrSubscriptions(
-        apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1,
+        mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1,
         app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
         app::ReadClient::InteractionType::Subscribe, &readCallback, readClients);
     // Subscription B
     EstablishReadOrSubscriptions(
-        apSuite, ctx.GetSessionBobToAlice(), kExpectedParallelSubs, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
+        mContext.GetSessionBobToAlice(), kExpectedParallelSubs, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
         app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
         app::ReadClient::InteractionType::Subscribe, &readCallback, readClients);
 
     // There are too many messages and the test (gcc_debug, which includes many sanity checks) will be quite slow. Note: report
     // engine is using ScheduleWork which cannot be handled by DrainAndServiceIO correctly.
-    ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+    mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
         return readCallback.mOnSubscriptionEstablishedCount == kExpectedParallelSubs + 1 &&
             readCallback.mAttributeCount ==
             kExpectedParallelSubs * app::InteractionModelEngine::kMinSupportedPathsPerSubscription +
                 app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1;
     });
 
-    NL_TEST_ASSERT(apSuite,
-                   readCallback.mAttributeCount ==
+    EXPECT_EQ(readCallback.mAttributeCount,
                        kExpectedParallelSubs * app::InteractionModelEngine::kMinSupportedPathsPerSubscription +
                            app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1);
-    NL_TEST_ASSERT(apSuite, readCallback.mOnSubscriptionEstablishedCount == kExpectedParallelSubs + 1);
+    EXPECT_EQ(readCallback.mOnSubscriptionEstablishedCount, kExpectedParallelSubs + 1);
 
     // We have set up the environment for testing the evicting logic.
     // We now have a full stable of subscriptions setup AND we've artificially limited the capacity, creation of further
@@ -3506,28 +3439,28 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
         TestReadCallback callback;
         std::vector<std::unique_ptr<app::ReadClient>> outReadClient;
         EstablishReadOrSubscriptions(
-            apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1,
+            mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1,
             app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
             app::ReadClient::InteractionType::Subscribe, &callback, outReadClient);
 
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return callback.mOnError == 1; });
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return callback.mOnError == 1; });
 
         // Over-sized request after used all paths will receive Paths Exhausted status code.
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_IM_GLOBAL_STATUS(PathsExhausted));
+        EXPECT_EQ(callback.mOnError, 1);
+        EXPECT_EQ(callback.mLastError, CHIP_IM_GLOBAL_STATUS(PathsExhausted));
     }
 
     // This next test validates that a compliant subscription request will kick out an existing subscription (arguably, the one that
     // was previously established with more paths than the limit per fabric)
     {
         EstablishReadOrSubscriptions(
-            apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
+            mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
             app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
             app::ReadClient::InteractionType::Subscribe, &readCallback, readClients);
 
         readCallback.ClearCounters();
         // Run until the new subscription got setup fully as viewed by the client.
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
             return readCallback.mOnSubscriptionEstablishedCount == 1 &&
                 readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerSubscription;
         });
@@ -3535,8 +3468,8 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
         // This read handler should evict some existing subscriptions for enough space.
         // Validate that the new subscription got setup fully as viewed by the client. And we will validate we handled this
         // subscription by evicting the correct subscriptions later.
-        NL_TEST_ASSERT(apSuite, readCallback.mOnSubscriptionEstablishedCount == 1);
-        NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerSubscription);
+        EXPECT_EQ(readCallback.mOnSubscriptionEstablishedCount, 1);
+        EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerSubscription);
     }
 
     // Validate we evicted the right subscription for handling the new subscription above.
@@ -3552,7 +3485,7 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
     readCallback.ClearCounters();
 
     // Run until all subscriptions are clean.
-    ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60),
+    mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60),
                                     [&]() { return app::InteractionModelEngine::GetInstance()->GetNumDirtySubscriptions() == 0; });
 
     // Before the above subscription, we have one subscription with kMinSupportedPathsPerSubscription + 1 paths, we should evict
@@ -3561,28 +3494,26 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
     // We have exactly one subscription than uses more resources than others, so the interaction model must evict it first, and we
     // will have exactly kExpectedParallelPaths only when that subscription have been evicted. We use this indirect method to verify
     // the subscriptions since the read client won't shutdown until the timeout fired.
-    NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == kExpectedParallelPaths);
-    NL_TEST_ASSERT(apSuite,
-                   app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                       app::ReadHandler::InteractionType::Subscribe) == static_cast<uint32_t>(kExpectedParallelSubs));
+    EXPECT_EQ(readCallback.mAttributeCount, kExpectedParallelPaths);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                       app::ReadHandler::InteractionType::Subscribe), static_cast<uint32_t>(kExpectedParallelSubs));
 
     // Part 2: Testing per fabric minimas.
     // Validate we have more than kMinSupportedSubscriptionsPerFabric subscriptions for testing per fabric minimas.
-    NL_TEST_ASSERT(apSuite,
-                   app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                       app::ReadHandler::InteractionType::Subscribe, ctx.GetAliceFabricIndex()) >
+    EXPECT_GT(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                       app::ReadHandler::InteractionType::Subscribe, mContext.GetAliceFabricIndex()),
                        app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric);
 
     // The following check will trigger the logic in im to kill the read handlers that use more paths than the limit per fabric.
     {
         EstablishReadOrSubscriptions(
-            apSuite, ctx.GetSessionAliceToBob(), app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric,
+            mContext.GetSessionAliceToBob(), app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric,
             app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
             app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
             app::ReadClient::InteractionType::Subscribe, &readCallbackFabric2, readClients);
 
         // Run until we have established the subscriptions.
-        ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+        mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
             return readCallbackFabric2.mOnSubscriptionEstablishedCount ==
                 app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric &&
                 readCallbackFabric2.mAttributeCount ==
@@ -3591,11 +3522,9 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
         });
 
         // Verify the subscriptions are established successfully. We will check if we evicted the expected subscriptions later.
-        NL_TEST_ASSERT(apSuite,
-                       readCallbackFabric2.mOnSubscriptionEstablishedCount ==
+        EXPECT_EQ(readCallbackFabric2.mOnSubscriptionEstablishedCount,
                            app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric);
-        NL_TEST_ASSERT(apSuite,
-                       readCallbackFabric2.mAttributeCount ==
+        EXPECT_EQ(readCallbackFabric2.mAttributeCount,
                            app::InteractionModelEngine::kMinSupportedPathsPerSubscription *
                                app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric);
     }
@@ -3612,52 +3541,46 @@ void TestReadInteraction::TestReadHandler_KillOverQuotaSubscriptions(nlTestSuite
     readCallbackFabric2.ClearCounters();
 
     // Run until all subscriptions are clean.
-    ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60),
+    mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(60),
                                     [&]() { return app::InteractionModelEngine::GetInstance()->GetNumDirtySubscriptions() == 0; });
 
     // Some subscriptions on fabric 1 should be evicted since fabric 1 is using more resources than the limits.
-    NL_TEST_ASSERT(apSuite,
-                   readCallback.mAttributeCount ==
+    EXPECT_EQ(readCallback.mAttributeCount,
                        app::InteractionModelEngine::kMinSupportedPathsPerSubscription *
                            app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric);
-    NL_TEST_ASSERT(apSuite,
-                   readCallbackFabric2.mAttributeCount ==
+    EXPECT_EQ(readCallbackFabric2.mAttributeCount,
                        app::InteractionModelEngine::kMinSupportedPathsPerSubscription *
                            app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric);
-    NL_TEST_ASSERT(apSuite,
-                   app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                       app::ReadHandler::InteractionType::Subscribe, ctx.GetAliceFabricIndex()) ==
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                       app::ReadHandler::InteractionType::Subscribe, mContext.GetAliceFabricIndex()),
                        app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric);
-    NL_TEST_ASSERT(apSuite,
-                   app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                       app::ReadHandler::InteractionType::Subscribe, ctx.GetBobFabricIndex()) ==
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                       app::ReadHandler::InteractionType::Subscribe, mContext.GetBobFabricIndex()),
                        app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric);
 
     // Ensure our read transactions are still alive.
-    NL_TEST_ASSERT(apSuite,
-                   app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) ==
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read),
                        2);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     // Shutdown all clients
     readClients.clear();
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
     app::InteractionModelEngine::GetInstance()->SetForceHandlerQuota(false);
     app::InteractionModelEngine::GetInstance()->SetHandlerCapacityForSubscriptions(-1);
     app::InteractionModelEngine::GetInstance()->SetPathPoolCapacityForSubscriptions(-1);
 }
 
-void TestReadInteraction::TestReadHandler_KillOldestSubscriptions(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_KillOldestSubscriptions)
 {
     using namespace SubscriptionPathQuotaHelpers;
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
     const auto kExpectedParallelSubs =
-        app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric * ctx.GetFabricTable().FabricCount();
+        app::InteractionModelEngine::kMinSupportedSubscriptionsPerFabric * mContext.GetFabricTable().FabricCount();
     const auto kExpectedParallelPaths = kExpectedParallelSubs * app::InteractionModelEngine::kMinSupportedPathsPerSubscription;
 
     app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(&gTestReadInteraction);
@@ -3671,49 +3594,47 @@ void TestReadInteraction::TestReadHandler_KillOldestSubscriptions(nlTestSuite * 
 
     // This should just use all availbale resources.
     EstablishReadOrSubscriptions(
-        apSuite, ctx.GetSessionBobToAlice(), kExpectedParallelSubs, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
+        mContext.GetSessionBobToAlice(), kExpectedParallelSubs, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
         app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
         app::ReadClient::InteractionType::Subscribe, &readCallback, readClients);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite,
-                   readCallback.mAttributeCount ==
+    EXPECT_EQ(readCallback.mAttributeCount,
                        kExpectedParallelSubs * app::InteractionModelEngine::kMinSupportedPathsPerSubscription);
-    NL_TEST_ASSERT(apSuite, readCallback.mOnSubscriptionEstablishedCount == kExpectedParallelSubs);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == kExpectedParallelSubs);
+    EXPECT_EQ(readCallback.mOnSubscriptionEstablishedCount, kExpectedParallelSubs);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), kExpectedParallelSubs);
 
     // The following check will trigger the logic in im to kill the read handlers that uses more paths than the limit per fabric.
     {
         TestReadCallback callback;
         std::vector<std::unique_ptr<app::ReadClient>> outReadClient;
         EstablishReadOrSubscriptions(
-            apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1,
+            mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription + 1,
             app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
             app::ReadClient::InteractionType::Subscribe, &callback, outReadClient);
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
 
         // Over-sized request after used all paths will receive Paths Exhausted status code.
-        NL_TEST_ASSERT(apSuite, callback.mOnError == 1);
-        NL_TEST_ASSERT(apSuite, callback.mLastError == CHIP_IM_GLOBAL_STATUS(PathsExhausted));
+        EXPECT_EQ(callback.mOnError, 1u);
+        EXPECT_EQ(callback.mLastError, CHIP_IM_GLOBAL_STATUS(PathsExhausted));
     }
 
     // The following check will trigger the logic in im to kill the read handlers that uses more paths than the limit per fabric.
     {
         EstablishReadOrSubscriptions(
-            apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
+            mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerSubscription,
             app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
             app::ReadClient::InteractionType::Subscribe, &readCallback, readClients);
         readCallback.ClearCounters();
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
 
         // This read handler should evict some existing subscriptions for enough space
-        NL_TEST_ASSERT(apSuite, readCallback.mOnSubscriptionEstablishedCount == 1);
-        NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerSubscription);
-        NL_TEST_ASSERT(apSuite,
-                       app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() ==
+        EXPECT_EQ(readCallback.mOnSubscriptionEstablishedCount, 1);
+        EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerSubscription);
+        EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(),
                            static_cast<size_t>(kExpectedParallelSubs));
     }
 
@@ -3725,17 +3646,17 @@ void TestReadInteraction::TestReadHandler_KillOldestSubscriptions(nlTestSuite * 
         app::InteractionModelEngine::GetInstance()->GetReportingEngine().SetDirty(path);
     }
     readCallback.ClearCounters();
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount <= kExpectedParallelPaths);
+    EXPECT_LE(readCallback.mAttributeCount, kExpectedParallelPaths);
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     // Shutdown all clients
     readClients.clear();
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
     app::InteractionModelEngine::GetInstance()->SetForceHandlerQuota(false);
     app::InteractionModelEngine::GetInstance()->SetHandlerCapacityForSubscriptions(-1);
     app::InteractionModelEngine::GetInstance()->SetPathPoolCapacityForSubscriptions(-1);
@@ -3748,12 +3669,10 @@ struct TestReadHandler_ParallelReads_TestCase_Parameters
     int MaxFabrics          = -1;
 };
 
-static void TestReadHandler_ParallelReads_TestCase(nlTestSuite * apSuite, void * apContext,
+static void TestReadHandler_ParallelReads_TestCase(void * apContext,
                                                    const TestReadHandler_ParallelReads_TestCase_Parameters & params,
                                                    std::function<void()> body)
 {
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
-
     app::InteractionModelEngine::GetInstance()->SetForceHandlerQuota(true);
     app::InteractionModelEngine::GetInstance()->SetHandlerCapacityForReads(params.ReadHandlerCapacity);
     app::InteractionModelEngine::GetInstance()->SetConfigMaxFabrics(params.MaxFabrics);
@@ -3763,10 +3682,10 @@ static void TestReadHandler_ParallelReads_TestCase(nlTestSuite * apSuite, void *
 
     // Clean up
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
     // Sanity check
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 
     app::InteractionModelEngine::GetInstance()->SetForceHandlerQuota(false);
     app::InteractionModelEngine::GetInstance()->SetHandlerCapacityForReads(-1);
@@ -3774,22 +3693,21 @@ static void TestReadHandler_ParallelReads_TestCase(nlTestSuite * apSuite, void *
     app::InteractionModelEngine::GetInstance()->SetPathPoolCapacityForReads(-1);
 }
 
-void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_ParallelReads)
 {
-    // Note: We cannot use ctx.DrainAndServiceIO() except at the end of each test case since the perpetual read transactions will
+    // Note: We cannot use mLoopbackTransportManager.DrainAndServiceIO() except at the end of each test case since the perpetual read transactions will
     // never end.
-    // Note: We use ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { CONDITION }); and NL_TEST_ASSERT(apSuite,
+    // Note: We use mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { CONDITION }); and EXPECT_TRUE(
     // CONDITION ) to ensure the CONDITION is satisfied.
     using namespace SubscriptionPathQuotaHelpers;
     using Params = TestReadHandler_ParallelReads_TestCase_Parameters;
 
-    TestContext & ctx  = *static_cast<TestContext *>(apContext);
-    auto sessionHandle = ctx.GetSessionBobToAlice();
+    auto sessionHandle = mContext.GetSessionBobToAlice();
 
     app::InteractionModelEngine::GetInstance()->RegisterReadHandlerAppCallback(&gTestReadInteraction);
 
     auto TestCase = [&](const TestReadHandler_ParallelReads_TestCase_Parameters & params, std::function<void()> body) {
-        TestReadHandler_ParallelReads_TestCase(apSuite, apContext, params, body);
+        TestReadHandler_ParallelReads_TestCase(apContext, params, body);
     };
 
     // Case 1.1: 2 reads used up the path pool (but not the ReadHandler pool), and one incoming oversized read request =>
@@ -3806,35 +3724,35 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             backgroundReadCallback1.ClearCounter();
             backgroundReadCallback2.ClearCounter();
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The two subscriptions should still alive
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
             // The new read request should be rejected
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError != 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mLastError == CHIP_IM_GLOBAL_STATUS(PathsExhausted));
+            EXPECT_NE(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mLastError, CHIP_IM_GLOBAL_STATUS(PathsExhausted));
         });
 
     // Case 1.2: 2 reads used up the ReadHandler pool (not the PathPool), and one incoming oversized read request => Busy.
@@ -3851,33 +3769,33 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             backgroundReadCallback1.ClearCounter();
             backgroundReadCallback2.ClearCounter();
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The two subscriptions should still alive
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
             // The new read request should be rejected
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError != 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mLastError == CHIP_IM_GLOBAL_STATUS(Busy));
+            EXPECT_NE(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mLastError, CHIP_IM_GLOBAL_STATUS(Busy));
         });
 
     // Case 1.3.1: If we have enough resource, any read requests will be accepted (case for oversized read request).
@@ -3893,39 +3811,38 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted
-            NL_TEST_ASSERT(apSuite,
-                           readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1);
+            EXPECT_EQ(readCallback.mOnError, 0u);
 
             // The two subscriptions should still alive
             backgroundReadCallback1.ClearCounter();
             backgroundReadCallback2.ClearCounter();
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
         });
 
     // Case 1.3.2: If we have enough resource, any read requests will be accepted (case for non-oversized read requests)
@@ -3941,41 +3858,41 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             backgroundReadCallback1.ClearCounter();
             backgroundReadCallback2.ClearCounter();
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+                mContext.GetSessionAliceToBob(), 1, 1,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
+            EXPECT_EQ(readCallback.mAttributeCount, 1);
+            EXPECT_EQ(readCallback.mOnError, 0u);
 
             // The two subscriptions should still alive
             backgroundReadCallback1.ClearCounter();
             backgroundReadCallback2.ClearCounter();
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
         });
 
     // Case 2: 1 oversized read and one non-oversized read, and one incoming read request from __another__ fabric => accept by
@@ -3992,38 +3909,38 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &readCallbackForOversizedRead, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return readCallbackForOversizedRead.reportsReceived > 0; });
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback.reportsReceived > 0; });
 
-            NL_TEST_ASSERT(apSuite, readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
+            EXPECT_TRUE(readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
 
             // The oversized read handler should be evicted -> We should have one active read handler.
-            NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 1);
 
             backgroundReadCallback.ClearCounter();
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback.reportsReceived > 0; });
 
             // We don't check the readCallbackForOversizedRead, since it cannot prove anything -- it can be 0 even when the
@@ -4031,7 +3948,7 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             // active read handler is the non-oversized one.
 
             // The non-oversized read handler should not be evicted.
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback.reportsReceived > 0);
+            EXPECT_GT(backgroundReadCallback.reportsReceived, 0);
         });
 
     // Case 2 (Repeat): we swapped the order of the oversized and non-oversized read handler to ensure we always evict the oversized
@@ -4048,38 +3965,38 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback.reportsReceived > 0; });
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &readCallbackForOversizedRead, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return readCallbackForOversizedRead.reportsReceived > 0; });
 
-            NL_TEST_ASSERT(apSuite, readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
+            EXPECT_TRUE(readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
 
             // The oversized read handler should be evicted -> We should have one active read handler.
-            NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 1);
 
             backgroundReadCallback.ClearCounter();
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback.reportsReceived > 0; });
 
             // We don't check the readCallbackForOversizedRead, since it cannot prove anything -- it can be 0 even when the
@@ -4087,7 +4004,7 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             // active read handler is the non-oversized one.
 
             // The non-oversized read handler should not be evicted.
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback.reportsReceived > 0);
+            EXPECT_GT(backgroundReadCallback.reportsReceived, 0);
         });
 
     // Case 3: one oversized read and one non-oversized read, the remaining path in PathPool is suffcient but the ReadHandler pool
@@ -4106,37 +4023,37 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &readCallbackForOversizedRead, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback.reportsReceived > 0 && readCallbackForOversizedRead.reportsReceived > 0;
             });
 
-            NL_TEST_ASSERT(apSuite, readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
+            EXPECT_TRUE(readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be rejected.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError != 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mLastError == CHIP_IM_GLOBAL_STATUS(Busy));
+            EXPECT_NE(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mLastError, CHIP_IM_GLOBAL_STATUS(Busy));
 
             // Ensure the two read transactions are not evicted.
             backgroundReadCallback.ClearCounter();
             readCallbackForOversizedRead.ClearCounter();
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
+            EXPECT_TRUE(readCallbackForOversizedRead.reportsReceived > 0 && backgroundReadCallback.reportsReceived > 0);
         });
 
     // Case 4.1: 1 fabric is oversized, and one incoming read request from __another__ fabric => accept by evicting one read request
@@ -4154,43 +4071,43 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback1.reportsReceived > 0; });
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback2.reportsReceived > 0; });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             backgroundReadCallback1.ClearCounter();
             backgroundReadCallback2.ClearCounter();
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be rejected.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
 
             // One of the read requests from Bob to Alice should be evicted.
             // We should have only one 1 active read handler, since the transaction from Alice to Bob has finished already, and one
             // of two Bob to Alice transactions has been evicted.
-            NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 1);
 
             // Note: Younger read handler will be evicted.
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback1.reportsReceived > 0; });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0);
+            EXPECT_GT(backgroundReadCallback1.reportsReceived, 0);
         });
 
     // Case 4.2: Like case 4.1, but now the over sized fabric contains one (older) oversized read request and one (younger)
@@ -4207,44 +4124,44 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback1.reportsReceived > 0; });
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback2.reportsReceived > 0; });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             backgroundReadCallback1.ClearCounter();
             backgroundReadCallback2.ClearCounter();
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be rejected.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
 
             // One of the read requests from Bob to Alice should be evicted.
             // We should have only one 1 active read handler, since the transaction from Alice to Bob has finished already, and one
             // of two Bob to Alice transactions has been evicted.
-            NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 1);
 
             // Note: Larger read handler will be evicted before evicting the younger one.
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5),
                                             [&]() { return backgroundReadCallback2.reportsReceived > 0; });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_GT(backgroundReadCallback2.reportsReceived, 0);
         });
 
     // The following tests are the cases of read transactions on PASE sessions.
@@ -4264,42 +4181,39 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback3;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback3, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
                     backgroundReadCallback3.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite,
-                           backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
                                backgroundReadCallback3.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
             // Should evict one read request from Bob fabric for enough resources.
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetAliceFabricIndex()) == 1);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetBobFabricIndex()) == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetAliceFabricIndex()), 1u);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetBobFabricIndex()), 1u);
         });
 
     // Case 5.2: The device's fabric table is not full, PASE sessions are counted as a "valid" fabric and can evict existing read
@@ -4319,42 +4233,39 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback3;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback3, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
                     backgroundReadCallback3.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite,
-                           backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
                                backgroundReadCallback3.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
             // Should evict one read request from Bob fabric for enough resources.
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetAliceFabricIndex()) == 1);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetBobFabricIndex()) == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetAliceFabricIndex()), 1u);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetBobFabricIndex()), 1u);
         });
 
     // Case 6: The device's fabric table is full, PASE sessions won't be counted as a valid fabric and cannot evict existing read
@@ -4372,44 +4283,41 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback3;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback3, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
                     backgroundReadCallback3.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite,
-                           backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
                                backgroundReadCallback3.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be rejected.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mLastError == CHIP_IM_GLOBAL_STATUS(Busy));
+            EXPECT_EQ(readCallback.mOnError, 1u);
+            EXPECT_EQ(readCallback.mLastError, CHIP_IM_GLOBAL_STATUS(Busy));
             // Should evict one read request from Bob fabric for enough resources.
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetAliceFabricIndex()) == 2);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetBobFabricIndex()) == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetAliceFabricIndex()), 2u);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetBobFabricIndex()), 1u);
         });
 
     // Case 7: We will accept read transactions on PASE session when the fabric table is full but we have enough resources for it.
@@ -4426,38 +4334,36 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionCharlieToDavid(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
 
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
             // No read transactions should be evicted.
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetAliceFabricIndex()) == 1);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, ctx.GetBobFabricIndex()) == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetAliceFabricIndex()), 1u);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, mContext.GetBobFabricIndex()), 1u);
         });
 
     // Case 8.1: If the fabric table on the device is full, read transactions on PASE session will always be evicted when another
@@ -4474,34 +4380,31 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionCharlieToDavid(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionCharlieToDavid(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
             // Should evict the read request on PASE session for enough resources.
-            NL_TEST_ASSERT(
-                apSuite,
-                app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) == 1);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex) == 0);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read), 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex), 0);
         });
 
     // Case 8.2: If the fabric table on the device is full, read transactions on PASE session will always be evicted when another
@@ -4519,35 +4422,32 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             TestPerpetualListReadCallback backgroundReadCallback2;
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionCharlieToDavid(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionCharlieToDavid(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite, backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
+            EXPECT_TRUE(backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+                mContext.GetSessionBobToAlice(), 1, 1,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == 1);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, 1);
             // Should evict the read request on PASE session for enough resources.
-            NL_TEST_ASSERT(
-                apSuite,
-                app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) == 1);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex) == 0);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read), 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex), 0);
         });
 
     // Case 9.1: If the fabric table on the device is not full, read transactions on PASE session will NOT be evicted when the
@@ -4566,41 +4466,37 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionCharlieToDavid(), 1, 1, app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
+                mContext.GetSessionCharlieToDavid(), 1, 1, app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                 app::ReadClient::InteractionType::Read, &backgroundReadCallbackForPASESession, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1, 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1, 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallbackForPASESession.reportsReceived > 0 && backgroundReadCallback1.reportsReceived > 0 &&
                     backgroundReadCallback2.reportsReceived > 0;
             });
-            NL_TEST_ASSERT(apSuite,
-                           backgroundReadCallbackForPASESession.reportsReceived > 0 &&
+            EXPECT_TRUE(backgroundReadCallbackForPASESession.reportsReceived > 0 &&
                                backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0);
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionBobToAlice(), 1, 1,
+                mContext.GetSessionBobToAlice(), 1, 1,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == 1);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, 1);
 
             // The read handler on PASE session should not be evicted since the resources used by all PASE sessions are not
             // exceeding the resources guaranteed to a normal fabric.
-            NL_TEST_ASSERT(
-                apSuite,
-                app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) == 2);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex) == 1);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read), 2);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex), 1);
         });
 
     // Case 9.2: If the fabric table on the device is not full, the read handlers from normal fabrics MAY be evicted before all read
@@ -4620,42 +4516,38 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionCharlieToDavid(), 3, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest - 1,
+                mContext.GetSessionCharlieToDavid(), 3, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest - 1,
                 app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1), app::ReadClient::InteractionType::Read,
                 &backgroundReadCallbackForPASESession, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionBobToAlice(), 3,
+            EstablishReadOrSubscriptions(mContext.GetSessionBobToAlice(), 3,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
                            app::ReadHandler::InteractionType::Read) == 6;
             });
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex) == 3);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex), 3);
 
             // We have to evict one read transaction on PASE session and one read transaction on Alice's fabric.
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionAliceToBob(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
 
             // No more than one read handler on PASE session should be evicted exceeding the resources guaranteed to a normal
             // fabric. Note: We are using ">=" here since it is also acceptable if we choose to evict one read transaction from
             // Alice fabric.
-            NL_TEST_ASSERT(
-                apSuite,
-                app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) >= 4);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex) >= 2);
+            EXPECT_GE(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read), 4);
+            EXPECT_GE(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex), 2);
         });
 
     // Case 10: If the fabric table on the device is full, we won't evict read requests from normal fabrics before we have evicted
@@ -4674,55 +4566,51 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
             std::vector<std::unique_ptr<app::ReadClient>> readClients;
 
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionCharlieToDavid(), 2, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest - 1,
+                mContext.GetSessionCharlieToDavid(), 2, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest - 1,
                 app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1), app::ReadClient::InteractionType::Read,
                 &backgroundReadCallbackForPASESession, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback1, readClients);
-            EstablishReadOrSubscriptions(apSuite, ctx.GetSessionAliceToBob(), 1,
+            EstablishReadOrSubscriptions(mContext.GetSessionAliceToBob(), 1,
                                          app::InteractionModelEngine::kMinSupportedPathsPerReadRequest + 1,
                                          app::AttributePathParams(kTestEndpointId, kPerpetualClusterId, 1),
                                          app::ReadClient::InteractionType::Read, &backgroundReadCallback2, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() {
                 return backgroundReadCallbackForPASESession.reportsReceived > 0 && backgroundReadCallback1.reportsReceived > 0 &&
                     backgroundReadCallback2.reportsReceived > 0 &&
                     app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read,
                                                                                          kUndefinedFabricIndex) == 2;
             });
-            NL_TEST_ASSERT(apSuite,
-                           backgroundReadCallbackForPASESession.reportsReceived > 0 &&
+            EXPECT_TRUE(backgroundReadCallbackForPASESession.reportsReceived > 0 &&
                                backgroundReadCallback1.reportsReceived > 0 && backgroundReadCallback2.reportsReceived > 0 &&
                                app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
                                    app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex) == 2);
 
             // To handle this read request, we must evict both read transactions from the PASE session.
             EstablishReadOrSubscriptions(
-                apSuite, ctx.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
+                mContext.GetSessionBobToAlice(), 1, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest,
                 app::AttributePathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id),
                 app::ReadClient::InteractionType::Read, &readCallback, readClients);
-            ctx.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
+            mLoopbackTransportManager.GetIOContext().DriveIOUntil(System::Clock::Seconds16(5), [&]() { return readCallback.mOnDone != 0; });
 
             // The new read request should be accepted.
-            NL_TEST_ASSERT(apSuite, readCallback.mOnError == 0);
-            NL_TEST_ASSERT(apSuite, readCallback.mOnDone == 1);
-            NL_TEST_ASSERT(apSuite, readCallback.mAttributeCount == app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
+            EXPECT_EQ(readCallback.mOnError, 0u);
+            EXPECT_EQ(readCallback.mOnDone, 1u);
+            EXPECT_EQ(readCallback.mAttributeCount, app::InteractionModelEngine::kMinSupportedPathsPerReadRequest);
 
             // The read handler on PASE session should be evicted, and the read transactions on a normal fabric should be untouched
             // although it is oversized.
-            NL_TEST_ASSERT(
-                apSuite,
-                app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read) == 2);
-            NL_TEST_ASSERT(apSuite,
-                           app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
-                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex) == 0);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(app::ReadHandler::InteractionType::Read), 2);
+            EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(
+                               app::ReadHandler::InteractionType::Read, kUndefinedFabricIndex), 0);
         });
 
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
     app::InteractionModelEngine::GetInstance()->SetForceHandlerQuota(false);
     app::InteractionModelEngine::GetInstance()->SetConfigMaxFabrics(-1);
     app::InteractionModelEngine::GetInstance()->SetHandlerCapacityForReads(-1);
@@ -4732,20 +4620,18 @@ void TestReadInteraction::TestReadHandler_ParallelReads(nlTestSuite * apSuite, v
 // Needs to be larger than our plausible path pool.
 constexpr size_t sTooLargePathCount = 200;
 
-void TestReadInteraction::TestReadHandler_TooManyPaths(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_TooManyPaths)
 {
     using namespace chip::app;
 
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
-
-    chip::Messaging::ReliableMessageMgr * rm = ctx.GetExchangeManager().GetReliableMessageMgr();
+    chip::Messaging::ReliableMessageMgr * rm = mContext.GetExchangeManager().GetReliableMessageMgr();
     // Shouldn't have anything in the retransmit table when starting the test.
-    NL_TEST_ASSERT(apSuite, rm->TestGetCountRetransTable() == 0);
+    EXPECT_EQ(rm->TestGetCountRetransTable(), 0);
 
     auto * engine = InteractionModelEngine::GetInstance();
     engine->SetForceHandlerQuota(true);
 
-    ReadPrepareParams readPrepareParams(ctx.GetSessionBobToAlice());
+    ReadPrepareParams readPrepareParams(mContext.GetSessionBobToAlice());
     // Needs to be larger than our plausible path pool.
     chip::app::AttributePathParams attributePathParams[sTooLargePathCount];
     readPrepareParams.mpAttributePathParamsList    = attributePathParams;
@@ -4753,93 +4639,90 @@ void TestReadInteraction::TestReadHandler_TooManyPaths(nlTestSuite * apSuite, vo
 
     {
         MockInteractionModelApp delegate;
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 0);
-        NL_TEST_ASSERT(apSuite, !delegate.mReadError);
-        ReadClient readClient(InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), delegate,
+        EXPECT_EQ(delegate.mNumAttributeResponse, 0);
+        EXPECT_FALSE(delegate.mReadError);
+        ReadClient readClient(InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), delegate,
                               ReadClient::InteractionType::Read);
 
         CHIP_ERROR err = readClient.SendRequest(readPrepareParams);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
 
-        NL_TEST_ASSERT(apSuite, delegate.mNumAttributeResponse == 0);
-        NL_TEST_ASSERT(apSuite, delegate.mReadError);
+        EXPECT_EQ(delegate.mNumAttributeResponse, 0);
+        EXPECT_TRUE(delegate.mReadError);
 
         StatusIB status(delegate.mError);
-        NL_TEST_ASSERT(apSuite, status.mStatus == Protocols::InteractionModel::Status::PathsExhausted);
+        EXPECT_EQ(status.mStatus, Protocols::InteractionModel::Status::PathsExhausted);
     }
 
-    NL_TEST_ASSERT(apSuite, engine->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(engine->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
     engine->SetForceHandlerQuota(false);
 }
 
-void TestReadInteraction::TestReadHandler_TwoParallelReadsSecondTooManyPaths(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_TwoParallelReadsSecondTooManyPaths)
 {
     using namespace chip::app;
 
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
-
-    chip::Messaging::ReliableMessageMgr * rm = ctx.GetExchangeManager().GetReliableMessageMgr();
+    chip::Messaging::ReliableMessageMgr * rm = mContext.GetExchangeManager().GetReliableMessageMgr();
     // Shouldn't have anything in the retransmit table when starting the test.
-    NL_TEST_ASSERT(apSuite, rm->TestGetCountRetransTable() == 0);
+    EXPECT_EQ(rm->TestGetCountRetransTable(), 0);
 
     auto * engine = InteractionModelEngine::GetInstance();
     engine->SetForceHandlerQuota(true);
 
     {
         MockInteractionModelApp delegate1;
-        NL_TEST_ASSERT(apSuite, delegate1.mNumAttributeResponse == 0);
-        NL_TEST_ASSERT(apSuite, !delegate1.mReadError);
-        ReadClient readClient1(InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), delegate1,
+        EXPECT_EQ(delegate1.mNumAttributeResponse, 0);
+        EXPECT_FALSE(delegate1.mReadError);
+        ReadClient readClient1(InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), delegate1,
                                ReadClient::InteractionType::Read);
 
         MockInteractionModelApp delegate2;
-        NL_TEST_ASSERT(apSuite, delegate2.mNumAttributeResponse == 0);
-        NL_TEST_ASSERT(apSuite, !delegate2.mReadError);
-        ReadClient readClient2(InteractionModelEngine::GetInstance(), &ctx.GetExchangeManager(), delegate2,
+        EXPECT_EQ(delegate2.mNumAttributeResponse, 0);
+        EXPECT_FALSE(delegate2.mReadError);
+        ReadClient readClient2(InteractionModelEngine::GetInstance(), &mContext.GetExchangeManager(), delegate2,
                                ReadClient::InteractionType::Read);
 
-        ReadPrepareParams readPrepareParams1(ctx.GetSessionBobToAlice());
+        ReadPrepareParams readPrepareParams1(mContext.GetSessionBobToAlice());
         // Read full wildcard paths, repeat twice to ensure chunking.
         chip::app::AttributePathParams attributePathParams1[2];
         readPrepareParams1.mpAttributePathParamsList    = attributePathParams1;
         readPrepareParams1.mAttributePathParamsListSize = ArraySize(attributePathParams1);
 
         CHIP_ERROR err = readClient1.SendRequest(readPrepareParams1);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ReadPrepareParams readPrepareParams2(ctx.GetSessionBobToAlice());
+        ReadPrepareParams readPrepareParams2(mContext.GetSessionBobToAlice());
         // Read full wildcard paths, repeat twice to ensure chunking.
         chip::app::AttributePathParams attributePathParams2[sTooLargePathCount];
         readPrepareParams2.mpAttributePathParamsList    = attributePathParams2;
         readPrepareParams2.mAttributePathParamsListSize = ArraySize(attributePathParams2);
 
         err = readClient2.SendRequest(readPrepareParams2);
-        NL_TEST_ASSERT(apSuite, err == CHIP_NO_ERROR);
+        EXPECT_EQ(err, CHIP_NO_ERROR);
 
-        ctx.DrainAndServiceIO();
+        mLoopbackTransportManager.DrainAndServiceIO();
 
-        NL_TEST_ASSERT(apSuite, delegate1.mNumAttributeResponse != 0);
-        NL_TEST_ASSERT(apSuite, !delegate1.mReadError);
+        EXPECT_NE(delegate1.mNumAttributeResponse, 0);
+        EXPECT_FALSE(delegate1.mReadError);
 
-        NL_TEST_ASSERT(apSuite, delegate2.mNumAttributeResponse == 0);
-        NL_TEST_ASSERT(apSuite, delegate2.mReadError);
+        EXPECT_EQ(delegate2.mNumAttributeResponse, 0);
+        EXPECT_TRUE(delegate2.mReadError);
 
         StatusIB status(delegate2.mError);
-        NL_TEST_ASSERT(apSuite, status.mStatus == Protocols::InteractionModel::Status::PathsExhausted);
+        EXPECT_EQ(status.mStatus, Protocols::InteractionModel::Status::PathsExhausted);
     }
 
-    NL_TEST_ASSERT(apSuite, engine->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(engine->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
     engine->SetForceHandlerQuota(false);
 }
 
-void TestReadInteraction::TestReadAttribute_ManyDataValues(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadAttribute_ManyDataValues)
 {
-    TestContext & ctx   = *static_cast<TestContext *>(apContext);
-    auto sessionHandle  = ctx.GetSessionBobToAlice();
+    auto sessionHandle  = mContext.GetSessionBobToAlice();
     size_t successCalls = 0;
     size_t failureCalls = 0;
 
@@ -4847,10 +4730,10 @@ void TestReadInteraction::TestReadAttribute_ManyDataValues(nlTestSuite * apSuite
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &successCalls](const app::ConcreteDataAttributePath & attributePath, const auto & dataResponse) {
-        NL_TEST_ASSERT(apSuite, attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
+    auto onSuccessCb = [&successCalls](const app::ConcreteDataAttributePath & attributePath, const auto & dataResponse) {  //+++ removed 1st arg.
+        EXPECT_TRUE(attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
 
-        NL_TEST_ASSERT(apSuite, dataResponse);
+        EXPECT_TRUE(dataResponse);
         ++successCalls;
     };
 
@@ -4858,22 +4741,21 @@ void TestReadInteraction::TestReadAttribute_ManyDataValues(nlTestSuite * apSuite
     // not safe to do so.
     auto onFailureCb = [&failureCalls](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) { ++failureCalls; };
 
-    Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Boolean::TypeInfo>(&ctx.GetExchangeManager(), sessionHandle,
+    Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Boolean::TypeInfo>(&mContext.GetExchangeManager(), sessionHandle,
                                                                                     kTestEndpointId, onSuccessCb, onFailureCb);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, successCalls == 1);
-    NL_TEST_ASSERT(apSuite, failureCalls == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(successCalls, 1u);
+    EXPECT_EQ(failureCalls, 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadAttribute_ManyDataValuesWrongPath(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadAttribute_ManyDataValuesWrongPath)
 {
-    TestContext & ctx   = *static_cast<TestContext *>(apContext);
-    auto sessionHandle  = ctx.GetSessionBobToAlice();
+    auto sessionHandle  = mContext.GetSessionBobToAlice();
     size_t successCalls = 0;
     size_t failureCalls = 0;
 
@@ -4881,10 +4763,10 @@ void TestReadInteraction::TestReadAttribute_ManyDataValuesWrongPath(nlTestSuite 
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &successCalls](const app::ConcreteDataAttributePath & attributePath, const auto & dataResponse) {
-        NL_TEST_ASSERT(apSuite, attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
+    auto onSuccessCb = [&successCalls](const app::ConcreteDataAttributePath & attributePath, const auto & dataResponse) {  //+++ removed 1st arg.
+        EXPECT_TRUE(attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
 
-        NL_TEST_ASSERT(apSuite, dataResponse);
+        EXPECT_TRUE(dataResponse);
         ++successCalls;
     };
 
@@ -4892,22 +4774,21 @@ void TestReadInteraction::TestReadAttribute_ManyDataValuesWrongPath(nlTestSuite 
     // not safe to do so.
     auto onFailureCb = [&failureCalls](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) { ++failureCalls; };
 
-    Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Boolean::TypeInfo>(&ctx.GetExchangeManager(), sessionHandle,
+    Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Boolean::TypeInfo>(&mContext.GetExchangeManager(), sessionHandle,
                                                                                     kTestEndpointId, onSuccessCb, onFailureCb);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, successCalls == 0);
-    NL_TEST_ASSERT(apSuite, failureCalls == 1);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(successCalls, 0u);
+    EXPECT_EQ(failureCalls, 1u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
-void TestReadInteraction::TestReadAttribute_ManyErrors(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadAttribute_ManyErrors)
 {
-    TestContext & ctx   = *static_cast<TestContext *>(apContext);
-    auto sessionHandle  = ctx.GetSessionBobToAlice();
+    auto sessionHandle  = mContext.GetSessionBobToAlice();
     size_t successCalls = 0;
     size_t failureCalls = 0;
 
@@ -4915,10 +4796,10 @@ void TestReadInteraction::TestReadAttribute_ManyErrors(nlTestSuite * apSuite, vo
 
     // Passing of stack variables by reference is only safe because of synchronous completion of the interaction. Otherwise, it's
     // not safe to do so.
-    auto onSuccessCb = [apSuite, &successCalls](const app::ConcreteDataAttributePath & attributePath, const auto & dataResponse) {
-        NL_TEST_ASSERT(apSuite, attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
+    auto onSuccessCb = [&successCalls](const app::ConcreteDataAttributePath & attributePath, const auto & dataResponse) {  //+++ removed 1st arg.
+        EXPECT_TRUE(attributePath.mDataVersion.HasValue() && attributePath.mDataVersion.Value() == kDataVersion);
 
-        NL_TEST_ASSERT(apSuite, dataResponse);
+        EXPECT_TRUE(dataResponse);
         ++successCalls;
     };
 
@@ -4926,16 +4807,16 @@ void TestReadInteraction::TestReadAttribute_ManyErrors(nlTestSuite * apSuite, vo
     // not safe to do so.
     auto onFailureCb = [&failureCalls](const app::ConcreteDataAttributePath * attributePath, CHIP_ERROR aError) { ++failureCalls; };
 
-    Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Boolean::TypeInfo>(&ctx.GetExchangeManager(), sessionHandle,
+    Controller::ReadAttribute<Clusters::UnitTesting::Attributes::Boolean::TypeInfo>(&mContext.GetExchangeManager(), sessionHandle,
                                                                                     kTestEndpointId, onSuccessCb, onFailureCb);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, successCalls == 0);
-    NL_TEST_ASSERT(apSuite, failureCalls == 1);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients() == 0);
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, ctx.GetExchangeManager().GetNumActiveExchanges() == 0);
+    EXPECT_EQ(successCalls, 0u);
+    EXPECT_EQ(failureCalls, 1u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadClients(), 0u);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_EQ(mContext.GetExchangeManager().GetNumActiveExchanges(), 0u);
 }
 
 //
@@ -4944,15 +4825,14 @@ void TestReadInteraction::TestReadAttribute_ManyErrors(nlTestSuite * apSuite, vo
 //
 // This should evict the previous subscription before sending back an error.
 //
-void TestReadInteraction::TestReadHandler_KeepSubscriptionTest(nlTestSuite * apSuite, void * apContext)
+TEST_F(TestReadInteraction, TestReadHandler_KeepSubscriptionTest)
 {
     using namespace SubscriptionPathQuotaHelpers;
 
-    TestContext & ctx = *static_cast<TestContext *>(apContext);
     TestReadCallback readCallback;
     app::AttributePathParams pathParams(kTestEndpointId, Clusters::UnitTesting::Id, Clusters::UnitTesting::Attributes::Int16u::Id);
 
-    app::ReadPrepareParams readParam(ctx.GetSessionAliceToBob());
+    app::ReadPrepareParams readParam(mContext.GetSessionAliceToBob());
     readParam.mpAttributePathParamsList    = &pathParams;
     readParam.mAttributePathParamsListSize = 1;
     readParam.mMaxIntervalCeilingSeconds   = 1;
@@ -4961,11 +4841,11 @@ void TestReadInteraction::TestReadHandler_KeepSubscriptionTest(nlTestSuite * apS
     std::unique_ptr<app::ReadClient> readClient = std::make_unique<app::ReadClient>(
         app::InteractionModelEngine::GetInstance(), app::InteractionModelEngine::GetInstance()->GetExchangeManager(), readCallback,
         app::ReadClient::InteractionType::Subscribe);
-    NL_TEST_ASSERT(apSuite, readClient->SendRequest(readParam) == CHIP_NO_ERROR);
+    EXPECT_EQ(readClient->SendRequest(readParam), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 1);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 1);
 
     ChipLogProgress(DataManagement, "Issue another subscription that will evict the first sub...");
 
@@ -4973,14 +4853,14 @@ void TestReadInteraction::TestReadHandler_KeepSubscriptionTest(nlTestSuite * apS
     readClient                             = std::make_unique<app::ReadClient>(app::InteractionModelEngine::GetInstance(),
                                                    app::InteractionModelEngine::GetInstance()->GetExchangeManager(), readCallback,
                                                    app::ReadClient::InteractionType::Subscribe);
-    NL_TEST_ASSERT(apSuite, readClient->SendRequest(readParam) == CHIP_NO_ERROR);
+    EXPECT_EQ(readClient->SendRequest(readParam), CHIP_NO_ERROR);
 
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 
-    NL_TEST_ASSERT(apSuite, app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers() == 0);
-    NL_TEST_ASSERT(apSuite, readCallback.mOnError != 0);
+    EXPECT_EQ(app::InteractionModelEngine::GetInstance()->GetNumActiveReadHandlers(), 0u);
+    EXPECT_NE(readCallback.mOnError, 0u);
     app::InteractionModelEngine::GetInstance()->ShutdownActiveReads();
-    ctx.DrainAndServiceIO();
+    mLoopbackTransportManager.DrainAndServiceIO();
 }
 
 System::Clock::Timeout TestReadInteraction::ComputeSubscriptionTimeout(System::Clock::Seconds16 aMaxInterval)
@@ -5018,7 +4898,7 @@ const nlTest sTests[] =
     change the max interval of a subscription.
 */
 #if CHIP_CONFIG_ENABLE_ICD_SERVER != 1
-    NL_TEST_DEF("TestReadHandler_SubscriptionReportingIntervalsTest1", TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest1), // no good
+    NL_TEST_DEF("TestReadHandler_SubscriptionReportingIntervalsTest1", TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest1), // no good  //++++where?
     NL_TEST_DEF("TestReadHandler_SubscriptionReportingIntervalsTest2", TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest2),
     NL_TEST_DEF("TestReadHandler_SubscriptionReportingIntervalsTest3", TestReadInteraction::TestReadHandler_SubscriptionReportingIntervalsTest3),
 #endif // CHIP_CONFIG_ENABLE_ICD_SERVER
@@ -5051,20 +4931,4 @@ const nlTest sTests[] =
 };
 // clang-format on
 
-nlTestSuite sSuite = {
-    "TestRead",
-    &sTests[0],
-    TestContext::nlTestSetUpTestSuite,
-    TestContext::nlTestTearDownTestSuite,
-    TestContext::nlTestSetUp,
-    TestContext::nlTestTearDown,
-};
-
 } // namespace
-
-int TestReadInteractionTest()
-{
-    return chip::ExecuteTestsWithContext<TestContext>(&sSuite);
-}
-
-CHIP_REGISTER_TEST_SUITE(TestReadInteractionTest)
