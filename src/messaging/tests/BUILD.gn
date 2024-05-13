@@ -14,7 +14,8 @@
 
 import("//build_overrides/build.gni")
 import("//build_overrides/chip.gni")
-import("//build_overrides/nlunit_test.gni")
+import("//build_overrides/nlunit_test.gni")  # PW_MIGRATION: Remove this.
+import("//build_overrides/pigweed.gni")
 
 import("${chip_root}/build/chip/chip_test_suite.gni")
 import("${chip_root}/src/app/icd/icd.gni")
@@ -43,10 +44,10 @@ static_library("helpers") {
   # they return nltest specific SUCCESS/FAILURE constants hence this dependency.
   #
   # Once all tests are moved to pw_unittest/gtest, this dependency should be removed
-  public_deps = [ "${nlunit_test_root}:nlunit-test" ]
+  public_deps = [ "${nlunit_test_root}:nlunit-test" ]  # PW_MIGRATION
 }
 
-chip_test_suite_using_nltest("tests") {
+chip_test_suite("tests") {
   output_name = "libMessagingLayerTests"
 
   test_sources = []
@@ -80,12 +81,12 @@ chip_test_suite_using_nltest("tests") {
     "${chip_root}/src/lib/core",
     "${chip_root}/src/lib/support",
     "${chip_root}/src/lib/support:test_utils",
-    "${chip_root}/src/lib/support:testing_nlunit",
+    "${chip_root}/src/lib/support:testing_nlunit",  # PW_MIGRATION: Remove this.
     "${chip_root}/src/messaging",
     "${chip_root}/src/protocols",
     "${chip_root}/src/transport",
     "${chip_root}/src/transport/raw/tests:helpers",
-    "${nlunit_test_root}:nlunit-test",
+    "${nlunit_test_root}:nlunit-test",  # PW_MIGRATION: Remove this.
   ]
 
   if (chip_enable_icd_server) {

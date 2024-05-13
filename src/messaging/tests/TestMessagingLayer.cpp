@@ -21,12 +21,15 @@
  *      This file implements unit tests for the ExchangeManager implementation.
  */
 
+#include <errno.h>
+#include <utility>
+
+#include <gtest/gtest.h>
+
 #include <lib/core/CHIPCore.h>
 #include <lib/support/CHIPFaultInjection.h>
 #include <lib/support/CHIPMem.h>
 #include <lib/support/CodeUtils.h>
-#include <lib/support/UnitTestContext.h>
-#include <lib/support/UnitTestRegistration.h>
 #include <messaging/ExchangeContext.h>
 #include <messaging/ExchangeMgr.h>
 #include <messaging/Flags.h>
@@ -35,12 +38,6 @@
 #include <protocols/echo/Echo.h>
 #include <transport/SessionManager.h>
 #include <transport/TransportMgr.h>
-
-#include <nlbyteorder.h>
-#include <nlunit-test.h>
-
-#include <errno.h>
-#include <utility>
 
 namespace {
 
@@ -78,6 +75,35 @@ public:
     bool IsOnResponseTimeoutCalled = false;
 };
 
+class TestMessagingLayer : public ::testing::Test
+{
+public:
+    // Performs shared setup for all tests in the test suite
+    static void SetUpTestSuite()
+    {
+        mpContext = new TestContext();
+        ASSERT_NE(mpContext, nullptr);
+        mpContext->SetUpTestSuite();
+    }
+
+    // Performs shared teardown for all tests in the test suite
+    static void TearDownTestSuite()
+    {
+        mpContext->TearDownTestSuite();
+        delete mpContext;
+    }
+
+protected:
+    // Performs setup for each individual test in the test suite
+    void SetUp() { mpContext->SetUp(); }
+
+    // Performs teardown for each individual test in the test suite
+    void TearDown() { mpContext->TearDown(); }
+
+    static TestContext * mpContext;
+};
+TestContext * TestMessagingLayer::mpContext = nullptr;
+
 /**
  * Tests sending exchange message with Success:
  *
@@ -87,25 +113,23 @@ public:
  *      - Confirm the message is sent successfully
  *      - Observe DUT response timeout with no response
  */
-void CheckExchangeOutgoingMessagesSuccess(nlTestSuite * inSuite, void * inContext)
+TEST_F(TestMessagingLayer, CheckExchangeOutgoingMessagesSuccess)
 {
-    TestContext & ctx = *reinterpret_cast<TestContext *>(inContext);
-
     // create solicited exchange
     MockAppDelegate mockSolicitedAppDelegate;
-    ExchangeContext * ec = ctx.NewExchangeToAlice(&mockSolicitedAppDelegate);
+    ExchangeContext * ec = mpContext->NewExchangeToAlice(&mockSolicitedAppDelegate);
 
-    NL_TEST_ASSERT(inSuite, ec != nullptr);
+    ASSERT_NE(ec, nullptr);
     ec->SetResponseTimeout(kMessageTimeout);
 
     CHIP_ERROR err = ec->SendMessage(Echo::MsgType::EchoRequest, System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize),
                                      SendFlags(SendMessageFlags::kExpectResponse).Set(SendMessageFlags::kNoAutoRequestAck));
 
     // Wait for the initial message to fail (should take 330-413ms)
-    ctx.GetIOContext().DriveIOUntil(500_ms32, [&] { return mockSolicitedAppDelegate.IsOnMessageReceivedCalled; });
+    mpContext->GetIOContext().DriveIOUntil(500_ms32, [&] { return mockSolicitedAppDelegate.IsOnMessageReceivedCalled; });
 
-    NL_TEST_ASSERT(inSuite, err == CHIP_NO_ERROR);
-    NL_TEST_ASSERT(inSuite, mockSolicitedAppDelegate.IsOnResponseTimeoutCalled);
+    EXPECT_EQ(err, CHIP_NO_ERROR);
+    EXPECT_TRUE(mockSolicitedAppDelegate.IsOnResponseTimeoutCalled);
 }
 
 /**
@@ -118,15 +142,13 @@ void CheckExchangeOutgoingMessagesSuccess(nlTestSuite * inSuite, void * inContex
  *      - Confirm the message is sent with failure
  *      - Confirm the DUT response timeout timer is cancelled
  */
-void CheckExchangeOutgoingMessagesFail(nlTestSuite * inSuite, void * inContext)
+TEST_F(TestMessagingLayer, CheckExchangeOutgoingMessagesFail)
 {
-    TestContext & ctx = *reinterpret_cast<TestContext *>(inContext);
-
     // create solicited exchange
     MockAppDelegate mockSolicitedAppDelegate;
-    ExchangeContext * ec = ctx.NewExchangeToAlice(&mockSolicitedAppDelegate);
+    ExchangeContext * ec = mpContext->NewExchangeToAlice(&mockSolicitedAppDelegate);
 
-    NL_TEST_ASSERT(inSuite, ec != nullptr);
+    ASSERT_NE(ec, nullptr);
     ec->SetResponseTimeout(kMessageTimeout);
 
     chip::FaultInjection::GetManager().FailAtFault(chip::FaultInjection::kFault_DropOutgoingUDPMsg, 0, 1);
@@ -135,48 +157,11 @@ void CheckExchangeOutgoingMessagesFail(nlTestSuite * inSuite, void * inContext)
                                      SendFlags(SendMessageFlags::kExpectResponse).Set(SendMessageFlags::kNoAutoRequestAck));
 
     // Wait for the initial message to fail (should take 330-413ms)
-    ctx.GetIOContext().DriveIOUntil(500_ms32, [&] { return mockSolicitedAppDelegate.IsOnMessageReceivedCalled; });
+    mpContext->GetIOContext().DriveIOUntil(500_ms32, [&] { return mockSolicitedAppDelegate.IsOnMessageReceivedCalled; });
 
-    NL_TEST_ASSERT(inSuite, err != CHIP_NO_ERROR);
-    NL_TEST_ASSERT(inSuite, !mockSolicitedAppDelegate.IsOnResponseTimeoutCalled);
+    EXPECT_NE(err, CHIP_NO_ERROR);
+    EXPECT_FALSE(mockSolicitedAppDelegate.IsOnResponseTimeoutCalled);
     ec->Close();
 }
 
-// Test Suite
-
-/**
- *  Test Suite that lists all the test functions.
- */
-// clang-format off
-const nlTest sTests[] =
-{
-    NL_TEST_DEF("Test MessagingLayer::ExchangeOutgoingMessagesSuccess", CheckExchangeOutgoingMessagesSuccess),
-    NL_TEST_DEF("Test MessagingLayer::ExchangeOutgoingMessagesFail", CheckExchangeOutgoingMessagesFail),
-
-    NL_TEST_SENTINEL()
-};
-// clang-format on
-
-// clang-format off
-nlTestSuite sSuite =
-{
-    "Test-CHIP-MessagingLayer",
-    &sTests[0],
-    TestContext::nlTestSetUpTestSuite,
-    TestContext::nlTestTearDownTestSuite,
-    TestContext::nlTestSetUp,
-    TestContext::nlTestTearDown,
-};
-// clang-format on
-
 } // namespace
-
-/**
- *  Main
- */
-int TestMessagingLayer()
-{
-    return chip::ExecuteTestsWithContext<TestContext>(&sSuite);
-}
-
-CHIP_REGISTER_TEST_SUITE(TestMessagingLayer);
