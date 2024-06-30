@@ -28,4 +28,6 @@ chip_test_suite("tests") {
     "${chip_root}/src/lib/support:test_utils",
     "${dir_pw_unit_test}",
   ]
+
+  public_deps += [ ":efr32_device_tests--libaccesstest--TestAccessControl" ]  #+++++ Redundant?  Trying to build silabs_executable
 }
