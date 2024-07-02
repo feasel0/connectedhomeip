@@ -184,7 +184,6 @@ template("chip_test_suite") {
 
 
         if (test_build_efr32_version2) {
-          #+++++ Redundant?  Trying to build silabs_executable
           if (defined(invoker.output_name)) {
             # Get it from the suite's output_name.
             _unique_suite_name = invoker.output_name
@@ -323,7 +322,6 @@ template("chip_test_suite") {
 
 
       if (test_build_efr32_version1) {
-        #+++++ Redundant?  Trying to build silabs_executable
         if (defined(invoker.test_sources)) {
           foreach(_test, invoker.test_sources) {
             _test_name = string_replace(_test, ".cpp", "")
@@ -343,7 +341,6 @@ template("chip_test_suite") {
     }
 
     if (test_build_efr32_version1) {
-      #+++++ Redundant?  Trying to build silabs_executable
       if (defined(invoker.test_sources)) {
 
         foreach(_test, invoker.test_sources) {

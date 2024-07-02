@@ -29,5 +29,5 @@ chip_test_suite("tests") {
     "${dir_pw_unit_test}",
   ]
 
-  public_deps += [ ":efr32_device_tests--libaccesstest--TestAccessControl" ]  #+++++ Redundant?  Trying to build silabs_executable
+  #public_deps += [ ":efr32_device_tests--libaccesstest--TestAccessControl" ]  #+++++ Redundant?  Trying to build silabs_executable
 }
