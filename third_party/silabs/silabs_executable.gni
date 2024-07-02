@@ -68,7 +68,7 @@ template("silabs_executable") {
   ]
   copy(flashing_runtime_target) {
     sources = flashing_script_inputs
-    outputs = [ "${root_out_dir}/{{source_file_part}}__${target_name}" ]  #++++ name collision
+    outputs = [ "${root_out_dir}/{{source_file_part}}__${target_name}" ]  # Added target_name to prevent collision when there are multiple silabs_executable
   }
 
   flashing_script_generator =
