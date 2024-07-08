@@ -19,6 +19,9 @@ import("${chip_root}/build/chip/chip_test.gni")
 import("${chip_root}/build/chip/tests.gni")
 import("${dir_pw_unit_test}/test.gni")
 
+efr32_project_dir = "${chip_root}/src/test_driver/efr32"
+import("${efr32_project_dir}/efr32_unit_test.gni")
+
 assert(chip_build_tests)
 
 # Define CHIP unit tests
@@ -170,8 +173,42 @@ template("chip_test_suite") {
       }
     }
   } else {
+    # Get a unique name for the test suite.
+    if (defined(invoker.test_sources)) {
+      if (defined(invoker.output_name)) {  # Get it from the suite's output_name.
+        _unique_suite_name = invoker.output_name
+      } else {  # Some test suites don't have output_name defined. Use the first source file.
+        ts = invoker.test_sources
+        _unique_suite_name = string_replace(ts[0], ".cpp", "")
+      }
+    }
+
     group(_suite_name) {
       deps = [ ":${_suite_name}.lib" ]
+
+      if (defined(invoker.test_sources)) {
+        foreach(_test, invoker.test_sources) {
+          _test_name = string_replace(_test, ".cpp", "")
+          deps += [":efr32_device_tests--${_unique_suite_name}--${_test_name}"]
+        }
+      }
+    }
+
+    if (defined(invoker.test_sources)) {
+      foreach(_test, invoker.test_sources) {
+        _test_name = string_replace(_test, ".cpp", "")
+
+        print("+++ SOURCE $_test")
+        if (_test_name == "TestAccessControl") {
+          print(invoker)
+        }
+
+        efr32_unit_test("efr32_device_tests--${_unique_suite_name}--${_test_name}") {
+          unique_suite_name = _unique_suite_name
+          test_name = _test_name
+          test_source = _test  #++++ this is probably not right
+        }
+      }
     }
   }
 }
