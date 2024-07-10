@@ -137,7 +137,7 @@ template("chip_test_suite") {
           sources = [ _test ]
           output_dir = _test_output_dir
 
-          #FIXME: The following variables need to be set in a more proper way.  They should only be set if it's an efr32 build.  And their values should be come from somewhere in `src/test_driver/efr32/*` or one of the efr32-related config files, rather than hard-coding them here.
+          #FIXME: The following variables need to be set in a better way.  They should only be set if it's an efr32 build.  And their values should come from somewhere in `src/test_driver/efr32/*` or one of the efr32-related config files, rather than hard-coding them here.
 
           efr32_project_dir = "${chip_root}/src/test_driver/efr32"
           examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
