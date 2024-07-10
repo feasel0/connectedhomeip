@@ -137,14 +137,15 @@ template("chip_test_suite") {
           sources = [ _test ]
           output_dir = _test_output_dir
 
-          #FIXME: The following variables need to be set in a more proper way, and only if it's efr32 build.
+          #FIXME: The following variables need to be set in a more proper way.  They should only be set if it's an efr32 build.  And their values should be come from somewhere in `src/test_driver/efr32/*` or one of the efr32-related config files, rather than hard-coding them here.
 
           efr32_project_dir = "${chip_root}/src/test_driver/efr32"
           examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
           examples_common_plat_dir = "${chip_root}/examples/platform/silabs"
 
           output_name = "matter-silabs-device_tests_${_test_name}.out"
-          print("CREATING silabs_executable: ${output_name}")  # Debugging
+          print(
+              "CREATING ${pw_unit_test_EXECUTABLE_TARGET_TYPE}: ${output_name}")  # Debugging
 
           defines = [ "PW_RPC_ENABLED" ]
 
@@ -171,7 +172,7 @@ template("chip_test_suite") {
             "${dir_pw_unit_test}:rpc_service",
             "${examples_common_plat_dir}/pw_sys_io:pw_sys_io_silabs",
 
-            #FIXME: If either of these deps are included we get this error:  ninja: error: obj/third_party/connectedhomeip/src/test_driver/efr32/sdk.ninja:14: multiple rules generate obj/third_party/connectedhomeip/third_party/silabs/simplicity_sdk/hardware/board/src/sdk.sl_board_control_gpio.c.o
+            #FIXME: Including either of the following 2 deps causes this error:  ninja: error: obj/third_party/connectedhomeip/src/test_driver/efr32/sdk.ninja:14: multiple rules generate obj/third_party/connectedhomeip/third_party/silabs/simplicity_sdk/hardware/board/src/sdk.sl_board_control_gpio.c.o
             "${efr32_project_dir}:nl_test_service.nanopb_rpc",
             "${efr32_project_dir}:sdk",
           ]
@@ -192,8 +193,8 @@ template("chip_test_suite") {
 
           ldscript = "${examples_common_plat_dir}/ldscripts/${silabs_family}.ld"
 
-          #FIXME: This line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
-          #inputs = [ ldscript ]
+          #FIXME: The following line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
+          inputs = [ ldscript ]
 
           ldflags = [
             "-T" + rebase_path(ldscript, root_build_dir),
