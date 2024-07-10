@@ -19,6 +19,17 @@ import("${chip_root}/build/chip/chip_test.gni")
 import("${chip_root}/build/chip/tests.gni")
 import("${dir_pw_unit_test}/test.gni")
 
+#FIXME: Import the silabs variables only if it's efr32 build.
+import("//build_overrides/efr32_sdk.gni")
+import("${efr32_sdk_build_root}/efr32_sdk.gni")
+
+#FIXME: Decide the right place to set these.
+pw_unit_test_EXECUTABLE_TARGET_TYPE = "silabs_executable"
+pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE =
+    "${efr32_sdk_build_root}/silabs_executable.gni"
+
+#
+
 assert(chip_build_tests)
 
 # Define CHIP unit tests
@@ -125,6 +136,69 @@ template("chip_test_suite") {
           public_deps += [ ":${_suite_name}.lib" ]
           sources = [ _test ]
           output_dir = _test_output_dir
+
+          #FIXME: The following variables need to be set in a more proper way, and only if it's efr32 build.
+
+          efr32_project_dir = "${chip_root}/src/test_driver/efr32"
+          examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
+          examples_common_plat_dir = "${chip_root}/examples/platform/silabs"
+
+          output_name = "matter-silabs-device_tests_${_test_name}.out"
+          print("CREATING silabs_executable: ${output_name}")  # Debugging
+
+          defines = [ "PW_RPC_ENABLED" ]
+
+          sources += [
+            "${chip_root}/examples/common/pigweed/RpcService.cpp",
+            "${chip_root}/examples/common/pigweed/efr32/PigweedLoggerMutex.cpp",
+            "${efr32_project_dir}/src/main.cpp",
+            "${examples_common_plat_dir}/PigweedLogger.cpp",
+            "${examples_common_plat_dir}/provision/ProvisionStorageCustom.cpp",
+            "${examples_common_plat_dir}/provision/ProvisionStorageDefault.cpp",
+            "${examples_common_plat_dir}/syscalls_stubs.cpp",
+            "${examples_plat_dir}/uart.cpp",
+          ]
+
+          if (!defined(deps)) {
+            deps = []
+          }
+          deps += [
+            "${chip_root}/config/efr32/lib/pw_rpc:pw_rpc",
+            "${chip_root}/examples/common/pigweed:system_rpc_server",
+            "${chip_root}/src/lib",
+            "${chip_root}/src/lib/support:pw_tests_wrapper",
+            "${chip_root}/src/platform/silabs/provision:provision-headers",
+            "${dir_pw_unit_test}:rpc_service",
+            "${examples_common_plat_dir}/pw_sys_io:pw_sys_io_silabs",
+
+            #FIXME: If either of these deps are included we get this error:  ninja: error: obj/third_party/connectedhomeip/src/test_driver/efr32/sdk.ninja:14: multiple rules generate obj/third_party/connectedhomeip/third_party/silabs/simplicity_sdk/hardware/board/src/sdk.sl_board_control_gpio.c.o
+            "${efr32_project_dir}:nl_test_service.nanopb_rpc",
+            "${efr32_project_dir}:sdk",
+          ]
+          deps += pw_build_LINK_DEPS
+
+          # OpenThread Settings
+          if (chip_enable_openthread) {
+            deps += [
+              "${chip_root}/third_party/openthread:openthread",
+              "${chip_root}/third_party/openthread:openthread-platform",
+              "${examples_plat_dir}:efr-matter-shell",
+            ]
+          }
+
+          libs = [ "${sdk_support_root}/matter/provision/lib/libProvision_${silabs_family}.a" ]
+
+          include_dirs = [ "${chip_root}/examples/common/pigweed/efr32" ]
+
+          ldscript = "${examples_common_plat_dir}/ldscripts/${silabs_family}.ld"
+
+          #FIXME: This line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
+          #inputs = [ ldscript ]
+
+          ldflags = [
+            "-T" + rebase_path(ldscript, root_build_dir),
+            "-Wl,--no-warn-rwx-segment",
+          ]
         }
         tests += [ _test_name ]
       }
