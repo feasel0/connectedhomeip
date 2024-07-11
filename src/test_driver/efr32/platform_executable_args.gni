@@ -1,0 +1,88 @@
+# Copyright (c) 2024 Project CHIP Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+import("//build_overrides/efr32_sdk.gni")  # Defines efr32_sdk_build_root
+import("//build_overrides/pigweed.gni")  # Defines dir_pw_protobuf_compiler
+
+import("${efr32_sdk_build_root}/efr32_sdk.gni")  # Defines sdk_support_root
+
+import("${chip_root}/src/platform/device.gni")  # Defines chip_enable_openthread
+
+import("$dir_pw_protobuf_compiler/proto.gni")  # Defines pw_build_LINK_DEPS
+
+#FIXME: Where should these come from?  They are also defined in src/test_driver_efr32/BUILD.gn
+_efr32_project_dir = "${chip_root}/src/test_driver/efr32"
+_examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
+_examples_common_plat_dir = "${chip_root}/examples/platform/silabs"
+
+# Set the varialbes that silabs_exectuable will need.
+platform_executable_type = "silabs_executable"
+platform_executable_type_file = "${efr32_sdk_build_root}/silabs_executable.gni"
+platform_executable_output_name = "matter-silabs-device_tests_"
+platform_executable_output_name_suffix = ".out"
+platform_executable_variables = {
+  defines = [ "PW_RPC_ENABLED" ]
+
+  sources = [
+    "${_efr32_project_dir}/src/main.cpp",
+    "${_examples_common_plat_dir}/PigweedLogger.cpp",
+    "${_examples_common_plat_dir}/provision/ProvisionStorageCustom.cpp",
+    "${_examples_common_plat_dir}/provision/ProvisionStorageDefault.cpp",
+    "${_examples_common_plat_dir}/syscalls_stubs.cpp",
+    "${_examples_plat_dir}/uart.cpp",
+    "${chip_root}/examples/common/pigweed/RpcService.cpp",
+    "${chip_root}/examples/common/pigweed/efr32/PigweedLoggerMutex.cpp",
+  ]
+
+  deps = [
+    "${_examples_common_plat_dir}/pw_sys_io:pw_sys_io_silabs",
+    "${chip_root}/config/efr32/lib/pw_rpc:pw_rpc",
+    "${chip_root}/examples/common/pigweed:system_rpc_server",
+    "${chip_root}/src/lib",
+    "${chip_root}/src/lib/support:pw_tests_wrapper",
+    "${chip_root}/src/platform/silabs/provision:provision-headers",
+    "${dir_pw_unit_test}:rpc_service",
+
+    #FIXME: Including either of the following 2 deps causes this error:  ninja: error: obj/third_party/connectedhomeip/src/test_driver/efr32/sdk.ninja:14: multiple rules generate obj/third_party/connectedhomeip/third_party/silabs/simplicity_sdk/hardware/board/src/sdk.sl_board_control_gpio.c.o
+    "${_efr32_project_dir}:nl_test_service.nanopb_rpc",
+    "${_efr32_project_dir}:sdk",
+  ]
+
+  deps += pw_build_LINK_DEPS
+
+  # OpenThread Settings
+  if (chip_enable_openthread) {
+    deps += [
+      "${_examples_plat_dir}:efr-matter-shell",
+      "${chip_root}/third_party/openthread:openthread",
+      "${chip_root}/third_party/openthread:openthread-platform",
+    ]
+  }
+
+  libs = [
+    "${sdk_support_root}/matter/provision/lib/libProvision_${silabs_family}.a",
+  ]
+
+  include_dirs = [ "${chip_root}/examples/common/pigweed/efr32" ]
+
+  ldscript = "${_examples_common_plat_dir}/ldscripts/${silabs_family}.ld"
+
+  inputs = [ ldscript ]
+
+  ldflags = [
+    "-T" + rebase_path(ldscript, root_build_dir),
+    "-Wl,--no-warn-rwx-segment",
+  ]
+}

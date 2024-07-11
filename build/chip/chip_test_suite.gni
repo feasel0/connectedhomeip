@@ -19,18 +19,19 @@ import("${chip_root}/build/chip/chip_test.gni")
 import("${chip_root}/build/chip/tests.gni")
 import("${dir_pw_unit_test}/test.gni")
 
-#FIXME: Import the silabs variables only if it's efr32 build.
-import("//build_overrides/efr32_sdk.gni")
-import("${efr32_sdk_build_root}/efr32_sdk.gni")
-
-#FIXME: Decide the right place to set these.
-pw_unit_test_EXECUTABLE_TARGET_TYPE = "silabs_executable"
-pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE =
-    "${efr32_sdk_build_root}/silabs_executable.gni"
-
-#
+if (chip_device_platform == "efr32") {
+  import("//platform_executable_args.gni")
+}
 
 assert(chip_build_tests)
+
+# Set the platform-specific executable type.
+if (defined(platform_executable_type)) {
+  pw_unit_test_EXECUTABLE_TARGET_TYPE = platform_executable_type
+}
+if (defined(platform_executable_type_file)) {
+  pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE = platform_executable_type_file
+}
 
 # Define CHIP unit tests
 #
@@ -126,80 +127,77 @@ template("chip_test_suite") {
         }
 
         pw_test(_test_name) {
-          forward_variables_from(invoker,
-                                 [
-                                   "deps",
-                                   "public_deps",
-                                   "cflags",
-                                   "configs",
-                                 ])
-          public_deps += [ ":${_suite_name}.lib" ]
-          sources = [ _test ]
-          output_dir = _test_output_dir
-
-          #FIXME: The following variables need to be set in a better way.  They should only be set if it's an efr32 build.  And their values should come from somewhere in `src/test_driver/efr32/*` or one of the efr32-related config files, rather than hard-coding them here.
-
-          efr32_project_dir = "${chip_root}/src/test_driver/efr32"
-          examples_plat_dir = "${chip_root}/examples/platform/silabs/efr32"
-          examples_common_plat_dir = "${chip_root}/examples/platform/silabs"
-
-          output_name = "matter-silabs-device_tests_${_test_name}.out"
-          print(
-              "CREATING ${pw_unit_test_EXECUTABLE_TARGET_TYPE}: ${output_name}")  # Debugging
-
-          defines = [ "PW_RPC_ENABLED" ]
-
-          sources += [
-            "${chip_root}/examples/common/pigweed/RpcService.cpp",
-            "${chip_root}/examples/common/pigweed/efr32/PigweedLoggerMutex.cpp",
-            "${efr32_project_dir}/src/main.cpp",
-            "${examples_common_plat_dir}/PigweedLogger.cpp",
-            "${examples_common_plat_dir}/provision/ProvisionStorageCustom.cpp",
-            "${examples_common_plat_dir}/provision/ProvisionStorageDefault.cpp",
-            "${examples_common_plat_dir}/syscalls_stubs.cpp",
-            "${examples_plat_dir}/uart.cpp",
+          # Get varibles from the invoker
+          _variables_from_invoker = [
+            "deps",
+            "public_deps",
+            "cflags",
+            "configs",
           ]
+          forward_variables_from(invoker, _variables_from_invoker)
 
+          # Initialize the variables that weren't defined in the invoker.
           if (!defined(deps)) {
             deps = []
           }
-          deps += [
-            "${chip_root}/config/efr32/lib/pw_rpc:pw_rpc",
-            "${chip_root}/examples/common/pigweed:system_rpc_server",
-            "${chip_root}/src/lib",
-            "${chip_root}/src/lib/support:pw_tests_wrapper",
-            "${chip_root}/src/platform/silabs/provision:provision-headers",
-            "${dir_pw_unit_test}:rpc_service",
-            "${examples_common_plat_dir}/pw_sys_io:pw_sys_io_silabs",
-
-            #FIXME: Including either of the following 2 deps causes this error:  ninja: error: obj/third_party/connectedhomeip/src/test_driver/efr32/sdk.ninja:14: multiple rules generate obj/third_party/connectedhomeip/third_party/silabs/simplicity_sdk/hardware/board/src/sdk.sl_board_control_gpio.c.o
-            "${efr32_project_dir}:nl_test_service.nanopb_rpc",
-            "${efr32_project_dir}:sdk",
-          ]
-          deps += pw_build_LINK_DEPS
-
-          # OpenThread Settings
-          if (chip_enable_openthread) {
-            deps += [
-              "${chip_root}/third_party/openthread:openthread",
-              "${chip_root}/third_party/openthread:openthread-platform",
-              "${examples_plat_dir}:efr-matter-shell",
-            ]
+          if (!defined(public_deps)) {
+            public_deps = []
+          }
+          if (!defined(cflags)) {
+            cflags = []
+          }
+          if (!defined(configs)) {
+            configs = []
           }
 
-          libs = [ "${sdk_support_root}/matter/provision/lib/libProvision_${silabs_family}.a" ]
+          # Set platform-specific variables that the executable will need.
+          if (defined(platform_executable_variables)) {
+            #forward_variables_from(platform_executable_variables, "*", _variables_from_invoker)
+            #FIXME: The line above doesn't work for some reason, so for now copy the variables manually.
+            defines = platform_executable_variables.defines
+            sources = platform_executable_variables.sources
+            libs = platform_executable_variables.libs
+            include_dirs = platform_executable_variables.include_dirs
+            ldflags = platform_executable_variables.ldflags
 
-          include_dirs = [ "${chip_root}/examples/common/pigweed/efr32" ]
+            #FIXME: The following line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
+            inputs = platform_executable_variables.inputs
 
-          ldscript = "${examples_common_plat_dir}/ldscripts/${silabs_family}.ld"
+            # For the variables that might come from invoker, append the platform variables instead of overwriting.
+            if (defined(platform_executable_variables.deps)) {
+              deps += platform_executable_variables.deps
+            }
+            if (defined(platform_executable_variables.public_deps)) {
+              public_deps += platform_executable_variables.public_deps
+            }
+            if (defined(platform_executable_variables.cflags)) {
+              cflags += platform_executable_variables.cflags
+            }
+            if (defined(platform_executable_variables.configs)) {
+              configs += platform_executable_variables.configs
+            }
+          }
 
-          #FIXME: The following line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
-          inputs = [ ldscript ]
+          # Set `output_name` if the platform exectuable needs it.
+          if (defined(platform_executable_output_name)) {
+            if (!defined(platform_executable_output_name_suffix)) {
+              platform_executable_output_name_suffix = ""
+            }
+            output_name = platform_executable_output_name + _test_name +
+                          platform_executable_output_name_suffix
 
-          ldflags = [
-            "-T" + rebase_path(ldscript, root_build_dir),
-            "-Wl,--no-warn-rwx-segment",
-          ]
+            print(
+                "CREATE ${pw_unit_test_EXECUTABLE_TARGET_TYPE}: ${output_name}")  # DEBUGGING
+          }
+
+          if (!defined(sources)) {
+            sources = []
+          }
+          sources += [ _test ]  # Add test source TestSomething.cpp
+
+          public_deps += [ ":${_suite_name}.lib" ]
+
+          output_dir = _test_output_dir
         }
         tests += [ _test_name ]
       }
