@@ -127,7 +127,7 @@ template("chip_test_suite") {
         }
 
         pw_test(_test_name) {
-          # Get varibles from the invoker
+          # Forward certain varibles from the invoker
           _variables_from_invoker = [
             "deps",
             "public_deps",
@@ -163,7 +163,7 @@ template("chip_test_suite") {
             #FIXME: The following line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
             inputs = platform_executable_variables.inputs
 
-            # For the variables that might come from invoker, append the platform variables instead of overwriting.
+            # Some variables might be set in both invoker and platform_executable_variables, so append these instead of overwriting.
             if (defined(platform_executable_variables.deps)) {
               deps += platform_executable_variables.deps
             }
