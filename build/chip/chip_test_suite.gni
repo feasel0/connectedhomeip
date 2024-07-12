@@ -209,18 +209,10 @@ template("chip_test_suite") {
           forward_variables_from(invoker, _variables_from_invoker)
 
           # Initialize the variables that weren't defined in the invoker.
-          if (!defined(deps)) {
-            deps = []
-          }
-          if (!defined(public_deps)) {
-            public_deps = []
-          }
-          if (!defined(cflags)) {
-            cflags = []
-          }
-          if (!defined(configs)) {
-            configs = []
-          }
+          if (!defined(deps)) { deps = [] }
+          if (!defined(public_deps)) { public_deps = [] }
+          if (!defined(cflags)) { cflags = [] }
+          if (!defined(configs)) { configs = [] }
 
           # Set platform-specific variables that the executable will need.
           if (defined(platform_executable_variables)) {
@@ -257,8 +249,7 @@ template("chip_test_suite") {
           output_name = platform_executable_output_name + _test_name +
                         platform_executable_output_name_suffix
 
-          print(
-              "CREATE ${pw_unit_test_EXECUTABLE_TARGET_TYPE}: ${output_name}")  # DEBUGGING
+          print("CREATE ${pw_unit_test_EXECUTABLE_TARGET_TYPE}: ${output_name}")  # DEBUG
 
           # Add the individual test source file (e.g. "TestSomething.cpp")
           if (!defined(sources)) {
@@ -267,8 +258,6 @@ template("chip_test_suite") {
           sources += [ _test ]
 
           output_dir = _test_output_dir
-
-          deps += [ dir_pw_unit_test ]
 
           if (current_os != "zephyr" && current_os != "mbed" &&
               chip_device_platform != "efr32") {
