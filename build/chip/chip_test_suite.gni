@@ -23,8 +23,6 @@ if (chip_device_platform == "efr32") {
   import("//platform_executable_args.gni")
 }
 
-assert(chip_build_tests)
-
 # Set the platform-specific executable type.
 if (defined(platform_executable_type)) {
   pw_unit_test_EXECUTABLE_TARGET_TYPE = platform_executable_type
@@ -32,6 +30,8 @@ if (defined(platform_executable_type)) {
 if (defined(platform_executable_type_file)) {
   pw_unit_test_EXECUTABLE_TARGET_TYPE_FILE = platform_executable_type_file
 }
+
+assert(chip_build_tests)
 
 # Define CHIP unit tests
 #
@@ -260,15 +260,16 @@ template("chip_test_suite") {
           print(
               "CREATE ${pw_unit_test_EXECUTABLE_TARGET_TYPE}: ${output_name}")  # DEBUGGING
 
+          # Add the individual test source file (e.g. "TestSomething.cpp")
           if (!defined(sources)) {
             sources = []
           }
-          sources += [ _test ]  # Add test source TestSomething.cpp
+          sources += [ _test ]
 
           output_dir = _test_output_dir
 
-          # From target ":${_suite_name}.lib"
           deps += [ dir_pw_unit_test ]
+
           if (current_os != "zephyr" && current_os != "mbed" &&
               chip_device_platform != "efr32") {
             # Depend on stdio logging, and have it take precedence over the default platform backend
