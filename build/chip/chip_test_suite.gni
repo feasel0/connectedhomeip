@@ -219,14 +219,6 @@ template("chip_test_suite") {
             # Set the variables that wouldn't have been forwarded from the invoker.
             forward_variables_from(invoker.platform_executable_variables, "*", _variables_from_invoker)
 
-
-
-
-
-
-
-
-
             # For variables that might have been forwarded from the invoker, append to them instead of overwriting.
             if (defined(platform_executable_variables.deps)) {
               deps += platform_executable_variables.deps
