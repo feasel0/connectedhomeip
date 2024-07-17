@@ -35,8 +35,8 @@ platform_executable_output_name_suffix = ".out"
 platform_executable_variables = {
   defines = [ "PW_RPC_ENABLED" ]
 
+  test_main = "//:efr32_test_main"
   sources = [
-    "//src/main.cpp",
     "${_examples_common_plat_dir}/PigweedLogger.cpp",
     "${_examples_common_plat_dir}/provision/ProvisionStorageCustom.cpp",
     "${_examples_common_plat_dir}/provision/ProvisionStorageDefault.cpp",

@@ -216,18 +216,18 @@ template("chip_test_suite") {
 
           # Set platform-specific variables that the executable will need.
           if (defined(platform_executable_variables)) {
-            #forward_variables_from(platform_executable_variables, "*", _variables_from_invoker)
-            #FIXME: The line above doesn't work for some reason, so for now copy the variables manually.
-            defines = platform_executable_variables.defines
-            sources = platform_executable_variables.sources
-            libs = platform_executable_variables.libs
-            include_dirs = platform_executable_variables.include_dirs
-            ldflags = platform_executable_variables.ldflags
+            # Set the variables that wouldn't have been forwarded from the invoker.
+            forward_variables_from(invoker.platform_executable_variables, "*", _variables_from_invoker)
 
-            #RESOLVED WITH UPSTREAM FIX: The following line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
-            inputs = platform_executable_variables.inputs
 
-            # Some variables might be set in both invoker and platform_executable_variables, so append these instead of overwriting.
+
+
+
+
+
+
+
+            # For variables that might have been forwarded from the invoker, append to them instead of overwriting.
             if (defined(platform_executable_variables.deps)) {
               deps += platform_executable_variables.deps
             }

@@ -75,3 +75,10 @@ group("runner") {
 group("default") {
   deps = [ ":efr32" ]
 }
+
+source_set("efr32_test_main") {
+  deps = [
+    "${dir_pw_unit_test}:rpc_service",
+  ]
+  sources = [ "src/main.cpp" ]
+}
