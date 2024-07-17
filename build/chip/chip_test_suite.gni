@@ -224,7 +224,7 @@ template("chip_test_suite") {
             include_dirs = platform_executable_variables.include_dirs
             ldflags = platform_executable_variables.ldflags
 
-            #FIXME: The following line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
+            #RESOLVED WITH UPSTREAM FIX: The following line causes: ERROR at //third_party/connectedhomeip/third_party/pigweed/repo/pw_unit_test/test.gni:296:7: Clobbering existing value.
             inputs = platform_executable_variables.inputs
 
             # Some variables might be set in both invoker and platform_executable_variables, so append these instead of overwriting.
