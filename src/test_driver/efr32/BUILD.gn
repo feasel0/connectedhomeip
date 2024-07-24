@@ -61,21 +61,7 @@ efr32_sdk("sdk") {
   ]
 }
 
-group("efr32") {
-  deps = [ "${chip_root}/src:tests" ]
-}
-
-group("runner") {
-  deps = [
-    "${efr32_project_dir}/py:nl_test_runner.install",
-    "${efr32_project_dir}/py:nl_test_runner_wheel",
-  ]
-}
-
-group("default") {
-  deps = [ ":efr32" ]
-}
-
+# This is the test runner.  `pw_test` will dep this for each `silabs_executable` target.
 source_set("efr32_test_main") {
   defines = [ "PW_RPC_ENABLED" ]
 
@@ -129,4 +115,19 @@ source_set("efr32_test_main") {
     "-T" + rebase_path(ldscript, root_build_dir),
     "-Wl,--no-warn-rwx-segment",
   ]
+}
+
+group("efr32") {
+  deps = [ "${chip_root}/src:tests" ]
+}
+
+group("runner") {
+  deps = [
+    "${efr32_project_dir}/py:nl_test_runner.install",
+    "${efr32_project_dir}/py:nl_test_runner_wheel",
+  ]
+}
+
+group("default") {
+  deps = [ ":efr32" ]
 }
