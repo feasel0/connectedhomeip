@@ -208,9 +208,6 @@ template("chip_test_suite") {
           ]
           forward_variables_from(invoker, _variables_from_invoker)
 
-          # Initialize the variables that weren't defined in the invoker.
-          if (!defined(public_deps)) { public_deps = [] }
-
           # Set platform-specific test main.
           if (defined(platform_executable_test_main)) {
             test_main = platform_executable_test_main
