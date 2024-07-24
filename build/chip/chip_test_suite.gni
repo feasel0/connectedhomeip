@@ -209,29 +209,11 @@ template("chip_test_suite") {
           forward_variables_from(invoker, _variables_from_invoker)
 
           # Initialize the variables that weren't defined in the invoker.
-          if (!defined(deps)) { deps = [] }
           if (!defined(public_deps)) { public_deps = [] }
-          if (!defined(cflags)) { cflags = [] }
-          if (!defined(configs)) { configs = [] }
 
-          # Set platform-specific variables that the executable will need.
-          if (defined(platform_executable_variables)) {
-            # Set the variables that wouldn't have been forwarded from the invoker.
-            forward_variables_from(invoker.platform_executable_variables, "*", _variables_from_invoker)
-
-            # For variables that might have been forwarded from the invoker, append to them instead of overwriting.
-            if (defined(platform_executable_variables.deps)) {
-              deps += platform_executable_variables.deps
-            }
-            if (defined(platform_executable_variables.public_deps)) {
-              public_deps += platform_executable_variables.public_deps
-            }
-            if (defined(platform_executable_variables.cflags)) {
-              cflags += platform_executable_variables.cflags
-            }
-            if (defined(platform_executable_variables.configs)) {
-              configs += platform_executable_variables.configs
-            }
+          # Set platform-specific test main.
+          if (defined(platform_executable_test_main)) {
+            test_main = platform_executable_test_main
           }
 
           # Set `output_name` if the platform exectuable needs it.
