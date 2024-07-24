@@ -66,28 +66,28 @@ source_set("efr32_test_main") {
   defines = [ "PW_RPC_ENABLED" ]
 
   sources = [
+    "${chip_root}/examples/common/pigweed/RpcService.cpp",
+    "${chip_root}/examples/common/pigweed/efr32/PigweedLoggerMutex.cpp",
     "${examples_common_plat_dir}/PigweedLogger.cpp",
     "${examples_common_plat_dir}/provision/ProvisionStorageCustom.cpp",
     "${examples_common_plat_dir}/provision/ProvisionStorageDefault.cpp",
     "${examples_common_plat_dir}/syscalls_stubs.cpp",
     "${examples_plat_dir}/uart.cpp",
-    "${chip_root}/examples/common/pigweed/RpcService.cpp",
-    "${chip_root}/examples/common/pigweed/efr32/PigweedLoggerMutex.cpp",
     "src/main.cpp",
   ]
 
   deps = [
-    "${examples_common_plat_dir}/pw_sys_io:pw_sys_io_silabs",
+    ":nl_test_service.nanopb_rpc",
+    ":sdk",
+    "${dir_pw_unit_test}:rpc_service",
     "${chip_root}/config/efr32/lib/pw_rpc:pw_rpc",
     "${chip_root}/examples/common/pigweed:system_rpc_server",
     "${chip_root}/src/lib",
     "${chip_root}/src/lib/support:pw_tests_wrapper",
     "${chip_root}/src/platform/silabs/provision:provision-headers",
-    "${dir_pw_unit_test}:rpc_service",
+    "${examples_common_plat_dir}/pw_sys_io:pw_sys_io_silabs",
 
     # Targets in the efr32 test driver.
-    ":nl_test_service.nanopb_rpc",
-    ":sdk",
   ]
 
   deps += pw_build_LINK_DEPS
