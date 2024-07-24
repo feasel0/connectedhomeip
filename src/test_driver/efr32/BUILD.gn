@@ -64,7 +64,6 @@ efr32_sdk("sdk") {
 # This is the test runner.  `pw_test` will dep this for each `silabs_executable` target.
 source_set("efr32_test_main") {
   defines = [ "PW_RPC_ENABLED" ]
-
   sources = [
     "${chip_root}/examples/common/pigweed/RpcService.cpp",
     "${chip_root}/examples/common/pigweed/efr32/PigweedLoggerMutex.cpp",
@@ -79,7 +78,7 @@ source_set("efr32_test_main") {
   deps = [
     ":nl_test_service.nanopb_rpc",
     ":sdk",
-    "${dir_pw_unit_test}:rpc_service",
+    "$dir_pw_unit_test:rpc_service",
     "${chip_root}/config/efr32/lib/pw_rpc:pw_rpc",
     "${chip_root}/examples/common/pigweed:system_rpc_server",
     "${chip_root}/src/lib",
@@ -91,9 +90,9 @@ source_set("efr32_test_main") {
   # OpenThread Settings
   if (chip_enable_openthread) {
     deps += [
-      "${examples_plat_dir}:efr-matter-shell",
       "${chip_root}/third_party/openthread:openthread",
       "${chip_root}/third_party/openthread:openthread-platform",
+      "${examples_plat_dir}:efr-matter-shell",
     ]
   }
 
