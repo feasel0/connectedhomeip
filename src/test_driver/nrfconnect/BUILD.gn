@@ -1,0 +1,61 @@
+import("//build_overrides/chip.gni")
+
+# This is the test runner.  `pw_test` will dep this for each `silabs_executable` target.
+source_set("nrfconnect_test_main") {
+#   defines = [ "PW_RPC_ENABLED" ]
+#   sources = [
+#     "${chip_root}/examples/common/pigweed/RpcService.cpp",
+#     "${chip_root}/examples/common/pigweed/efr32/PigweedLoggerMutex.cpp",
+#     "${examples_common_plat_dir}/PigweedLogger.cpp",
+#     "${examples_common_plat_dir}/provision/ProvisionStorageCustom.cpp",
+#     "${examples_common_plat_dir}/provision/ProvisionStorageDefault.cpp",
+#     "${examples_common_plat_dir}/syscalls_stubs.cpp",
+#     "${examples_common_plat_dir}/uart.cpp",
+#     "src/main.cpp",
+#   ]
+
+  #complete_static_lib = true  #+++x would prefer to do this here, but it seems like it's only relevant when we're using it in pw_test.  doing it in pw_tests_wrapper doesn't seem to help
+
+#   include_dirs = [  #+++x Try to move runner.cpp into GN.
+#     "${chip_root}/src/test_driver/nrfconnect/main/include",  # can this be shortened to a relative path?
+#     #needed?:
+#     #"${examples_plat_dir}",
+#     #"${examples_common_plat_dir}",
+#   ]
+
+  #sources = [  #+++x Try to move runner.cpp into GN.
+    #"${chip_root}/src/test_driver/nrfconnect/main/runner.cpp",  # can this be shortened to a relative path?
+  #]
+
+  deps = [
+    #"${chip_root}/src/lib/support:verifymacros",  #+++x Try to move runner.cpp into GN.
+    #"${chip_root}/src/platform:platform",  #+++x Try to move runner.cpp into GN.
+    # ":nl_test_service.nanopb_rpc",
+    # ":sdk",
+    # "$dir_pw_unit_test:rpc_service",
+    # "${chip_root}/config/efr32/lib/pw_rpc:pw_rpc",
+    # "${chip_root}/examples/common/pigweed:system_rpc_server",
+    # "${chip_root}/src/lib",
+    "${chip_root}/src/lib/support:pw_tests_wrapper",
+    # "${chip_root}/src/platform/silabs/provision:provision-headers",
+    # "${examples_common_plat_dir}/pw_sys_io:pw_sys_io_silabs",
+  ]
+
+#   # OpenThread Settings
+#   if (chip_enable_openthread) {
+#     deps += [
+#       "${chip_root}/third_party/openthread:openthread",
+#       "${chip_root}/third_party/openthread:openthread-platform",
+#       "${examples_plat_dir}:efr-matter-shell",
+#     ]
+#   }
+
+    #+++x needed?
+#   deps += pw_build_LINK_DEPS
+
+#   libs = [ 
+#     "${sdk_support_root}/matter/provision/lib/libProvision_${silabs_family}.a",
+#   ]
+
+#   include_dirs = [ "${chip_root}/examples/common/pigweed/efr32" ]
+}

@@ -120,6 +120,10 @@ template("chip_test_suite") {
           # Link to the common lib for this suite so we get its `sources`.
           public_deps += [ ":${_suite_name}.lib" ]
 
+          if (chip_device_platform == "nrfconnect") {  #+++x Find a way to set this without having platform mentioned specifically here.  Is there a variable that is only going to be true for nrfconnect (and potentially other platforms that will use this)?
+            complete_static_lib = true   #+++x Make this go away.  but it doesn't seem to matter if i put it in test_main.  maybe if runner.cpp was moved into test_main we wouldn't need this here.
+          }
+
           # Set variables that the platform executable may need.
           if (test_executable_output_name != "") {
             output_name = test_executable_output_name + _test_name +

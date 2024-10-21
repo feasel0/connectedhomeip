@@ -55,7 +55,7 @@ find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
 project(AllChipTests)
 enable_testing()
 
-target_sources(app PRIVATE main/runner.cpp)
+target_sources(app PRIVATE main/runner.cpp)  #+++x Try to move runner.cpp into GN.
 target_link_libraries(app PUBLIC chip $<TARGET_FILE:kernel>)
 target_compile_definitions(app PUBLIC CHIP_HAVE_CONFIG_H)
 

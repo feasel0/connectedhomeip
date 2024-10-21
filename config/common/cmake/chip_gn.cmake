@@ -185,7 +185,10 @@ macro(matter_build target)
     endif()
 
     if (ARG_LIB_TESTS)
-        target_link_options(${target} INTERFACE -Wl,--whole-archive ${MATTER_LIB_DIR}/libCHIP_tests.a -Wl,--no-whole-archive)
+        #target_link_options(${target} INTERFACE -Wl,--whole-archive ${MATTER_LIB_DIR}/libCHIP_tests.a -Wl,--no-whole-archive)  #+++x
+        #target_link_options(${target} INTERFACE -Wl,--whole-archive ${MATTER_LIB_DIR}/libChipCryptoTests.a -Wl,--no-whole-archive)  #+++x
+        #target_link_options(${target} INTERFACE -Wl,--whole-archive ${CMAKE_CURRENT_BINARY_DIR}/tests/TestASN1.a -Wl,--no-whole-archive)  #+++x
+        target_link_options(${target} INTERFACE -Wl,--whole-archive ${CMAKE_CURRENT_BINARY_DIR}/tests/TestBytesCircularBuffer.a -Wl,--no-whole-archive)  #+++x
     endif()
 
     if (ARG_DEVICE_INFO_EXAMPLE_PROVIDER)
