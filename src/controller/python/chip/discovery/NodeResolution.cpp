@@ -37,6 +37,7 @@ class PythonResolverDelegate : public OperationalResolveDelegate
 public:
     void OnOperationalNodeResolved(const ResolvedNodeData & nodeData) override
     {
+        ChipLogProgress(Controller, "PythonResolverDelegate::OnOperationalNodeResolved " ChipLogFormatPeerId, ChipLogValuePeerId(nodeData.operationalData.peerId));
         Resolver::Instance().NodeIdResolutionNoLongerNeeded(nodeData.operationalData.peerId);
         if (mSuccessCallback != nullptr)
         {
@@ -60,6 +61,7 @@ public:
 
     void OnOperationalNodeResolutionFailed(const PeerId & peerId, CHIP_ERROR error) override
     {
+        ChipLogProgress(Controller, "PythonResolverDelegate::OnOperationalNodeResolutionFailed " ChipLogFormatPeerId, ChipLogValuePeerId(peerId));
         Resolver::Instance().NodeIdResolutionNoLongerNeeded(peerId);
         if (mFailureCallback != nullptr)
         {

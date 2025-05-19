@@ -826,29 +826,40 @@ MdnsAvahi::ResolveContext * MdnsAvahi::ResolveContextForHandle(size_t handle)
 
 void MdnsAvahi::FreeResolveContext(size_t handle)
 {
+    ChipLogProgress(DeviceLayer, "MdnsAvahi::FreeResolveContext(%ld)", static_cast<long>(handle));
     for (auto it = mAllocatedResolves.begin(); it != mAllocatedResolves.end(); it++)
     {
         if ((*it)->mNumber == handle)
         {
+            ChipLogProgress(DeviceLayer, "MdnsAvahi::FreeResolveContext(%ld) deleting %p", static_cast<long>(handle), static_cast<void *>(*it));
             chip::Platform::Delete(*it);
+            ChipLogProgress(DeviceLayer, "MdnsAvahi::FreeResolveContext(%ld) erasing %p", static_cast<long>(handle), static_cast<void *>(*it));
             mAllocatedResolves.erase(it);
+            ChipLogProgress(DeviceLayer, "MdnsAvahi::FreeResolveContext(%ld) erased %p", static_cast<long>(handle), static_cast<void *>(*it));
             return;
         }
     }
+    ChipLogProgress(DeviceLayer, "MdnsAvahi::FreeResolveContext(%ld) no match", static_cast<long>(handle));
 }
 
 void MdnsAvahi::StopResolve(const char * name)
 {
+    ChipLogProgress(DeviceLayer, "MdnsAvahi::StopResolve(%s)", name);
     auto truncate_end = std::remove_if(mAllocatedResolves.begin(), mAllocatedResolves.end(),
                                        [name](ResolveContext * ctx) { return strcmp(ctx->mName, name) == 0; });
 
     for (auto it = truncate_end; it != mAllocatedResolves.end(); it++)
     {
+        ChipLogProgress(DeviceLayer, "MdnsAvahi::StopResolve(%s) calling callback", name);
         (*it)->mCallback((*it)->mContext, nullptr, Span<Inet::IPAddress>(), CHIP_ERROR_CANCELLED);
+        ChipLogProgress(DeviceLayer, "MdnsAvahi::StopResolve(%s) deleting %p", name, static_cast<void *>(*it));
         chip::Platform::Delete(*it);
+        ChipLogProgress(DeviceLayer, "MdnsAvahi::StopResolve(%s) deleted %p", name, static_cast<void *>(*it));
     }
 
+    ChipLogProgress(DeviceLayer, "MdnsAvahi::StopResolve(%s) erasing matches", name);
     mAllocatedResolves.erase(truncate_end, mAllocatedResolves.end());
+    ChipLogProgress(DeviceLayer, "MdnsAvahi::StopResolve(%s) erased matches", name);
 }
 
 CHIP_ERROR MdnsAvahi::Resolve(const char * name, const char * type, DnssdServiceProtocol protocol, Inet::IPAddressType addressType,
@@ -917,6 +928,7 @@ void MdnsAvahi::HandleResolve(AvahiServiceResolver * resolver, AvahiIfIndex inte
             {
                 ChipLogError(DeviceLayer, "Avahi resolve failed on retry");
                 context->mCallback(context->mContext, nullptr, Span<Inet::IPAddress>(), CHIP_ERROR_INTERNAL);
+                ChipLogError(Discovery, "MdnsAvahi::HandleResolve[A] %ld", static_cast<long>(handle));
                 sInstance.FreeResolveContext(handle);
             }
             return;
@@ -1009,6 +1021,7 @@ void MdnsAvahi::HandleResolve(AvahiServiceResolver * resolver, AvahiIfIndex inte
         break;
     }
 
+    ChipLogError(Discovery, "MdnsAvahi::HandleResolve[B] %ld", static_cast<long>(handle));
     sInstance.FreeResolveContext(handle);
 }
 

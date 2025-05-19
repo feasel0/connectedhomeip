@@ -232,6 +232,7 @@ CHIP_ERROR Resolver::CancelLookup(Impl::NodeLookupHandle & handle, FailureCallba
 {
     VerifyOrReturnError(handle.IsActive(), CHIP_ERROR_INVALID_ARGUMENT);
     mActiveLookups.Remove(&handle);
+    ChipLogProgress(Discovery, "Resolver::CancelLookup " ChipLogFormatPeerId, ChipLogValuePeerId(handle.GetRequest().GetPeerId()));
     Dnssd::Resolver::Instance().NodeIdResolutionNoLongerNeeded(handle.GetRequest().GetPeerId());
 
     // Adjust any timing updates.
@@ -278,6 +279,7 @@ void Resolver::Shutdown()
 
         MATTER_LOG_NODE_DISCOVERY_FAILED(&peerId, CHIP_ERROR_SHUT_DOWN);
 
+        ChipLogProgress(Discovery, "Resolver::Shutdown " ChipLogFormatPeerId, ChipLogValuePeerId(peerId));
         Dnssd::Resolver::Instance().NodeIdResolutionNoLongerNeeded(peerId);
         // Failure callback only called after iterator was cleared:
         // This allows failure handlers to deallocate structures that may
@@ -352,6 +354,7 @@ void Resolver::HandleAction(IntrusiveList<NodeLookupHandle>::Iterator & current)
     NodeListener * listener = current->GetListener();
     mActiveLookups.Erase(current);
 
+    ChipLogProgress(Discovery, "Resolver::HandleAction " ChipLogFormatPeerId, ChipLogValuePeerId(peerId));
     Dnssd::Resolver::Instance().NodeIdResolutionNoLongerNeeded(peerId);
 
     // ensure action is taken AFTER the current current lookup is marked complete
@@ -402,6 +405,7 @@ void Resolver::OnOperationalNodeResolutionFailed(const PeerId & peerId, CHIP_ERR
         NodeListener * listener = current->GetListener();
         mActiveLookups.Erase(current);
 
+        ChipLogProgress(Discovery, "Resolver::OnOperationalNodeResolutionFailed " ChipLogFormatPeerId, ChipLogValuePeerId(peerId));
         Dnssd::Resolver::Instance().NodeIdResolutionNoLongerNeeded(peerId);
 
         // Failure callback only called after iterator was cleared:
@@ -450,6 +454,7 @@ void Resolver::ReArmTimer()
             mActiveLookups.Erase(it);
             it = mActiveLookups.begin();
 
+            ChipLogProgress(Discovery, "Resolver::ReArmTimer " ChipLogFormatPeerId, ChipLogValuePeerId(peerId));
             Dnssd::Resolver::Instance().NodeIdResolutionNoLongerNeeded(peerId);
             // Callback only called after active lookup is cleared
             // This allows failure handlers to deallocate structures that may

@@ -763,6 +763,7 @@ CHIP_ERROR MinMdnsResolver::ResolveNodeId(const PeerId & peerId)
 
 void MinMdnsResolver::NodeIdResolutionNoLongerNeeded(const PeerId & peerId)
 {
+    ChipLogProgress(Discovery, "MinMdnsResolver::NodeIdResolutionNoLongerNeeded(%ld)", static_cast<long>(peerId.GetNodeId()));
     mActiveResolves.NodeIdResolutionNoLongerNeeded(peerId);
 }
 

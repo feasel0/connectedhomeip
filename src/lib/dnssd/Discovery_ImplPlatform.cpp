@@ -705,6 +705,7 @@ void DiscoveryImplPlatform::NodeIdResolutionNoLongerNeeded(const PeerId & peerId
 {
     char name[Common::kInstanceNameMaxLength + 1];
     ReturnOnFailure(MakeInstanceName(name, sizeof(name), peerId));
+    ChipLogProgress(Discovery, "DiscoveryImplPlatform::NodeIdResolutionNoLongerNeeded(" ChipLogFormatPeerId ")", ChipLogValuePeerId(peerId));
     ChipDnssdResolveNoLongerNeeded(name);
 }
 
