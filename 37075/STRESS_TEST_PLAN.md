@@ -220,6 +220,38 @@ failed only because an empty `analytics_parameters: {}` mapping triggers a
 matter-qa `TestConfig` fallback bug. The configuration now uses valid
 `current_heap_used` and `reboot_count` analytics entries.
 
+## Verified 100-iteration campaign
+
+The full `TC_Darwin_Pair.py` campaign ran from September 21, 2026 at 10:08:13
+through 12:22:04 and completed before the later development-session crash:
+
+- Result: 100 requested, 100 executed, 100 passed, 0 failed.
+- Run artifacts:
+  `37075/logs/stress-darwin-pair-100/MatterTest/ble-thread/09-21-2026_10-08-13-523`
+- Mean iteration duration: 80.05199583 seconds.
+- Mean pairing duration: 55.63721903 seconds.
+- All 200 first- and second-fabric `CommissioningCompleteResponse` values were
+  `kOK`, and all 200 commands were observed in the DUT UART logs.
+- Every iteration attached to the `Matter37075` Thread network on channel 20,
+  PAN ID `0x6213`, and partition `0x28CA9D9E`.
+- Every iteration discovered the same SRP server and enabled operational
+  advertising; none logged an operational-advertising failure.
+- The controller emitted the security-test-mode warning for PASE and both CASE
+  paths in every iteration.
+
+A single `AddressResolve_DefaultImpl.cpp:124` timeout appeared while iteration 1
+was running. Its lookup began before iteration 1 for the framework's default
+node ID `0x12344321`; it was not the generated DUT identity used by the
+iteration. The actual first-fabric lookup resolved, both CASE sessions
+completed, and both `CommissioningComplete` commands returned `kOK`. No later
+iteration contained this timeout.
+
+This isolated local setup therefore did not reproduce a terminal issue #37075
+failure. Its stable partition, SRP, and operational-advertising results support
+the existing finding that the historical exact-signature failures occurred
+when the DUT attached to an unintended Thread partition without a reachable SRP
+server.
+
 ## Packet capture and decryption
 
 - Matter message decryption is enabled by the fixed test session keys in both
@@ -232,9 +264,11 @@ matter-qa `TestConfig` fallback bug. The configuration now uses valid
   the OTBR/RCP-side Thread traffic. Preserve the active dataset alongside the
   captures.
 
-## Next stress step
+## Follow-up testing
 
-Increase `number_of_iterations` in `37075/matter-qa-nordic.yaml`, then rerun
-`TC_Darwin_Pair.py`. Keep the passing smoke artifacts unchanged as the baseline
-and use a new log directory and controller storage file for each stress
-campaign.
+Keep the passing smoke and 100-iteration artifacts unchanged as baselines. For
+additional coverage, run `TC_RT_1_1.py` and `TC_RT_1_2.py` with separate
+controller storage files and log directories. If a terminal timeout reappears,
+enable controller and OTBR packet capture for the next campaign and correlate
+the failing iteration with its Thread partition, SRP server, operational
+advertisement, CASE handshake, and command-delivery sequence.

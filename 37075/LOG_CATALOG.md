@@ -1,12 +1,12 @@
 # Issue #37075 Log Catalog and Initial Findings
 
-Date reviewed: 2026-09-08
+Date reviewed: 2026-09-21
 
 ## Executive summary
 
-The local `37075` evidence directory contains **43 complete per-iteration bundles from three test runs**:
+The local `37075` evidence directory contains **143 complete per-iteration bundles from four test runs**:
 
-- **36 passing iterations**
+- **136 passing iterations**
 - **7 failing iterations**
 - All seven failures occurred while the test was trying to complete commissioning.
 - All seven ended with `CHIP_ERROR_TIMEOUT (0x32)`.
@@ -18,6 +18,52 @@ The local `37075` evidence directory contains **43 complete per-iteration bundle
 The evidence therefore does **not** represent one uniform failure. At least three distinct failure classes have been grouped under the visible symptom "`CommissioningComplete` timed out."
 
 The October run also has an aggregate [summary](TC_Darwin_Pair_logs/summary.json) containing JSON records for all 100 iterations. Raw controller and DUT logs were retained for only 29 of those iterations.
+
+The September 21, 2026 local reproduction campaign adds 100 consecutive passes using an isolated `Matter37075` Thread network formed by a local OTBR and nRF52840 RCP. This supports the earlier conclusion that the October address-resolution failures depended on the DUT attaching to an unintended Thread partition rather than on `AddressResolve` itself.
+
+## September 21, 2026 local 100-iteration campaign
+
+Directory: `logs/stress-darwin-pair-100/MatterTest/ble-thread/09-21-2026_10-08-13-523`
+
+The run completed before the development-session crash. Its persisted summary reports:
+
+- Start: `2026-09-21T10:08:13.533129`
+- End: `2026-09-21T12:22:04.835324`
+- Wall-clock duration: approximately 2 hours, 13 minutes, 51 seconds
+- Result: **PASS**
+- Requested/completed/passed/failed: **100/100/100/0**
+- Mean iteration duration: `80.05199583` seconds
+- Mean pairing duration: `55.63721903` seconds
+- Iteration-duration range: `78.841255` to `83.242719` seconds
+- Pairing-duration range: `54.450735` to `58.787224` seconds
+
+Every iteration retained its JSON result, controller log, and DUT UART log. Cross-run validation found:
+
+- 200 controller-side `CommissioningCompleteResponse` records, exactly two per iteration, all with `errorCode = 0 == kOK`.
+- 200 DUT-side `GeneralCommissioning: Received CommissioningComplete` records, exactly two per iteration.
+- 300 controller-side security-test-mode warnings, corresponding to PASE and both CASE paths in every iteration.
+- No DUT fatal, panic, assertion, hard-fault, bus-fault, or watchdog markers.
+
+Thread state was stable for all 100 iterations:
+
+| Marker | Result |
+|---|---|
+| Network name | `Matter37075` in 100/100 iterations |
+| PAN ID | `0x6213` in 100/100 iterations |
+| Channel | 20 in 100/100 iterations |
+| Partition ID | `0x28CA9D9E` in 100/100 iterations |
+| SRP server | `fd97:3da1:0029:8106:f251:c7ca:ee09:d27a` in 100/100 iterations |
+| Thread role | Child in 100/100 iterations |
+| Operational advertising enabled | 100/100 iterations |
+| Operational advertising failed | 0 iterations |
+
+One `AddressResolve_DefaultImpl.cpp:124: CHIP Error 0x00000032: Timeout` line appeared during iteration 1, but it was not an iteration failure or a failed post-`AddNOC` lookup for that iteration's DUT identity. The lookup for default node ID `0x12344321` began at `10:08:13.887`, before iteration 1 began at `10:08:38.994`, and expired at `10:08:58.890`. The generated iteration-1 DUT identity was different; its operational lookup began at `10:08:59.523`, resolved successfully, established CASE, and returned `CommissioningCompleteResponse(kOK)`. No later iteration contained an operational-discovery timeout.
+
+### After-action conclusion
+
+The local campaign did not reproduce a terminal issue #37075 failure. It did validate the full Python-controller, BLE-Thread, local-OTBR, nRF52840-RCP, and nRF52840-DK setup under sustained factory-reset/recommission cycles. Most importantly, the DUT stayed on one intended partition with working SRP discovery and operational advertisement throughout the campaign. That is the condition absent from the four exact-signature October failures.
+
+The lone startup timeout should be tracked separately as a framework initialization lookup for the default node ID. It does not indicate a lost `CommissioningComplete` response and should not be counted as an issue reproduction.
 
 ## What counts as an iteration bundle
 
