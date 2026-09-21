@@ -1,0 +1,21 @@
+services:
+  otbr:
+    image: otbr-37075:local
+    container_name: otbr-37075
+    privileged: true
+    network_mode: host
+    restart: unless-stopped
+    devices:
+      - /dev/serial/by-id/usb-Nordic_Semiconductor_ASA_Thread_Co-Processor_8388F563A730D925-if00:/dev/ttyRCP
+    environment:
+      OT_LOG_LEVEL: "7"
+      OT_RCP_DEVICE: spinel+hdlc+uart:///dev/ttyRCP?uart-baudrate=1000000
+      OT_INFRA_IF: enx207bd2e29318
+      OT_THREAD_IF: wpan0
+      OT_REST_LISTEN_ADDR: 127.0.0.1
+      OT_REST_LISTEN_PORT: "8081"
+    volumes:
+      - otbr-thread-data:/data/thread
+
+volumes:
+  otbr-thread-data:

@@ -18,6 +18,7 @@ chip_device_platform = "nrfconnect"
 
 chip_build_tests = false
 chip_build_tools = false
+treat_warnings_as_errors = false
 
 chip_project_config_include = ""
 chip_system_project_config_include = ""

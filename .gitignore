@@ -105,3 +105,22 @@ imgui.ini
 
 # Joint Fabric test harness output file
 admin_storage.json
+
+# Local issue #37075 generated and machine-local artifacts. Documentation,
+# configuration, and build-proof summaries under /37075 remain trackable.
+/37075/37075_Issue_reference_logs/
+/37075/TC_Darwin_Pair_logs/
+/37075/ble_thread_iter_7_fail/
+/37075/logs/
+
+# Matter controller runtime state contains generated test fabric private keys.
+/37075/admin-*.json
+
+# RCP firmware build trees and generated flash package.
+/37075/nrf52840dongle-rcp-build/
+/37075/nrf52840dongle-rcp-build-container/
+/37075/nrf52840dongle-rcp.zip
+
+# Locally installed/modified tools and Python environment.
+/37075/nrfutil-legacy-env/
+/37075/tools/

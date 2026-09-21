@@ -1,0 +1,71 @@
+# matter-qa configuration for issue #37075 reproduction.
+# Pass this file with:
+#   --string-arg reliability_tests_arg:<absolute-path-to-this-file>
+
+general_configs:
+  platform_execution: "nordic"
+  number_of_iterations: 100
+  sleep_duration_between_iterations: 5
+  delay_between_stress_test_operations: 2
+  host_sudo_password: ""
+  max_consecutive_identical_failure_attempts: 0
+  pass_percentage_threshold: 100
+  matter_xml_root: /home/feasel/matter-oct14/connectedhomeip/data_model/1.4.2
+  analytics_parameters:
+    current_heap_used:
+      attribute: SoftwareDiagnostics.Attributes.CurrentHeapUsed
+      end_point: 0
+    reboot_count:
+      attribute: GeneralDiagnostics.Attributes.RebootCount
+      end_point: 0
+  test_event_trigger_config:
+    use_test_event_trigger_factory_reset: false
+  logging_config:
+    copy_var_log: false
+  mongodb_server_config:
+    enable_mongodb_storage: false
+  diagnostic_logs_config:
+    enable_diagnostic_log_capture: false
+
+controller:
+  logging:
+    capture_bluez: false
+    capture_hcidump: false
+    capture_tcpdump: false
+    capture_dbus: false
+    capture_wpasupplicant: false
+
+otbr_device_config:
+  # The local OTBR still supplies network connectivity even when harness-side
+  # OTBR diagnostics are disabled. Enable this only after configuring an OTBR
+  # diagnostics adapter in this file.
+  enable_otbr_diagnostics: false
+
+dut_config:
+  nordic:
+    module: matter_qa.library.platform.nordic
+    do_factory_reset_every_iteration: true
+    ota_event_trigger: 0x002A000000000101
+    serial_port: /dev/serial/by-id/usb-SEGGER_J-Link_001050208117-if00
+    serial_baudrate: 115200
+    serial_timeout: 60
+    factoryreset_command: "matter device factoryreset\n"
+    dut_reboot_command: "kernel reboot\n"
+    app_config:
+      matter_app: ""
+      discriminator: 3840
+      passcode: 20202021
+      qr_code: "MT:-24J042C00KA0648G00"
+      setup_code: "34970112332"
+    uncertified_device: true
+
+test_case_config:
+  TC_RT_1_1:
+    retry_count: 3
+  TC_RT_1_2:
+    open_commissioning_window_timeout: 300
+    enable_concurrent_operation: true
+    cluster_read_write_config:
+      cluster_list_to_read_write: []
+  TC_Darwin_Pair:
+    manual_code: 34970112332
