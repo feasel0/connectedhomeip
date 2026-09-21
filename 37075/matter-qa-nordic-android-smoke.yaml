@@ -1,10 +1,10 @@
-# matter-qa configuration for issue #37075 reproduction.
+# One-iteration TC_Android_Pair BLE-Thread smoke configuration for issue #37075.
 # Pass this file with:
 #   --string-arg reliability_tests_arg:<absolute-path-to-this-file>
 
 general_configs:
   platform_execution: "nordic"
-  number_of_iterations: 100
+  number_of_iterations: 1
   sleep_duration_between_iterations: 5
   delay_between_stress_test_operations: 2
   host_sudo_password: ""
@@ -36,9 +36,8 @@ controller:
     capture_wpasupplicant: false
 
 otbr_device_config:
-  # The local OTBR still supplies network connectivity even when harness-side
-  # OTBR diagnostics are disabled. Enable this only after configuring an OTBR
-  # diagnostics adapter in this file.
+  # The local OTBR supplies network connectivity while harness-side diagnostics
+  # remain disabled for this smoke test.
   enable_otbr_diagnostics: false
 
 dut_config:

@@ -4,7 +4,8 @@ Date reviewed: 2026-09-21
 
 ## Executive summary
 
-The local `37075` evidence directory contains **143 complete per-iteration bundles from four test runs**:
+The primary campaign/reference evidence catalog contains **143 complete
+per-iteration bundles from four test runs**:
 
 - **136 passing iterations**
 - **7 failing iterations**
@@ -17,9 +18,87 @@ The local `37075` evidence directory contains **143 complete per-iteration bundl
 
 The evidence therefore does **not** represent one uniform failure. At least three distinct failure classes have been grouped under the visible symptom "`CommissioningComplete` timed out."
 
+Three additional standalone local smoke bundles are retained under `logs/` and
+are excluded from the 143-bundle campaign/reference count: the passing Darwin
+smoke, an infrastructure-valid Darwin flow marked failed by the empty-analytics
+configuration bug, and the passing Android smoke documented below.
+
 The October run also has an aggregate [summary](TC_Darwin_Pair_logs/summary.json) containing JSON records for all 100 iterations. Raw controller and DUT logs were retained for only 29 of those iterations.
 
 The September 21, 2026 local reproduction campaign adds 100 consecutive passes using an isolated `Matter37075` Thread network formed by a local OTBR and nRF52840 RCP. This supports the earlier conclusion that the October address-resolution failures depended on the DUT attaching to an unintended Thread partition rather than on `AddressResolve` itself.
+
+## September 21, 2026 Android pairing smoke
+
+Directory:
+`logs/smoke-android-pair/MatterTest/ble-thread/09-21-2026_14-31-05-684`
+
+The dedicated `TC_Android_Pair.py` BLE-Thread smoke used fresh controller
+storage and completed successfully:
+
+- Result: **PASS**
+- Requested/completed/passed/failed: **1/1/1/0**
+- Iteration duration: `97.657709` seconds
+- Pairing duration: `73.380083` seconds
+- Generated DUT node ID: `0x00000000044514D4`
+- `ConnectNetworkResponse`: `kSuccess`
+- `NOCResponse`: `kOK`
+- `CommissioningCompleteResponse`: `kOK`
+- Runtime `CHIP_CONFIG_SECURITY_TEST_MODE=1` warnings: PASE and CASE
+
+The DUT attached as a child to `Matter37075` on PAN ID `0x6213`, channel 20,
+and partition `0x28CA9D9E`. It discovered SRP server
+`fd97:3da1:0029:8106:f251:c7ca:ee09:d27a` at DUT uptime 8582 ms, became a child
+at 8600 ms, and enabled operational advertising at 8676 ms. This is the inverse
+of the October exact-signature failure condition: the intended partition, SRP
+server, and operational publication were all present.
+
+### Post-`AddNOC` operational sequence
+
+| Host time | Evidence |
+|---|---|
+| `14:31:50.211` | `AddNOC` returned `NOCResponse(kOK)` for fabric 1. |
+| `14:31:50.388` | The `WindowStatus` read triggered operational discovery for the generated DUT node. |
+| `14:31:51.361` | DNS-SD selected the DUT address after 969 ms and started CASE. |
+| `14:31:51.370` | Controller sent CASE Sigma1. |
+| `14:31:51.724` | Controller received CASE Sigma2. |
+| `14:31:51.746` | Controller sent CASE Sigma3. |
+| `14:31:52.307` | CASE became active; the security-test-mode warning was emitted. |
+| `14:31:52.472` | First CASE request returned `WindowStatus(kWindowNotOpen)`. |
+| `14:31:52.478` | `SerialNumber` read began on the existing CASE session. |
+| `14:31:52.618` | Wildcard/global read began on the existing CASE session. |
+| `14:31:59.714` | `CommissioningComplete` was sent on the same CASE session. |
+| `14:32:00.286` | `CommissioningCompleteResponse(kOK)` was received. |
+| `14:32:00.299` | Subscription request was sent. |
+| `14:32:18.334` onward | Time Synchronization and OTA Requestor coverage ran. |
+| `14:32:57.945` | `RemoveFabric` was sent; DUT cleanup succeeded. |
+| `14:33:03.733` | Iteration 1 was marked `PASS`. |
+
+Every operation after CASE establishment found the existing secure session;
+there was no second DUT lookup or CASE handshake before
+`CommissioningComplete`. This ordering distinguishes the Android flow from
+Darwin: Android proves operational discovery, CASE, and three operational reads
+before sending `CommissioningComplete`, while Darwin sends
+`CommissioningComplete` as its first operational CASE command.
+
+### Timeout and error classification
+
+No `Operational advertising failed` line, fatal, panic, assertion, hard-fault,
+or watchdog marker appeared. Two timeout events were non-terminal and unrelated
+to the successful DUT commissioning transition:
+
+1. A framework startup lookup for default node ID `0x12344321` expired after
+  45 seconds with `AddressResolve_DefaultImpl.cpp:124`. It was not the
+  generated DUT node ID. The DUT's independent lookup resolved approximately
+  306 ms later, and CASE plus `CommissioningComplete` succeeded.
+2. `AnnounceOTAProvider` timed out in `CommandSender.cpp:378` at
+  `14:32:54.089`. The DUT had logged `Failed to finalize command response: 3`.
+  The matter-qa helper explicitly caught the timeout as an unimplemented
+  optional operation, and the remaining Time Synchronization, OTA attribute,
+  analytics, fabric-removal, and reset operations passed.
+
+Classification: **not an issue #37075 reproduction**. The primary post-`AddNOC`
+operational transition succeeded. A separate 100-iteration Android campaign is
+the recommended next run, but it was not started as part of this smoke test.
 
 ## September 21, 2026 local 100-iteration campaign
 
