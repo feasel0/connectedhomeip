@@ -123,8 +123,8 @@ configuration but is not an option exposed by the installed Matter Python test
 parser.
 
 Do not increase the dedicated smoke configuration beyond one iteration. Create
-or select a separate campaign configuration only after the smoke result has
-been reviewed.
+or select a separate campaign configuration only after the smoke result has been
+reviewed.
 
 ## Required Thread infrastructure
 
@@ -275,21 +275,20 @@ September 21, 2026:
   SRP server `fd97:3da1:0029:8106:f251:c7ca:ee09:d27a` before operational
   advertising was enabled.
 - The controller emitted the `CHIP_CONFIG_SECURITY_TEST_MODE=1` runtime warning
-  when PASE became active at `14:31:43.549` and again when CASE became active
-  at `14:31:52.307`.
+  when PASE became active at `14:31:43.549` and again when CASE became active at
+  `14:31:52.307`.
 
 The post-`AddNOC` transition completed in this order:
 
 1. `AddNOC` returned `NOCResponse(kOK)` at `14:31:50.211`, after which the
    controller closed BLE/PASE.
 2. The `WindowStatus` read triggered the first DUT operational lookup at
-   `14:31:50.388`. Operational DNS-SD produced the selected address after 969
-   ms and completed at `14:31:51.361`.
-3. CASE Sigma1, Sigma2, and Sigma3 occurred at `14:31:51.370`,
-   `14:31:51.724`, and `14:31:51.746`; the CASE session became active at
-   `14:31:52.307`.
-4. The first operational request, `WindowStatus`, returned
-   `kWindowNotOpen` at `14:31:52.472`.
+   `14:31:50.388`. Operational DNS-SD produced the selected address after 969 ms
+   and completed at `14:31:51.361`.
+3. CASE Sigma1, Sigma2, and Sigma3 occurred at `14:31:51.370`, `14:31:51.724`,
+   and `14:31:51.746`; the CASE session became active at `14:31:52.307`.
+4. The first operational request, `WindowStatus`, returned `kWindowNotOpen` at
+   `14:31:52.472`.
 5. `SerialNumber` and the wildcard/global read completed before
    `CommissioningComplete`. Each operation found and reused the existing CASE
    session rather than performing another DNS-SD lookup or CASE handshake.
@@ -299,23 +298,23 @@ The post-`AddNOC` transition completed in this order:
    and fabric cleanup continued. `RemoveFabric` succeeded, and iteration 1 was
    marked `PASS` at `14:33:03.733`.
 
-There was no DUT operational-advertising failure and no fatal, panic,
-assertion, hard-fault, or watchdog marker. Two non-terminal timeout signatures
-must not be classified as issue #37075 reproductions:
+There was no DUT operational-advertising failure and no fatal, panic, assertion,
+hard-fault, or watchdog marker. Two non-terminal timeout signatures must not be
+classified as issue #37075 reproductions:
 
 - A 45-second startup lookup for the framework default node ID `0x12344321`
   expired at `14:31:51.055`. The generated DUT lookup was already progressing
   independently and resolved successfully at `14:31:51.361`.
 - The optional `AnnounceOTAProvider` command timed out in
-  `CommandSender.cpp:378` at `14:32:54.089`. The current matter-qa helper catches
-  this condition as an unimplemented operation, after which the remaining
-  operations and cleanup passed.
+  `CommandSender.cpp:378` at `14:32:54.089`. The current matter-qa helper
+  catches this condition as an unimplemented operation, after which the
+  remaining operations and cleanup passed.
 
-Unlike Darwin, which sends `CommissioningComplete` as its first operational
-CASE command, Android proves operational DNS-SD, CASE, and three operational
-reads before `CommissioningComplete`. This successful transition supports a
-separate 100-iteration Android campaign as the next run, but that campaign has
-not been started.
+Unlike Darwin, which sends `CommissioningComplete` as its first operational CASE
+command, Android proves operational DNS-SD, CASE, and three operational reads
+before `CommissioningComplete`. This successful transition supports a separate
+100-iteration Android campaign as the next run, but that campaign has not been
+started.
 
 ## Verified 100-iteration campaign
 
