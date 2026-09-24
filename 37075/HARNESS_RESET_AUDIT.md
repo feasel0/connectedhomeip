@@ -270,3 +270,230 @@ console is preserved separately under
 `37075/logs/stress-darwin-pair-500-prelaunch-invalid-dataset-20260921T1506`;
 the corrected launch asserts both the active-dataset equality and the expected
 107-byte length before invoking Python.
+
+## Production OTBR and dataset path investigation
+
+The public source proves two distinct production paths. They must not be
+conflated when attributing a particular failure.
+
+### Direct matter-qa Jenkins path
+
+The Nordic Jenkins library reads
+`testConfigs.network_config.thread_dataset` and passes that value unchanged as
+`--thread-dataset-hex`. It warns rather than failing when the value is absent.
+It does not start OTBR, call `dataset init new`, read the live active dataset,
+or verify that the configured value matches the running border router.
+
+The retained October controller logs use Jenkins workspace paths and show one
+constant command-line dataset throughout the inner stress loop. This proves
+that OTBR dataset generation did not occur once per `TC_Darwin_Pair` iteration.
+It does not prove where the Jenkins configuration value was originally
+generated or whether the border router was independently restarted while the
+controller retained state.
+
+### Test Harness adapter path
+
+The current matter-qa Test Harness adapter delegates pairing argument creation
+to certification-tool-backend's `generate_command_arguments()`. For
+`ThreadExternalConfig`, it forwards `operational_dataset_hex`. For
+`ThreadAutoConfig`, it uses an explicitly configured
+`operational_dataset_hex` if present; otherwise it starts a
+`ThreadBorderRouter`, forms a network, reads `dataset active -x`, and passes the
+complete returned dataset to matter-qa.
+
+The normal certification-tool Python suite starts/forms OTBR once during suite
+setup and destroys it during suite cleanup. The matter-qa adapter can instead
+start it lazily while building test arguments. In both cases the inner
+100/500-iteration matter-qa loop receives one dataset; OTBR is not recreated by
+each inner iteration. A later suite or backend lifecycle can recreate it.
+
+### Current auto-configuration behavior
+
+Current certification-tool-backend source forms the network with:
+
+1. `dataset init new`;
+2. fixed channel;
+3. fixed PAN ID;
+4. fixed Extended PAN ID;
+5. fixed Network Key;
+6. fixed Network Name; and
+7. `dataset commit active`.
+
+Its `ThreadDataset` schema exposes only those five overridden fields. It does
+not expose or restore Mesh-Local Prefix, PSKc, Security Policy, or timestamps.
+Consequently, repeated creation from the same visible configuration does not
+guarantee a byte-identical complete Active Operational Dataset. The manual
+`otbr_start.sh` path has the same `dataset init new` plus partial-override
+pattern and uses a well-known Network Key.
+
+The controller is nevertheless internally consistent with the newly formed
+OTBR during one suite because the backend reads the final complete
+`dataset active -x` and supplies those exact bytes. The risk appears across
+OTBR/suite recreation, controller-state reuse, or RF-visible neighboring
+fixtures sharing credentials—not from a dataset mismatch created inside one
+matter-qa iteration.
+
+### Prior exact reproduction and reverted fix
+
+Certification-tool-backend commit
+[`25fd46c6179d87a5d0e2a28787645c02d395e663`](https://github.com/project-chip/certification-tool-backend/commit/25fd46c6179d87a5d0e2a28787645c02d395e663)
+records an independent exact reproduction:
+
+- a first Test Harness Python test passed;
+- suite teardown/restart recreated OTBR;
+- previous commissioning information was reused; and
+- the next run failed with CASE timeout,
+  `AddressResolve_DefaultImpl.cpp:124`, and CHIP timeout `0x32`.
+
+That commit attributed the failure to `dataset init new` randomizing the
+Mesh-Local Prefix while only the five visible fields were pinned. It attempted
+to derive a stable prefix from Extended PAN ID in both the managed and manual
+OTBR paths. Commit
+[`aa173d3a7d532a48e793feb726690c863d9759f3`](https://github.com/project-chip/certification-tool-backend/commit/aa173d3a7d532a48e793feb726690c863d9759f3)
+reverted the change 27 minutes later.
+
+The public revert message only says that it reverts the prior commit. PR
+[#348](https://github.com/project-chip/certification-tool-backend/pull/348), its
+reviews, inline comments, commit comments, and related certification-tool issue
+[#1071](https://github.com/project-chip/certification-tool/issues/1071) contain
+no rationale for removing the Mesh-Local Prefix change. The review discussion
+concerns container cleanup, graceful shutdown, diagnostics, and tests. It would
+be speculation to claim the prefix approach was rejected as invalid; it may
+simply have been removed from an OTBR startup/reliability PR with a narrower
+scope.
+
+### Answers supported by public evidence
+
+| Question | Publicly supported answer |
+| --- | --- |
+| How is OTBR started? | Jenkins/direct path: not shown in matter-qa. Test Harness auto-config path: certification-tool-backend creates an OTBR Docker container around the configured RCP. |
+| What creates the dataset? | Jenkins/direct path: unknown producer; Jenkins only reads configuration. Test Harness auto-config path: `ThreadBorderRouter.form_thread_topology()`. |
+| When does generation execute? | Once when the OTBR network is formed at suite/backend lifecycle, potentially lazily during argument construction; not once per inner matter-qa iteration. |
+| Is `dataset init new` involved? | Yes for current certification-tool auto-config and manual `otbr_start.sh`; not proven for the retained Jenkins dataset. |
+| Which generated fields are overwritten? | Channel, PAN ID, Extended PAN ID, Network Key, and Network Name. |
+| Is the complete active dataset persisted? | It is read and passed to the current test, but public code does not persist and restore it as the canonical identity for a later OTBR recreation. |
+| Where does `--thread-dataset-hex` come from? | Jenkins: `network_config.thread_dataset`. Test Harness: external/configured complete dataset, or live `ThreadBorderRouter.active_dataset`. |
+| Can OTBR restart independently of controller state? | Yes across suite/backend/container lifecycles; public code does not enforce coupled invalidation of reused commissioning/controller state. |
+| Do neighboring GRL fixtures share credentials? | Unknown from public evidence. The manual backend script's well-known key proves the tooling permits common credentials, not that all GRL fixtures use them. |
+| Can neighboring networks be credential-compatible but non-identical? | Yes. Shared Network Key and Extended PAN ID with differing complete datasets can create that condition; the retained October logs already show attachment to multiple unintended partitions. |
+
+### Remaining GRL evidence needed
+
+The historical/current GRL production-path gap can be closed without another
+stress campaign. Preserve these artifacts from one affected fixture and its
+RF-visible neighbors:
+
+1. the Test Harness project/environment config, including whether it selects
+  `ThreadAutoConfig`, `ThreadExternalConfig`, or sets
+  `operational_dataset_hex`;
+2. the Jenkins job config and the source of
+  `network_config.thread_dataset`;
+3. exact certification-tool-backend, matter-qa, and Jenkins-library revisions;
+4. OTBR startup logs containing every `ot-ctl dataset ...` command;
+5. `dataset active -x`, `extpanid`, `networkkey`, `meshlocalprefix`,
+  `partitionid`, leader data, SRP state, and OMR prefixes before and after each
+  OTBR restart;
+6. the exact `--thread-dataset-hex` recorded by the controller; and
+7. credential-safe fingerprints of the same fields from neighboring fixtures.
+
+Compare complete dataset bytes, not only Network Name, PAN ID, or partition
+ID. Network keys should be compared as restricted evidence or keyed hashes and
+must not be published in general logs.
+
+## Independent matter-qa stale-session defect
+
+The Thread topology failure and matter-qa cleanup failure are independent and
+explain different retained failures.
+
+Current `TC_Darwin_Pair` records cleanup responsibility only after each
+`CommissioningComplete` succeeds. For both fabrics, `AddNOC` can therefore
+succeed and install a fabric before the corresponding controller/node pair is
+added to `list_of_commissioned_controller`. If the following
+`CommissioningComplete` or another intervening operation fails, the failure
+handler has an incomplete list of state to remove.
+
+Two additional cleanup properties compound this:
+
+- `cleanup_and_unpair_sessions()` exits its controller loop on the first
+  exception, so later fabrics are not attempted and their BLE closure is not
+  reached; and
+- `ChipPythonControllerNode.unpair_device()` calls `ExpireSessions()` only
+  after `UnpairDevice()` returns successfully, so an unpair timeout skips local
+  session expiration.
+
+Subscriptions are local variables and are shut down only on the normal path.
+An exception after a subscription is created but before the normal cleanup call
+can therefore leave it active. `CaseSession` does preserve the original test
+exception when its failure handler also fails, but the handler itself is not
+exhaustive or failure-safe.
+
+The retained February packet evidence demonstrates the consequence rather than
+merely a theoretical risk: TH2 reused the fixed second-fabric peer identity and
+an old CASE session, then sent encrypted traffic to the previous DUT
+incarnation's IPv6 address. This is a confirmed matter-qa state-lifecycle
+defect. Randomizing TH2's node ID would hide it rather than fix it.
+
+The narrow cleanup correction should:
+
+1. register each controller/node pair immediately after its `AddNOC` succeeds;
+2. attempt every registered controller even if an earlier unpair fails;
+3. expire the node's controller sessions in `finally` around unpair;
+4. close BLE and shut down every created subscription in failure-safe cleanup;
+5. clear bookkeeping only after taking a snapshot of all resources to attempt;
+  and
+6. retain the original commissioning/test exception when cleanup also fails,
+  while logging or aggregating cleanup failures.
+
+Unit regressions should inject an unpair timeout and prove that session
+expiration, later-controller cleanup, BLE closure, and subscription shutdown
+are still attempted. A second regression should fail immediately after a
+successful `AddNOC` and prove that the newly installed fabric is already
+registered for cleanup.
+
+## Causal and PR separation
+
+The October evidence proves that the controller supplied one constant dataset,
+the DUT later adopted several substantially different parent-supplied active
+datasets, passing iterations always reached one usable environment, and failed
+iterations reached environments without the required SRP/OMR path. Without the
+historical intended OTBR's `dataset active -x`, it does **not** prove that the
+controller bytes differed from that OTBR's active dataset at campaign start.
+The supported statement is narrower:
+
+> The stress setup allowed the DUT to attach to other credential-compatible
+> Thread infrastructure instead of reliably constraining it to the intended
+> OTBR.
+
+Current evidence supports three separate change sets:
+
+1. **matter-qa cleanup:** failure-safe fabric, session, subscription, and BLE
+  cleanup. This is the first and narrowest PR.
+2. **matter-qa validation/diagnostics:** when the intended OTBR is accessible,
+  compare the controller-supplied complete dataset with its live active
+  dataset before commissioning; after attachment, record and classify DUT and
+  OTBR identity, partition, role, SRP, and OMR state. A preflight mismatch is
+  infrastructure/configuration failure, not a Matter timeout.
+3. **certification-tool-backend dataset authority:** replace repeated
+  `dataset init new` plus partial overrides with canonical complete-dataset
+  persistence/restoration and unique per-fixture credentials.
+
+The backend defect is proven in current public source and by its prior exact
+restart/reused-commissioning reproduction. It is not yet proven to be the
+producer of the retained October Jenkins dataset. That remaining provenance
+gap affects historical attribution, not whether the current backend behavior
+needs a regression and correction.
+
+### Root-fix direction
+
+The preferred certification-tool-backend fix is to make one complete Active
+Operational Dataset the canonical run/testbed state: generate it once, read the
+exact `dataset active -x`, persist it, pass those exact bytes to controllers,
+and restore those exact bytes after OTBR recreation. Do not reconstruct the
+same logical testbed with `dataset init new` plus a subset of overrides.
+
+Each RF-visible fixture should also have unique Thread credentials. Add a
+regression that forms the network, records the complete active dataset,
+restarts OTBR, verifies byte identity, reuses commissioning, and proves
+operational discovery plus CASE. Pinning only Mesh-Local Prefix is a useful
+narrow regression target, but complete-dataset persistence avoids future gaps
+when other generated TLVs matter.

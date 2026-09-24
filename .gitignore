@@ -113,8 +113,14 @@ admin_storage.json
 /37075/ble_thread_iter_7_fail/
 /37075/logs/
 
+# Per-iteration stress results are generated in bulk; preserve only the
+# campaign summaries and selected diagnostic evidence.
+/37075/failure-evidence/**/iteration.json
+
 # Matter controller runtime state contains generated test fabric private keys.
-/37075/admin-*.json
+/37075/**/admin-*.json
+/37075/**/admin-storage*.json
+/37075/**/admin_storage*.json
 
 # RCP firmware build trees and generated flash package.
 /37075/nrf52840dongle-rcp-build/

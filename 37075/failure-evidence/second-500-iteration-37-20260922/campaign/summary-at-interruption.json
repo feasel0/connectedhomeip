@@ -1,0 +1,3603 @@
+{
+    "run_set_id": "5fa7e690-da1f-4bed-a1c5-8b95bb643cde",
+    "test_summary_record": {
+        "test_suite_name": "StressTestSuite",
+        "test_case_name": "Darwin_Pair",
+        "test_case_id": "stress_1_6",
+        "test_case_class": "TC_Darwin_Pair",
+        "test_case_description": null,
+        "test_case_begined_at": "2026-09-22T02:10:13.701257",
+        "test_case_ended_at": null,
+        "test_case_status": "Test In Progress",
+        "test_case_result": "Test In Progress",
+        "total_number_of_iterations": 500,
+        "number_of_iterations_completed": 209,
+        "number_of_iterations_passed": 208,
+        "number_of_iterations_failed": 1,
+        "platform": "nordic",
+        "commissioning_method": "ble-thread",
+        "list_of_iterations_failed": [
+            37
+        ],
+        "analytics_parameters": [
+            "current_heap_used",
+            "reboot_count",
+            "iteration_duration",
+            "pairing_duration"
+        ],
+        "mean_of_analytics": null,
+        "min_of_analytics": null,
+        "max_of_analytics": null
+    },
+    "list_of_iteration_records": [
+        {
+            "iteration_number": 1,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:10:39.155821",
+                    "iteration_end_time": "2026-09-22T02:11:59.723596",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.567775,
+                    "pairing_duration": 55.199641
+                }
+            }
+        },
+        {
+            "iteration_number": 2,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:11:59.724965",
+                    "iteration_end_time": "2026-09-22T02:13:20.000258",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.275293,
+                    "pairing_duration": 55.892436
+                }
+            }
+        },
+        {
+            "iteration_number": 3,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:13:20.001859",
+                    "iteration_end_time": "2026-09-22T02:14:39.460517",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.458658,
+                    "pairing_duration": 55.066045
+                }
+            }
+        },
+        {
+            "iteration_number": 4,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:14:39.461921",
+                    "iteration_end_time": "2026-09-22T02:15:59.745185",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.283264,
+                    "pairing_duration": 55.962103
+                }
+            }
+        },
+        {
+            "iteration_number": 5,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:15:59.746917",
+                    "iteration_end_time": "2026-09-22T02:17:19.876171",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.129254,
+                    "pairing_duration": 55.759824
+                }
+            }
+        },
+        {
+            "iteration_number": 6,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:17:19.877976",
+                    "iteration_end_time": "2026-09-22T02:18:40.753233",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.875257,
+                    "pairing_duration": 56.444135
+                }
+            }
+        },
+        {
+            "iteration_number": 7,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:18:40.765378",
+                    "iteration_end_time": "2026-09-22T02:20:00.268721",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.503343,
+                    "pairing_duration": 55.075508
+                }
+            }
+        },
+        {
+            "iteration_number": 8,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:20:00.270380",
+                    "iteration_end_time": "2026-09-22T02:21:20.263235",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.992855,
+                    "pairing_duration": 55.629786
+                }
+            }
+        },
+        {
+            "iteration_number": 9,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:21:20.264755",
+                    "iteration_end_time": "2026-09-22T02:22:40.202128",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.937373,
+                    "pairing_duration": 55.534003
+                }
+            }
+        },
+        {
+            "iteration_number": 10,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:22:40.204301",
+                    "iteration_end_time": "2026-09-22T02:23:59.915692",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.711391,
+                    "pairing_duration": 55.331027
+                }
+            }
+        },
+        {
+            "iteration_number": 11,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:23:59.917464",
+                    "iteration_end_time": "2026-09-22T02:25:19.168445",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.250981,
+                    "pairing_duration": 55.004922
+                }
+            }
+        },
+        {
+            "iteration_number": 12,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:25:19.170716",
+                    "iteration_end_time": "2026-09-22T02:26:40.840185",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.669469,
+                    "pairing_duration": 57.282734
+                }
+            }
+        },
+        {
+            "iteration_number": 13,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:26:40.852621",
+                    "iteration_end_time": "2026-09-22T02:28:01.208728",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.356107,
+                    "pairing_duration": 55.942533
+                }
+            }
+        },
+        {
+            "iteration_number": 14,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:28:01.210854",
+                    "iteration_end_time": "2026-09-22T02:29:20.843072",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.632218,
+                    "pairing_duration": 55.260682
+                }
+            }
+        },
+        {
+            "iteration_number": 15,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:29:20.855981",
+                    "iteration_end_time": "2026-09-22T02:30:40.634406",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.778425,
+                    "pairing_duration": 55.384829
+                }
+            }
+        },
+        {
+            "iteration_number": 16,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:30:40.636244",
+                    "iteration_end_time": "2026-09-22T02:32:00.440403",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.804159,
+                    "pairing_duration": 55.418265
+                }
+            }
+        },
+        {
+            "iteration_number": 17,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:32:00.442999",
+                    "iteration_end_time": "2026-09-22T02:33:20.608155",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.165156,
+                    "pairing_duration": 55.766291
+                }
+            }
+        },
+        {
+            "iteration_number": 18,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:33:20.610523",
+                    "iteration_end_time": "2026-09-22T02:34:40.689716",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.079193,
+                    "pairing_duration": 55.689379
+                }
+            }
+        },
+        {
+            "iteration_number": 19,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:34:40.692949",
+                    "iteration_end_time": "2026-09-22T02:36:00.774120",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.081171,
+                    "pairing_duration": 55.676359
+                }
+            }
+        },
+        {
+            "iteration_number": 20,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:36:00.776657",
+                    "iteration_end_time": "2026-09-22T02:37:20.511608",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.734951,
+                    "pairing_duration": 55.360184
+                }
+            }
+        },
+        {
+            "iteration_number": 21,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:37:20.513409",
+                    "iteration_end_time": "2026-09-22T02:38:41.123707",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.610298,
+                    "pairing_duration": 56.217194
+                }
+            }
+        },
+        {
+            "iteration_number": 22,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:38:41.126323",
+                    "iteration_end_time": "2026-09-22T02:40:01.563578",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.437255,
+                    "pairing_duration": 56.050728
+                }
+            }
+        },
+        {
+            "iteration_number": 23,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:40:01.566647",
+                    "iteration_end_time": "2026-09-22T02:41:21.445026",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.878379,
+                    "pairing_duration": 55.485445
+                }
+            }
+        },
+        {
+            "iteration_number": 24,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:41:21.447592",
+                    "iteration_end_time": "2026-09-22T02:42:42.115711",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.668119,
+                    "pairing_duration": 56.281356
+                }
+            }
+        },
+        {
+            "iteration_number": 25,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:42:42.118762",
+                    "iteration_end_time": "2026-09-22T02:44:01.838329",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.719567,
+                    "pairing_duration": 55.393462
+                }
+            }
+        },
+        {
+            "iteration_number": 26,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:44:01.841381",
+                    "iteration_end_time": "2026-09-22T02:45:21.553324",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.711943,
+                    "pairing_duration": 55.319454
+                }
+            }
+        },
+        {
+            "iteration_number": 27,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:45:21.556200",
+                    "iteration_end_time": "2026-09-22T02:46:41.413930",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.85773,
+                    "pairing_duration": 55.466173
+                }
+            }
+        },
+        {
+            "iteration_number": 28,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:46:41.416890",
+                    "iteration_end_time": "2026-09-22T02:48:01.522070",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.10518,
+                    "pairing_duration": 55.718256
+                }
+            }
+        },
+        {
+            "iteration_number": 29,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:48:01.570185",
+                    "iteration_end_time": "2026-09-22T02:49:21.605340",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.035155,
+                    "pairing_duration": 55.656719
+                }
+            }
+        },
+        {
+            "iteration_number": 30,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:49:21.608900",
+                    "iteration_end_time": "2026-09-22T02:50:41.931026",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.322126,
+                    "pairing_duration": 56.024178
+                }
+            }
+        },
+        {
+            "iteration_number": 31,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:50:41.935174",
+                    "iteration_end_time": "2026-09-22T02:52:02.208855",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.273681,
+                    "pairing_duration": 55.951551
+                }
+            }
+        },
+        {
+            "iteration_number": 32,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:52:02.211919",
+                    "iteration_end_time": "2026-09-22T02:53:22.265608",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.053689,
+                    "pairing_duration": 55.665139
+                }
+            }
+        },
+        {
+            "iteration_number": 33,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:53:22.273706",
+                    "iteration_end_time": "2026-09-22T02:54:41.804842",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.531136,
+                    "pairing_duration": 55.122611
+                }
+            }
+        },
+        {
+            "iteration_number": 34,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:54:41.808570",
+                    "iteration_end_time": "2026-09-22T02:56:01.164590",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.35602,
+                    "pairing_duration": 55.029652
+                }
+            }
+        },
+        {
+            "iteration_number": 35,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:56:01.168288",
+                    "iteration_end_time": "2026-09-22T02:57:21.329172",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.160884,
+                    "pairing_duration": 55.754623
+                }
+            }
+        },
+        {
+            "iteration_number": 36,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:57:21.332937",
+                    "iteration_end_time": "2026-09-22T02:58:41.534045",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.201108,
+                    "pairing_duration": 55.809135
+                }
+            }
+        },
+        {
+            "iteration_number": 37,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T02:58:41.538012",
+                    "iteration_end_time": "2026-09-22T03:00:30.515046",
+                    "iteration_result": "FAIL",
+                    "exception": "{\"exception_msg\": \"src/app/CommandSender.cpp:378: CHIP Error 0x00000032: Timeout\", \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 549, in cleanup_and_unpair_sessions\\n    await self.unpair_dut(controller=controller_object, node_id=nodeId)\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/base_test_classes/matter_qa_base_test_class.py\\\", line 178, in unpair_dut\\n    return await controller_node.unpair_device(test_harness=self, **kwargs)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/base_test_classes/chip_python_controller_node.py\\\", line 175, in unpair_device\\n    await self._controller.UnpairDevice(node_id)\\n  File \\\"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/matter/ChipDeviceCtrl.py\\\", line 858, in UnpairDevice\\n    return await asyncio.futures.wrap_future(ctx.future)\\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\nmatter.exceptions.ChipStackError: src/app/CommandSender.cpp:378: CHIP Error 0x00000032: Timeout\\n\\nDuring handling of the above exception, another exception occurred:\\n\\nTraceback (most recent call last):\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/base_test_classes/matter_qa_base_test_class.py\\\", line 1094, in wrapper\\n    await func(*args, **kwargs)\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/scripts/operational_scripts/TC_Darwin_Pair.py\\\", line 235, in tc_darwin_pair_unpair\\n    await self.cleanup_and_unpair_sessions()\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 554, in cleanup_and_unpair_sessions\\n    raise IterationError(e)\\nmatter_qa.library.helper_libs.exceptions.IterationError: src/app/CommandSender.cpp:378: CHIP Error 0x00000032: Timeout\\n\"}"
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 108.977034,
+                    "pairing_duration": 56.128894
+                }
+            }
+        },
+        {
+            "iteration_number": 38,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:00:30.519586",
+                    "iteration_end_time": "2026-09-22T03:01:50.517473",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.997887,
+                    "pairing_duration": 55.664812
+                }
+            }
+        },
+        {
+            "iteration_number": 39,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:01:50.521181",
+                    "iteration_end_time": "2026-09-22T03:03:10.753174",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.231993,
+                    "pairing_duration": 55.90935
+                }
+            }
+        },
+        {
+            "iteration_number": 40,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:03:10.762069",
+                    "iteration_end_time": "2026-09-22T03:04:30.897681",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.135612,
+                    "pairing_duration": 55.733049
+                }
+            }
+        },
+        {
+            "iteration_number": 41,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:04:30.901557",
+                    "iteration_end_time": "2026-09-22T03:05:50.925914",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.024357,
+                    "pairing_duration": 55.643982
+                }
+            }
+        },
+        {
+            "iteration_number": 42,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:05:50.930501",
+                    "iteration_end_time": "2026-09-22T03:07:11.183370",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.252869,
+                    "pairing_duration": 55.883607
+                }
+            }
+        },
+        {
+            "iteration_number": 43,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:07:11.188044",
+                    "iteration_end_time": "2026-09-22T03:08:30.980597",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.792553,
+                    "pairing_duration": 55.423215
+                }
+            }
+        },
+        {
+            "iteration_number": 44,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:08:30.986062",
+                    "iteration_end_time": "2026-09-22T03:09:50.537753",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.551691,
+                    "pairing_duration": 55.231673
+                }
+            }
+        },
+        {
+            "iteration_number": 45,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:09:50.543067",
+                    "iteration_end_time": "2026-09-22T03:11:10.497862",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.954795,
+                    "pairing_duration": 55.636224
+                }
+            }
+        },
+        {
+            "iteration_number": 46,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:11:10.502628",
+                    "iteration_end_time": "2026-09-22T03:12:30.524926",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.022298,
+                    "pairing_duration": 55.629354
+                }
+            }
+        },
+        {
+            "iteration_number": 47,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:12:30.533655",
+                    "iteration_end_time": "2026-09-22T03:13:49.902950",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.369295,
+                    "pairing_duration": 54.986147
+                }
+            }
+        },
+        {
+            "iteration_number": 48,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:13:49.907896",
+                    "iteration_end_time": "2026-09-22T03:15:09.888003",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.980107,
+                    "pairing_duration": 55.57615
+                }
+            }
+        },
+        {
+            "iteration_number": 49,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:15:09.892990",
+                    "iteration_end_time": "2026-09-22T03:16:29.746371",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.853381,
+                    "pairing_duration": 55.455039
+                }
+            }
+        },
+        {
+            "iteration_number": 50,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:16:29.751102",
+                    "iteration_end_time": "2026-09-22T03:17:49.616794",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.865692,
+                    "pairing_duration": 55.579128
+                }
+            }
+        },
+        {
+            "iteration_number": 51,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:17:49.621957",
+                    "iteration_end_time": "2026-09-22T03:19:09.940048",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.318091,
+                    "pairing_duration": 55.916957
+                }
+            }
+        },
+        {
+            "iteration_number": 52,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:19:09.944145",
+                    "iteration_end_time": "2026-09-22T03:20:30.263991",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.319846,
+                    "pairing_duration": 55.894421
+                }
+            }
+        },
+        {
+            "iteration_number": 53,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:20:30.268789",
+                    "iteration_end_time": "2026-09-22T03:21:50.477523",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.208734,
+                    "pairing_duration": 55.809679
+                }
+            }
+        },
+        {
+            "iteration_number": 54,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:21:50.531325",
+                    "iteration_end_time": "2026-09-22T03:23:10.411268",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.879943,
+                    "pairing_duration": 55.501189
+                }
+            }
+        },
+        {
+            "iteration_number": 55,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:23:10.415341",
+                    "iteration_end_time": "2026-09-22T03:24:30.517398",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.102057,
+                    "pairing_duration": 55.775095
+                }
+            }
+        },
+        {
+            "iteration_number": 56,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:24:30.521975",
+                    "iteration_end_time": "2026-09-22T03:25:50.678918",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.156943,
+                    "pairing_duration": 55.765096
+                }
+            }
+        },
+        {
+            "iteration_number": 57,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:25:50.683784",
+                    "iteration_end_time": "2026-09-22T03:27:11.003117",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.319333,
+                    "pairing_duration": 55.929854
+                }
+            }
+        },
+        {
+            "iteration_number": 58,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:27:11.008139",
+                    "iteration_end_time": "2026-09-22T03:28:30.785285",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.777146,
+                    "pairing_duration": 55.366029
+                }
+            }
+        },
+        {
+            "iteration_number": 59,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:28:30.790467",
+                    "iteration_end_time": "2026-09-22T03:29:51.032230",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.241763,
+                    "pairing_duration": 55.866595
+                }
+            }
+        },
+        {
+            "iteration_number": 60,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:29:51.036733",
+                    "iteration_end_time": "2026-09-22T03:31:12.508624",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.471891,
+                    "pairing_duration": 57.159949
+                }
+            }
+        },
+        {
+            "iteration_number": 61,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:31:12.518841",
+                    "iteration_end_time": "2026-09-22T03:32:32.631611",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.11277,
+                    "pairing_duration": 55.791825
+                }
+            }
+        },
+        {
+            "iteration_number": 62,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:32:32.646273",
+                    "iteration_end_time": "2026-09-22T03:33:52.715584",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.069311,
+                    "pairing_duration": 55.673843
+                }
+            }
+        },
+        {
+            "iteration_number": 63,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:33:52.721241",
+                    "iteration_end_time": "2026-09-22T03:35:12.669363",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.948122,
+                    "pairing_duration": 55.620383
+                }
+            }
+        },
+        {
+            "iteration_number": 64,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:35:12.676126",
+                    "iteration_end_time": "2026-09-22T03:36:32.580633",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.904507,
+                    "pairing_duration": 55.512278
+                }
+            }
+        },
+        {
+            "iteration_number": 65,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:36:32.586182",
+                    "iteration_end_time": "2026-09-22T03:37:52.848969",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.262787,
+                    "pairing_duration": 55.875469
+                }
+            }
+        },
+        {
+            "iteration_number": 66,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:37:52.854244",
+                    "iteration_end_time": "2026-09-22T03:39:14.014630",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.160386,
+                    "pairing_duration": 56.787985
+                }
+            }
+        },
+        {
+            "iteration_number": 67,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:39:14.020601",
+                    "iteration_end_time": "2026-09-22T03:40:35.210138",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.189537,
+                    "pairing_duration": 56.805823
+                }
+            }
+        },
+        {
+            "iteration_number": 68,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:40:35.219844",
+                    "iteration_end_time": "2026-09-22T03:41:55.220002",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.000158,
+                    "pairing_duration": 55.614029
+                }
+            }
+        },
+        {
+            "iteration_number": 69,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:41:55.225492",
+                    "iteration_end_time": "2026-09-22T03:43:15.160011",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.934519,
+                    "pairing_duration": 55.531613
+                }
+            }
+        },
+        {
+            "iteration_number": 70,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:43:15.167400",
+                    "iteration_end_time": "2026-09-22T03:44:35.383556",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.216156,
+                    "pairing_duration": 55.816338
+                }
+            }
+        },
+        {
+            "iteration_number": 71,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:44:35.388939",
+                    "iteration_end_time": "2026-09-22T03:45:55.169260",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.780321,
+                    "pairing_duration": 55.373296
+                }
+            }
+        },
+        {
+            "iteration_number": 72,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:45:55.174508",
+                    "iteration_end_time": "2026-09-22T03:47:14.813496",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.638988,
+                    "pairing_duration": 55.261565
+                }
+            }
+        },
+        {
+            "iteration_number": 73,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:47:14.818745",
+                    "iteration_end_time": "2026-09-22T03:48:34.898081",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.079336,
+                    "pairing_duration": 55.686901
+                }
+            }
+        },
+        {
+            "iteration_number": 74,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:48:34.904572",
+                    "iteration_end_time": "2026-09-22T03:49:54.399066",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.494494,
+                    "pairing_duration": 55.177715
+                }
+            }
+        },
+        {
+            "iteration_number": 75,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:49:54.409783",
+                    "iteration_end_time": "2026-09-22T03:51:14.798919",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.389136,
+                    "pairing_duration": 56.076122
+                }
+            }
+        },
+        {
+            "iteration_number": 76,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:51:14.804330",
+                    "iteration_end_time": "2026-09-22T03:52:34.226948",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.422618,
+                    "pairing_duration": 55.016537
+                }
+            }
+        },
+        {
+            "iteration_number": 77,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:52:34.241446",
+                    "iteration_end_time": "2026-09-22T03:53:53.995014",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.753568,
+                    "pairing_duration": 55.330304
+                }
+            }
+        },
+        {
+            "iteration_number": 78,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:53:54.000489",
+                    "iteration_end_time": "2026-09-22T03:55:13.878481",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.877992,
+                    "pairing_duration": 55.585149
+                }
+            }
+        },
+        {
+            "iteration_number": 79,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:55:13.884614",
+                    "iteration_end_time": "2026-09-22T03:56:34.215087",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.330473,
+                    "pairing_duration": 55.930434
+                }
+            }
+        },
+        {
+            "iteration_number": 80,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:56:34.221179",
+                    "iteration_end_time": "2026-09-22T03:57:53.917030",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.695851,
+                    "pairing_duration": 55.387111
+                }
+            }
+        },
+        {
+            "iteration_number": 81,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:57:53.923234",
+                    "iteration_end_time": "2026-09-22T03:59:13.640563",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.717329,
+                    "pairing_duration": 55.499216
+                }
+            }
+        },
+        {
+            "iteration_number": 82,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T03:59:13.654656",
+                    "iteration_end_time": "2026-09-22T04:00:35.738731",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 82.084075,
+                    "pairing_duration": 57.71971
+                }
+            }
+        },
+        {
+            "iteration_number": 83,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:00:35.744059",
+                    "iteration_end_time": "2026-09-22T04:01:56.155892",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.411833,
+                    "pairing_duration": 56.013266
+                }
+            }
+        },
+        {
+            "iteration_number": 84,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:01:56.163165",
+                    "iteration_end_time": "2026-09-22T04:03:16.637109",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.473944,
+                    "pairing_duration": 56.070097
+                }
+            }
+        },
+        {
+            "iteration_number": 85,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:03:16.652137",
+                    "iteration_end_time": "2026-09-22T04:04:36.181823",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.529686,
+                    "pairing_duration": 55.218137
+                }
+            }
+        },
+        {
+            "iteration_number": 86,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:04:36.187829",
+                    "iteration_end_time": "2026-09-22T04:05:57.005089",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.81726,
+                    "pairing_duration": 56.437915
+                }
+            }
+        },
+        {
+            "iteration_number": 87,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:05:57.010818",
+                    "iteration_end_time": "2026-09-22T04:07:16.988694",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.977876,
+                    "pairing_duration": 55.658683
+                }
+            }
+        },
+        {
+            "iteration_number": 88,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:07:17.004877",
+                    "iteration_end_time": "2026-09-22T04:08:37.362112",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.357235,
+                    "pairing_duration": 55.93771
+                }
+            }
+        },
+        {
+            "iteration_number": 89,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:08:37.373347",
+                    "iteration_end_time": "2026-09-22T04:09:57.464646",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.091299,
+                    "pairing_duration": 55.785703
+                }
+            }
+        },
+        {
+            "iteration_number": 90,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:09:57.476195",
+                    "iteration_end_time": "2026-09-22T04:11:17.849336",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.373141,
+                    "pairing_duration": 55.987567
+                }
+            }
+        },
+        {
+            "iteration_number": 91,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:11:17.856494",
+                    "iteration_end_time": "2026-09-22T04:12:36.579157",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 78.722663,
+                    "pairing_duration": 54.335119
+                }
+            }
+        },
+        {
+            "iteration_number": 92,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:12:36.586570",
+                    "iteration_end_time": "2026-09-22T04:13:56.999297",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.412727,
+                    "pairing_duration": 56.016942
+                }
+            }
+        },
+        {
+            "iteration_number": 93,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:13:57.006074",
+                    "iteration_end_time": "2026-09-22T04:15:16.483668",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.477594,
+                    "pairing_duration": 55.150299
+                }
+            }
+        },
+        {
+            "iteration_number": 94,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:15:16.496560",
+                    "iteration_end_time": "2026-09-22T04:16:36.908748",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.412188,
+                    "pairing_duration": 56.04524
+                }
+            }
+        },
+        {
+            "iteration_number": 95,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:16:36.916024",
+                    "iteration_end_time": "2026-09-22T04:17:56.634501",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.718477,
+                    "pairing_duration": 55.328763
+                }
+            }
+        },
+        {
+            "iteration_number": 96,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:17:56.641417",
+                    "iteration_end_time": "2026-09-22T04:19:17.663202",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.021785,
+                    "pairing_duration": 56.704032
+                }
+            }
+        },
+        {
+            "iteration_number": 97,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:19:17.669957",
+                    "iteration_end_time": "2026-09-22T04:20:37.008678",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.338721,
+                    "pairing_duration": 54.999405
+                }
+            }
+        },
+        {
+            "iteration_number": 98,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:20:37.014869",
+                    "iteration_end_time": "2026-09-22T04:21:57.265847",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.250978,
+                    "pairing_duration": 55.9249
+                }
+            }
+        },
+        {
+            "iteration_number": 99,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:21:57.290946",
+                    "iteration_end_time": "2026-09-22T04:23:16.635590",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.344644,
+                    "pairing_duration": 54.955562
+                }
+            }
+        },
+        {
+            "iteration_number": 100,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:23:16.642465",
+                    "iteration_end_time": "2026-09-22T04:24:36.579112",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.936647,
+                    "pairing_duration": 55.590807
+                }
+            }
+        },
+        {
+            "iteration_number": 101,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:24:36.585912",
+                    "iteration_end_time": "2026-09-22T04:25:57.055220",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.469308,
+                    "pairing_duration": 56.118474
+                }
+            }
+        },
+        {
+            "iteration_number": 102,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:25:57.063674",
+                    "iteration_end_time": "2026-09-22T04:27:17.317741",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.254067,
+                    "pairing_duration": 55.86323
+                }
+            }
+        },
+        {
+            "iteration_number": 103,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:27:17.325178",
+                    "iteration_end_time": "2026-09-22T04:28:36.967592",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.642414,
+                    "pairing_duration": 55.324557
+                }
+            }
+        },
+        {
+            "iteration_number": 104,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:28:36.981704",
+                    "iteration_end_time": "2026-09-22T04:29:56.522999",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.541295,
+                    "pairing_duration": 55.138202
+                }
+            }
+        },
+        {
+            "iteration_number": 105,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:29:56.530181",
+                    "iteration_end_time": "2026-09-22T04:31:16.267962",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.737781,
+                    "pairing_duration": 55.351513
+                }
+            }
+        },
+        {
+            "iteration_number": 106,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:31:16.275276",
+                    "iteration_end_time": "2026-09-22T04:32:36.519290",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.244014,
+                    "pairing_duration": 55.862552
+                }
+            }
+        },
+        {
+            "iteration_number": 107,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:32:36.527742",
+                    "iteration_end_time": "2026-09-22T04:33:56.306622",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.77888,
+                    "pairing_duration": 55.404925
+                }
+            }
+        },
+        {
+            "iteration_number": 108,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:33:56.316143",
+                    "iteration_end_time": "2026-09-22T04:35:16.839674",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.523531,
+                    "pairing_duration": 56.130209
+                }
+            }
+        },
+        {
+            "iteration_number": 109,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:35:16.852515",
+                    "iteration_end_time": "2026-09-22T04:36:37.122385",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.26987,
+                    "pairing_duration": 55.871257
+                }
+            }
+        },
+        {
+            "iteration_number": 110,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:36:37.144445",
+                    "iteration_end_time": "2026-09-22T04:37:56.974839",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.830394,
+                    "pairing_duration": 55.426973
+                }
+            }
+        },
+        {
+            "iteration_number": 111,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:37:56.982543",
+                    "iteration_end_time": "2026-09-22T04:39:17.494800",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.512257,
+                    "pairing_duration": 56.25808
+                }
+            }
+        },
+        {
+            "iteration_number": 112,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:39:17.502371",
+                    "iteration_end_time": "2026-09-22T04:40:37.808897",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.306526,
+                    "pairing_duration": 55.915902
+                }
+            }
+        },
+        {
+            "iteration_number": 113,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:40:37.816863",
+                    "iteration_end_time": "2026-09-22T04:41:57.185290",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.368427,
+                    "pairing_duration": 54.98565
+                }
+            }
+        },
+        {
+            "iteration_number": 114,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:41:57.197893",
+                    "iteration_end_time": "2026-09-22T04:43:17.850537",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.652644,
+                    "pairing_duration": 56.255742
+                }
+            }
+        },
+        {
+            "iteration_number": 115,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:43:17.858175",
+                    "iteration_end_time": "2026-09-22T04:44:39.088572",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.230397,
+                    "pairing_duration": 56.979939
+                }
+            }
+        },
+        {
+            "iteration_number": 116,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:44:39.098129",
+                    "iteration_end_time": "2026-09-22T04:45:59.377779",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.27965,
+                    "pairing_duration": 55.877612
+                }
+            }
+        },
+        {
+            "iteration_number": 117,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:45:59.386053",
+                    "iteration_end_time": "2026-09-22T04:47:20.145774",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.759721,
+                    "pairing_duration": 56.369001
+                }
+            }
+        },
+        {
+            "iteration_number": 118,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:47:20.154122",
+                    "iteration_end_time": "2026-09-22T04:48:41.042601",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.888479,
+                    "pairing_duration": 56.571031
+                }
+            }
+        },
+        {
+            "iteration_number": 119,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:48:41.056932",
+                    "iteration_end_time": "2026-09-22T04:50:01.703155",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.646223,
+                    "pairing_duration": 56.352094
+                }
+            }
+        },
+        {
+            "iteration_number": 120,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:50:01.713642",
+                    "iteration_end_time": "2026-09-22T04:51:21.707109",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.993467,
+                    "pairing_duration": 55.66003
+                }
+            }
+        },
+        {
+            "iteration_number": 121,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:51:21.717698",
+                    "iteration_end_time": "2026-09-22T04:52:41.601903",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.884205,
+                    "pairing_duration": 55.480811
+                }
+            }
+        },
+        {
+            "iteration_number": 122,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:52:41.609695",
+                    "iteration_end_time": "2026-09-22T04:54:01.694986",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.085291,
+                    "pairing_duration": 55.698777
+                }
+            }
+        },
+        {
+            "iteration_number": 123,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:54:01.703093",
+                    "iteration_end_time": "2026-09-22T04:55:22.742920",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.039827,
+                    "pairing_duration": 56.697301
+                }
+            }
+        },
+        {
+            "iteration_number": 124,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:55:22.754420",
+                    "iteration_end_time": "2026-09-22T04:56:42.711275",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.956855,
+                    "pairing_duration": 55.61869
+                }
+            }
+        },
+        {
+            "iteration_number": 125,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:56:42.720004",
+                    "iteration_end_time": "2026-09-22T04:58:03.205324",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.48532,
+                    "pairing_duration": 56.094995
+                }
+            }
+        },
+        {
+            "iteration_number": 126,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:58:03.215159",
+                    "iteration_end_time": "2026-09-22T04:59:23.345726",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.130567,
+                    "pairing_duration": 55.792165
+                }
+            }
+        },
+        {
+            "iteration_number": 127,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T04:59:23.357197",
+                    "iteration_end_time": "2026-09-22T05:00:44.454335",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.097138,
+                    "pairing_duration": 56.778549
+                }
+            }
+        },
+        {
+            "iteration_number": 128,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:00:44.462719",
+                    "iteration_end_time": "2026-09-22T05:02:05.070752",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.608033,
+                    "pairing_duration": 56.169794
+                }
+            }
+        },
+        {
+            "iteration_number": 129,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:02:05.083165",
+                    "iteration_end_time": "2026-09-22T05:03:25.786593",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.703428,
+                    "pairing_duration": 56.381104
+                }
+            }
+        },
+        {
+            "iteration_number": 130,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:03:25.796322",
+                    "iteration_end_time": "2026-09-22T05:04:47.311175",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.514853,
+                    "pairing_duration": 57.110099
+                }
+            }
+        },
+        {
+            "iteration_number": 131,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:04:47.319576",
+                    "iteration_end_time": "2026-09-22T05:06:07.020762",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.701186,
+                    "pairing_duration": 55.318262
+                }
+            }
+        },
+        {
+            "iteration_number": 132,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:06:07.029228",
+                    "iteration_end_time": "2026-09-22T05:07:27.006112",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.976884,
+                    "pairing_duration": 55.61179
+                }
+            }
+        },
+        {
+            "iteration_number": 133,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:07:27.015291",
+                    "iteration_end_time": "2026-09-22T05:08:47.053507",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.038216,
+                    "pairing_duration": 55.711429
+                }
+            }
+        },
+        {
+            "iteration_number": 134,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:08:47.072118",
+                    "iteration_end_time": "2026-09-22T05:10:06.934371",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.862253,
+                    "pairing_duration": 55.475045
+                }
+            }
+        },
+        {
+            "iteration_number": 135,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:10:06.944013",
+                    "iteration_end_time": "2026-09-22T05:11:27.229038",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.285025,
+                    "pairing_duration": 55.901833
+                }
+            }
+        },
+        {
+            "iteration_number": 136,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:11:27.240619",
+                    "iteration_end_time": "2026-09-22T05:12:46.262646",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.022027,
+                    "pairing_duration": 54.697213
+                }
+            }
+        },
+        {
+            "iteration_number": 137,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:12:46.271831",
+                    "iteration_end_time": "2026-09-22T05:14:06.603765",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.331934,
+                    "pairing_duration": 55.936584
+                }
+            }
+        },
+        {
+            "iteration_number": 138,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:14:06.611990",
+                    "iteration_end_time": "2026-09-22T05:15:26.312299",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.700309,
+                    "pairing_duration": 55.394128
+                }
+            }
+        },
+        {
+            "iteration_number": 139,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:15:26.366753",
+                    "iteration_end_time": "2026-09-22T05:16:46.574301",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.207548,
+                    "pairing_duration": 55.826304
+                }
+            }
+        },
+        {
+            "iteration_number": 140,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:16:46.583687",
+                    "iteration_end_time": "2026-09-22T05:18:05.942638",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.358951,
+                    "pairing_duration": 55.118505
+                }
+            }
+        },
+        {
+            "iteration_number": 141,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:18:05.951790",
+                    "iteration_end_time": "2026-09-22T05:19:26.894677",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.942887,
+                    "pairing_duration": 56.629967
+                }
+            }
+        },
+        {
+            "iteration_number": 142,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:19:26.903755",
+                    "iteration_end_time": "2026-09-22T05:20:46.712127",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.808372,
+                    "pairing_duration": 55.410536
+                }
+            }
+        },
+        {
+            "iteration_number": 143,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:20:46.726289",
+                    "iteration_end_time": "2026-09-22T05:22:07.017829",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.29154,
+                    "pairing_duration": 55.907158
+                }
+            }
+        },
+        {
+            "iteration_number": 144,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:22:07.026748",
+                    "iteration_end_time": "2026-09-22T05:23:27.713325",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.686577,
+                    "pairing_duration": 56.360341
+                }
+            }
+        },
+        {
+            "iteration_number": 145,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:23:27.722518",
+                    "iteration_end_time": "2026-09-22T05:24:46.986889",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.264371,
+                    "pairing_duration": 54.862671
+                }
+            }
+        },
+        {
+            "iteration_number": 146,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:24:46.995960",
+                    "iteration_end_time": "2026-09-22T05:26:07.752636",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.756676,
+                    "pairing_duration": 56.499653
+                }
+            }
+        },
+        {
+            "iteration_number": 147,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:26:07.761716",
+                    "iteration_end_time": "2026-09-22T05:27:29.040262",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.278546,
+                    "pairing_duration": 56.906503
+                }
+            }
+        },
+        {
+            "iteration_number": 148,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:27:29.066792",
+                    "iteration_end_time": "2026-09-22T05:28:49.294170",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.227378,
+                    "pairing_duration": 55.816662
+                }
+            }
+        },
+        {
+            "iteration_number": 149,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:28:49.303791",
+                    "iteration_end_time": "2026-09-22T05:30:10.031830",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.728039,
+                    "pairing_duration": 56.327896
+                }
+            }
+        },
+        {
+            "iteration_number": 150,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:30:10.041468",
+                    "iteration_end_time": "2026-09-22T05:31:30.022641",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.981173,
+                    "pairing_duration": 55.582876
+                }
+            }
+        },
+        {
+            "iteration_number": 151,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:31:30.032413",
+                    "iteration_end_time": "2026-09-22T05:32:49.778671",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.746258,
+                    "pairing_duration": 55.370659
+                }
+            }
+        },
+        {
+            "iteration_number": 152,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:32:49.789270",
+                    "iteration_end_time": "2026-09-22T05:34:09.462470",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.6732,
+                    "pairing_duration": 55.282104
+                }
+            }
+        },
+        {
+            "iteration_number": 153,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:34:09.472320",
+                    "iteration_end_time": "2026-09-22T05:35:29.384144",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.911824,
+                    "pairing_duration": 55.475901
+                }
+            }
+        },
+        {
+            "iteration_number": 154,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:35:29.395725",
+                    "iteration_end_time": "2026-09-22T05:36:49.515016",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.119291,
+                    "pairing_duration": 55.796657
+                }
+            }
+        },
+        {
+            "iteration_number": 155,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:36:49.528818",
+                    "iteration_end_time": "2026-09-22T05:38:09.169775",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.640957,
+                    "pairing_duration": 55.263608
+                }
+            }
+        },
+        {
+            "iteration_number": 156,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:38:09.188570",
+                    "iteration_end_time": "2026-09-22T05:39:29.594998",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.406428,
+                    "pairing_duration": 55.993577
+                }
+            }
+        },
+        {
+            "iteration_number": 157,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:39:29.605365",
+                    "iteration_end_time": "2026-09-22T05:40:48.730166",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.124801,
+                    "pairing_duration": 54.81048
+                }
+            }
+        },
+        {
+            "iteration_number": 158,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:40:48.740087",
+                    "iteration_end_time": "2026-09-22T05:42:09.587202",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.847115,
+                    "pairing_duration": 56.449632
+                }
+            }
+        },
+        {
+            "iteration_number": 159,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:42:09.596946",
+                    "iteration_end_time": "2026-09-22T05:43:29.761177",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.164231,
+                    "pairing_duration": 55.76857
+                }
+            }
+        },
+        {
+            "iteration_number": 160,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:43:29.771112",
+                    "iteration_end_time": "2026-09-22T05:44:49.921652",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.15054,
+                    "pairing_duration": 55.833014
+                }
+            }
+        },
+        {
+            "iteration_number": 161,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:44:49.932383",
+                    "iteration_end_time": "2026-09-22T05:46:10.427588",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.495205,
+                    "pairing_duration": 56.090406
+                }
+            }
+        },
+        {
+            "iteration_number": 162,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:46:10.437870",
+                    "iteration_end_time": "2026-09-22T05:47:30.891452",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.453582,
+                    "pairing_duration": 56.075795
+                }
+            }
+        },
+        {
+            "iteration_number": 163,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:47:30.901413",
+                    "iteration_end_time": "2026-09-22T05:48:50.553488",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.652075,
+                    "pairing_duration": 55.265196
+                }
+            }
+        },
+        {
+            "iteration_number": 164,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:48:50.569030",
+                    "iteration_end_time": "2026-09-22T05:50:10.827814",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.258784,
+                    "pairing_duration": 55.880937
+                }
+            }
+        },
+        {
+            "iteration_number": 165,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:50:10.843276",
+                    "iteration_end_time": "2026-09-22T05:51:31.104456",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.26118,
+                    "pairing_duration": 55.867732
+                }
+            }
+        },
+        {
+            "iteration_number": 166,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:51:31.116419",
+                    "iteration_end_time": "2026-09-22T05:52:50.793434",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.677015,
+                    "pairing_duration": 55.298038
+                }
+            }
+        },
+        {
+            "iteration_number": 167,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:52:50.803710",
+                    "iteration_end_time": "2026-09-22T05:54:11.362622",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.558912,
+                    "pairing_duration": 56.177645
+                }
+            }
+        },
+        {
+            "iteration_number": 168,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:54:11.373170",
+                    "iteration_end_time": "2026-09-22T05:55:31.025686",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.652516,
+                    "pairing_duration": 55.333871
+                }
+            }
+        },
+        {
+            "iteration_number": 169,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:55:31.036962",
+                    "iteration_end_time": "2026-09-22T05:56:51.185851",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.148889,
+                    "pairing_duration": 55.818224
+                }
+            }
+        },
+        {
+            "iteration_number": 170,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:56:51.197051",
+                    "iteration_end_time": "2026-09-22T05:58:10.906927",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.709876,
+                    "pairing_duration": 55.338198
+                }
+            }
+        },
+        {
+            "iteration_number": 171,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:58:10.918081",
+                    "iteration_end_time": "2026-09-22T05:59:30.627298",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.709217,
+                    "pairing_duration": 55.390617
+                }
+            }
+        },
+        {
+            "iteration_number": 172,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T05:59:30.642680",
+                    "iteration_end_time": "2026-09-22T06:00:50.377661",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.734981,
+                    "pairing_duration": 55.352914
+                }
+            }
+        },
+        {
+            "iteration_number": 173,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:00:50.392915",
+                    "iteration_end_time": "2026-09-22T06:02:10.460292",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.067377,
+                    "pairing_duration": 55.843634
+                }
+            }
+        },
+        {
+            "iteration_number": 174,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:02:10.471687",
+                    "iteration_end_time": "2026-09-22T06:03:30.382668",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.910981,
+                    "pairing_duration": 55.536065
+                }
+            }
+        },
+        {
+            "iteration_number": 175,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:03:30.394592",
+                    "iteration_end_time": "2026-09-22T06:04:50.385741",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.991149,
+                    "pairing_duration": 55.589417
+                }
+            }
+        },
+        {
+            "iteration_number": 176,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:04:50.397133",
+                    "iteration_end_time": "2026-09-22T06:06:10.717117",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.319984,
+                    "pairing_duration": 55.937848
+                }
+            }
+        },
+        {
+            "iteration_number": 177,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:06:10.728559",
+                    "iteration_end_time": "2026-09-22T06:07:31.646627",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.918068,
+                    "pairing_duration": 56.594231
+                }
+            }
+        },
+        {
+            "iteration_number": 178,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:07:31.661715",
+                    "iteration_end_time": "2026-09-22T06:08:51.909311",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.247596,
+                    "pairing_duration": 55.862303
+                }
+            }
+        },
+        {
+            "iteration_number": 179,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:08:51.921564",
+                    "iteration_end_time": "2026-09-22T06:10:11.733021",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.811457,
+                    "pairing_duration": 55.423371
+                }
+            }
+        },
+        {
+            "iteration_number": 180,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:10:11.748879",
+                    "iteration_end_time": "2026-09-22T06:11:31.602290",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.853411,
+                    "pairing_duration": 55.523449
+                }
+            }
+        },
+        {
+            "iteration_number": 181,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:11:31.620225",
+                    "iteration_end_time": "2026-09-22T06:12:51.658327",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.038102,
+                    "pairing_duration": 55.730961
+                }
+            }
+        },
+        {
+            "iteration_number": 182,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:12:51.670135",
+                    "iteration_end_time": "2026-09-22T06:14:12.118719",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.448584,
+                    "pairing_duration": 56.06351
+                }
+            }
+        },
+        {
+            "iteration_number": 183,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:14:12.130155",
+                    "iteration_end_time": "2026-09-22T06:15:31.784589",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.654434,
+                    "pairing_duration": 55.37143
+                }
+            }
+        },
+        {
+            "iteration_number": 184,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:15:31.796976",
+                    "iteration_end_time": "2026-09-22T06:16:50.864033",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.067057,
+                    "pairing_duration": 54.810181
+                }
+            }
+        },
+        {
+            "iteration_number": 185,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:16:50.876229",
+                    "iteration_end_time": "2026-09-22T06:18:11.427050",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.550821,
+                    "pairing_duration": 56.139154
+                }
+            }
+        },
+        {
+            "iteration_number": 186,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:18:11.438722",
+                    "iteration_end_time": "2026-09-22T06:19:32.421301",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.982579,
+                    "pairing_duration": 56.593116
+                }
+            }
+        },
+        {
+            "iteration_number": 187,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:19:32.436776",
+                    "iteration_end_time": "2026-09-22T06:20:51.961497",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.524721,
+                    "pairing_duration": 55.235192
+                }
+            }
+        },
+        {
+            "iteration_number": 188,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:20:52.284862",
+                    "iteration_end_time": "2026-09-22T06:22:14.204744",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.919882,
+                    "pairing_duration": 57.535371
+                }
+            }
+        },
+        {
+            "iteration_number": 189,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:22:14.221125",
+                    "iteration_end_time": "2026-09-22T06:23:35.313271",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 81.092146,
+                    "pairing_duration": 56.69126
+                }
+            }
+        },
+        {
+            "iteration_number": 190,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:23:35.331288",
+                    "iteration_end_time": "2026-09-22T06:24:55.299970",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.968682,
+                    "pairing_duration": 55.588501
+                }
+            }
+        },
+        {
+            "iteration_number": 191,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:24:55.313271",
+                    "iteration_end_time": "2026-09-22T06:26:14.754427",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.441156,
+                    "pairing_duration": 55.044047
+                }
+            }
+        },
+        {
+            "iteration_number": 192,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:26:14.773439",
+                    "iteration_end_time": "2026-09-22T06:27:35.444699",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.67126,
+                    "pairing_duration": 56.273544
+                }
+            }
+        },
+        {
+            "iteration_number": 193,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:27:35.461230",
+                    "iteration_end_time": "2026-09-22T06:28:56.040467",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.579237,
+                    "pairing_duration": 56.184191
+                }
+            }
+        },
+        {
+            "iteration_number": 194,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:28:56.053106",
+                    "iteration_end_time": "2026-09-22T06:30:15.638869",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.585763,
+                    "pairing_duration": 55.204996
+                }
+            }
+        },
+        {
+            "iteration_number": 195,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:30:15.652415",
+                    "iteration_end_time": "2026-09-22T06:31:36.009291",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.356876,
+                    "pairing_duration": 56.058619
+                }
+            }
+        },
+        {
+            "iteration_number": 196,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:31:36.021900",
+                    "iteration_end_time": "2026-09-22T06:32:56.291015",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.269115,
+                    "pairing_duration": 55.908044
+                }
+            }
+        },
+        {
+            "iteration_number": 197,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:32:56.626765",
+                    "iteration_end_time": "2026-09-22T06:34:16.386323",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.759558,
+                    "pairing_duration": 55.426346
+                }
+            }
+        },
+        {
+            "iteration_number": 198,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:34:16.404869",
+                    "iteration_end_time": "2026-09-22T06:35:36.405710",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.000841,
+                    "pairing_duration": 55.769573
+                }
+            }
+        },
+        {
+            "iteration_number": 199,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:35:36.424510",
+                    "iteration_end_time": "2026-09-22T06:36:55.933570",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.50906,
+                    "pairing_duration": 55.107099
+                }
+            }
+        },
+        {
+            "iteration_number": 200,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:36:55.945659",
+                    "iteration_end_time": "2026-09-22T06:38:15.115630",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.169971,
+                    "pairing_duration": 54.773803
+                }
+            }
+        },
+        {
+            "iteration_number": 201,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:38:15.129111",
+                    "iteration_end_time": "2026-09-22T06:39:35.027079",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.897968,
+                    "pairing_duration": 55.588387
+                }
+            }
+        },
+        {
+            "iteration_number": 202,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:39:35.039095",
+                    "iteration_end_time": "2026-09-22T06:40:55.244859",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.205764,
+                    "pairing_duration": 55.796796
+                }
+            }
+        },
+        {
+            "iteration_number": 203,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:40:55.256748",
+                    "iteration_end_time": "2026-09-22T06:42:15.948561",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.691813,
+                    "pairing_duration": 56.30324
+                }
+            }
+        },
+        {
+            "iteration_number": 204,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:42:15.973351",
+                    "iteration_end_time": "2026-09-22T06:43:36.685360",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.712009,
+                    "pairing_duration": 56.295056
+                }
+            }
+        },
+        {
+            "iteration_number": 205,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:43:36.702012",
+                    "iteration_end_time": "2026-09-22T06:44:56.496411",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.794399,
+                    "pairing_duration": 55.402177
+                }
+            }
+        },
+        {
+            "iteration_number": 206,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:44:56.823566",
+                    "iteration_end_time": "2026-09-22T06:46:16.763074",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.939508,
+                    "pairing_duration": 55.616509
+                }
+            }
+        },
+        {
+            "iteration_number": 207,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:46:16.781968",
+                    "iteration_end_time": "2026-09-22T06:47:36.921146",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.139178,
+                    "pairing_duration": 55.849454
+                }
+            }
+        },
+        {
+            "iteration_number": 208,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:47:36.933920",
+                    "iteration_end_time": "2026-09-22T06:48:57.452622",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 80.518702,
+                    "pairing_duration": 56.12068
+                }
+            }
+        },
+        {
+            "iteration_number": 209,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T06:48:57.465638",
+                    "iteration_end_time": "2026-09-22T06:50:17.408499",
+                    "iteration_result": "PASS",
+                    "exception": null
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": 7016,
+                    "reboot_count": 1,
+                    "iteration_duration": 79.942861,
+                    "pairing_duration": 55.562723
+                }
+            }
+        }
+    ],
+    "dut_information_record": {
+        "vendor_name": "Nordic Semiconductor ASA",
+        "product_name": "not-specified",
+        "product_id": 32769,
+        "vendor_id": 65521,
+        "software_version": "prerelease",
+        "hardware_version": "prerelease",
+        "serial_number": "11223344556677889900"
+    },
+    "host_information_record": {
+        "host_name": "fcomp",
+        "ip_address": "127.0.1.1",
+        "mac_address": "41:10:04:c1:30:cc"
+    },
+    "ci_information_record": null,
+    "commissioner_information_record": null
+}

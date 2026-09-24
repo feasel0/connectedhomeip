@@ -1,0 +1,27 @@
+# Fresh fourth 500-iteration campaign after terminating the USB-contaminated
+# third campaign. The test and USB monitor are detached from VS Code.
+# Test unit: matter-37075-darwin-500-fourth.service
+# USB monitor unit: matter-37075-usb-monitor-fourth.service
+
+systemd-run --user \
+  --unit=matter-37075-darwin-500-fourth \
+  --collect \
+  --description="Matter #37075 fourth native 500-iteration Darwin campaign" \
+  --working-directory=/home/feasel/matter-oct14/connectedhomeip \
+  --setenv=PYTHONUNBUFFERED=1 \
+  --setenv=LD_LIBRARY_PATH=/home/feasel/matter-oct14/connectedhomeip/out/host-deps/libevent/usr/lib/x86_64-linux-gnu \
+  --property=StandardOutput=file:/home/feasel/matter-oct14/connectedhomeip/37075/logs/stress-darwin-pair-500-fourth/campaign-console.log \
+  --property=StandardError=file:/home/feasel/matter-oct14/connectedhomeip/37075/logs/stress-darwin-pair-500-fourth/campaign-stderr.log \
+  /home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/bin/python \
+  /home/feasel/qa-mar6/matter-qa/src/matter_qa/scripts/operational_scripts/TC_Darwin_Pair.py \
+  --discriminator 3840 \
+  --passcode 20202021 \
+  --storage-path /home/feasel/matter-oct14/connectedhomeip/37075/admin-darwin-pair-500-fourth.json \
+  --timeout 72000 \
+  --commissioning-method ble-thread \
+  --logs-path /home/feasel/matter-oct14/connectedhomeip/37075/logs/stress-darwin-pair-500-fourth \
+  --string-arg reliability_tests_arg:/home/feasel/matter-oct14/connectedhomeip/37075/matter-qa-nordic-500.yaml \
+  --trace-to json:log \
+  --ble-controller 0 \
+  --thread-dataset-hex 0e08000000000001000000030000144a0300001535060004001fffe002089612ac5946f05eaf0708fd973da1002981060510127d3c1fb807e695fb0e6afe4db333340102621304104c58fd9a797e1195061d9d934ee3494e0c0402a0f7f8030b4d61747465723337303735 \
+  --paa-trust-store-path /home/feasel/matter-oct14/connectedhomeip/credentials/development/paa-root-certs

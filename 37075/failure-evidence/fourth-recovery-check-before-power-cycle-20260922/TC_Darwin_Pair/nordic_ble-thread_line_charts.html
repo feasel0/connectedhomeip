@@ -1,0 +1,160 @@
+<!--/**
+ *
+ * Copyright (c) 2025 Project CHIP Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>Enlarged Graph</title>
+  <script src="analytics_graph_html_libs/jquery-3.7.1.min.js"></script>
+  <script src="analytics_graph_html_libs/d3.v7.min.js"></script>
+  <script defer="defer" type="text/javascript" src="analytics_graph_html_libs/enlargedGraph.js"></script>
+  <link rel="stylesheet" href="analytics_graph_html_libs/bootstrap.min.css">
+  <script defer="defer" src="analytics_graph_html_libs/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="analytics_graph_html_libs/enlargedGraph.css" id="graph-css">
+  <link rel="stylesheet" href="analytics_graph_html_libs/font-awesome.min.css">
+  <script defer id="data" type="application/json"> {
+    "run_set_id": "c5c0a5aa-0df3-4a99-b145-fec954dd2611",
+    "test_summary_record": {
+        "test_suite_name": "StressTestSuite",
+        "test_case_name": "Darwin_Pair",
+        "test_case_id": "stress_1_6",
+        "test_case_class": "TC_Darwin_Pair",
+        "test_case_description": null,
+        "test_case_info_doc_id": null,
+        "test_case_begined_at": "2026-09-22T09:46:35.172572",
+        "test_case_ended_at": "2026-09-22T09:48:48.736651",
+        "test_case_status": "Test Completed",
+        "test_case_result": "FAIL",
+        "total_number_of_iterations": 500,
+        "number_of_iterations_completed": 2,
+        "number_of_iterations_passed": 0,
+        "number_of_iterations_failed": 2,
+        "platform": "nordic",
+        "commissioning_method": "ble-thread",
+        "list_of_iterations_failed": [
+            1,
+            2
+        ],
+        "analytics_parameters": [
+            "current_heap_used",
+            "reboot_count",
+            "iteration_duration"
+        ],
+        "mean_of_analytics": {},
+        "min_of_analytics": {},
+        "max_of_analytics": {}
+    },
+    "dut_info_doc_id": null,
+    "host_info_doc_id": null,
+    "ci_info_doc_id": null,
+    "commissioner_info_doc_id": null,
+    "list_of_iteration_records": [
+        {
+            "iteration_number": 1,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T09:47:00.584414",
+                    "iteration_end_time": "2026-09-22T09:47:46.633124",
+                    "iteration_result": "FAIL",
+                    "exception": "{\"exception_msg\": \"Failed to establish PASE session: src/controller/python/ChipDeviceController-ScriptDevicePairingDelegate.cpp:101: CHIP Error 0x00000003: Incorrect state\", \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 34, in __aenter__\\n    await self.pairing_class_object_reference.establish_pasesession()\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 133, in establish_pasesession\\n    self.th1_pasesession = await self.th1.EstablishPASESession(str(self.manual_code),\\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n                                                               self.dut_node_id)\\n                                                               ^^^^^^^^^^^^^^^^^\\n  File \\\"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/matter/ChipDeviceCtrl.py\\\", line 1109, in EstablishPASESession\\n    await self._establishPASESession(\\n    ...<3 lines>...\\n    )\\n  File \\\"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/matter/ChipDeviceCtrl.py\\\", line 1018, in _establishPASESession\\n    await asyncio.futures.wrap_future(ctx.future)\\nmatter.exceptions.ChipStackError: src/controller/python/ChipDeviceController-ScriptDevicePairingDelegate.cpp:101: CHIP Error 0x00000003: Incorrect state\\n\\nDuring handling of the above exception, another exception occurred:\\n\\nTraceback (most recent call last):\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/base_test_classes/matter_qa_base_test_class.py\\\", line 1094, in wrapper\\n    await func(*args, **kwargs)\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/scripts/operational_scripts/TC_Darwin_Pair.py\\\", line 163, in tc_darwin_pair_unpair\\n    async with self.PaseSession(pairing_class_object_reference=self) as pase_session:\\n               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 38, in __aenter__\\n    raise IterationError(f\\\"Failed to establish PASE session: {e}\\\")\\nmatter_qa.library.helper_libs.exceptions.IterationError: Failed to establish PASE session: src/controller/python/ChipDeviceController-ScriptDevicePairingDelegate.cpp:101: CHIP Error 0x00000003: Incorrect state\\n\"}"
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": null,
+                    "reboot_count": null,
+                    "iteration_duration": 46.04871
+                }
+            }
+        },
+        {
+            "iteration_number": 2,
+            "iteration_data": {
+                "iteration_tc_execution_data": {
+                    "iteration_begin_time": "2026-09-22T09:47:46.634586",
+                    "iteration_end_time": "2026-09-22T09:48:32.681642",
+                    "iteration_result": "FAIL",
+                    "exception": "{\"exception_msg\": \"Failed to establish PASE session: src/controller/python/ChipDeviceController-ScriptDevicePairingDelegate.cpp:101: CHIP Error 0x00000003: Incorrect state\", \"traceback\": \"Traceback (most recent call last):\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 34, in __aenter__\\n    await self.pairing_class_object_reference.establish_pasesession()\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 133, in establish_pasesession\\n    self.th1_pasesession = await self.th1.EstablishPASESession(str(self.manual_code),\\n                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n                                                               self.dut_node_id)\\n                                                               ^^^^^^^^^^^^^^^^^\\n  File \\\"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/matter/ChipDeviceCtrl.py\\\", line 1109, in EstablishPASESession\\n    await self._establishPASESession(\\n    ...<3 lines>...\\n    )\\n  File \\\"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/matter/ChipDeviceCtrl.py\\\", line 1018, in _establishPASESession\\n    await asyncio.futures.wrap_future(ctx.future)\\nmatter.exceptions.ChipStackError: src/controller/python/ChipDeviceController-ScriptDevicePairingDelegate.cpp:101: CHIP Error 0x00000003: Incorrect state\\n\\nDuring handling of the above exception, another exception occurred:\\n\\nTraceback (most recent call last):\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/base_test_classes/matter_qa_base_test_class.py\\\", line 1094, in wrapper\\n    await func(*args, **kwargs)\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/scripts/operational_scripts/TC_Darwin_Pair.py\\\", line 163, in tc_darwin_pair_unpair\\n    async with self.PaseSession(pairing_class_object_reference=self) as pase_session:\\n               ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\\n  File \\\"/home/feasel/qa-mar6/matter-qa/src/matter_qa/library/helper_libs/pairing_flow_functions.py\\\", line 38, in __aenter__\\n    raise IterationError(f\\\"Failed to establish PASE session: {e}\\\")\\nmatter_qa.library.helper_libs.exceptions.IterationError: Failed to establish PASE session: src/controller/python/ChipDeviceController-ScriptDevicePairingDelegate.cpp:101: CHIP Error 0x00000003: Incorrect state\\n\"}"
+                },
+                "iteration_tc_analytics_data": {
+                    "current_heap_used": null,
+                    "reboot_count": null,
+                    "iteration_duration": 46.047056
+                }
+            }
+        }
+    ],
+    "dut_information_record": null,
+    "host_information_record": {
+        "host_name": "fcomp",
+        "ip_address": "127.0.1.1",
+        "mac_address": "41:10:04:c1:30:cc"
+    },
+    "ci_information_record": null,
+    "commissioner_information_record": null,
+    "analytics": {
+        "current_heap_used": {
+            "1": null,
+            "2": null
+        },
+        "reboot_count": {
+            "1": null,
+            "2": null
+        },
+        "iteration_duration": {
+            "1": 46.04871,
+            "2": 46.047056
+        }
+    }
+} </script>
+</head>
+
+<body>
+  <div class="graph_container">
+    <div class="display_parent">
+      <div class="display_child">
+        <div class="dropdown" data-control="checkbox-dropdown">
+          <label class="dropdown-label">
+              Display All Graphs
+          </label>
+          <div class="dropdown-list" id="graph_option_selector_container">
+                <label class="dropdown-option">
+                  <input type="checkbox" id="DisplayAll" onchange="removeAllGraphs()" value="checked" /> Display All Graphs
+                </label>
+          </div>
+        </div>
+      </div>
+      <div class="display_child">
+        <p id="zoomLevel">Graph Zoom Level: 1 </p>
+      </div>
+      <div class="display_child">
+        <p id="zoom-refactor-p">Zoom Re-Factor: <span id="zoom-refactor-edit" value="100">100</span> <span
+            id="zoom-edit-button" class="fa fa-edit"></span> </p>
+      </div>
+      <div class="display_child">
+        <label for="graph_line_selector" id="graph_select_label">Graph Selected:  </label>
+            <select id="graph_line_selector" class="form-select" aria-label="Default select example">
+              <option selected value="step_graph">Step Graph</option>
+              <option  value="curved_line"> Curved Line Graph </option>
+            </select>
+      </div>
+    </div>
+    <div id="container">
+    </div>
+  </div>
+</body>
+
+</html>

@@ -1,0 +1,2 @@
+ 355872  355020 Tue Sep 22 09:36:02 2026     222 Sl   /home/feasel/.vscode/extensions/nordic-semiconductor.nrf-connect-2026.9.2797-linux-x64/platform/nrfutil/bin/nrfutil-device --json list --hotplug
+3512146 3510638 Tue Sep 22 07:38:22 2026    7282 Sl   /home/feasel/.vscode/extensions/nordic-semiconductor.nrf-connect-2026.9.2797-linux-x64/platform/nrfutil/bin/nrfutil-device --json list --hotplug

@@ -1,0 +1,10 @@
+{"Status":"running","Running":true,"Paused":false,"Restarting":false,"OOMKilled":false,"Dead":false,"Pid":1783827,"ExitCode":0,"Error":"","StartedAt":"2026-09-21T04:09:57.074145264Z","FinishedAt":"0001-01-01T00:00:00Z"}
+--- Thread state ---
+leader
+Done
+--- active dataset ---
+0e08000000000001000000030000144a0300001535060004001fffe002089612ac5946f05eaf0708fd973da1002981060510127d3c1fb807e695fb0e6afe4db333340102621304104c58fd9a797e1195061d9d934ee3494e0c0402a0f7f8030b4d61747465723337303735
+Done
+--- SRP server state ---
+running
+Done

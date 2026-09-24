@@ -1,0 +1,49 @@
+---
+Requested Tests:
+- test_TC_Darwin_Pair
+Type: TestNameList
+...
+---
+Begin Time: 1790084795457
+Details: Test received a SIGTERM.
+End Time: 1790084928731
+Extra Errors: {}
+Extras: null
+Parent: null
+Result: FAIL
+Retry Parent: null
+Signature: test_TC_Darwin_Pair-1790084795457
+Stacktrace: "Traceback (most recent call last):\n  File \"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/mobly/base_test.py\"\
+    , line 801, in exec_one_test\n    test_method()\n    ~~~~~~~~~~~^^\n  File \"\
+    /home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/matter/testing/decorators.py\"\
+    , line 270, in async_runner\n    return _async_runner(body, self, *args, **kwargs)\n\
+    \  File \"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/matter/testing/decorators.py\"\
+    , line 254, in _async_runner\n    return test_instance.event_loop.run_until_complete(asyncio.wait_for(body(test_instance,\
+    \ *args, **kwargs), timeout=timeout))\n           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n\
+    \  File \"/home/feasel/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/asyncio/base_events.py\"\
+    , line 713, in run_until_complete\n    self.run_forever()\n    ~~~~~~~~~~~~~~~~^^\n\
+    \  File \"/home/feasel/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/asyncio/base_events.py\"\
+    , line 684, in run_forever\n    self._run_once()\n    ~~~~~~~~~~~~~~^^\n  File\
+    \ \"/home/feasel/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/asyncio/base_events.py\"\
+    , line 2023, in _run_once\n    event_list = self._selector.select(timeout)\n \
+    \ File \"/home/feasel/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/lib/python3.13/selectors.py\"\
+    , line 452, in select\n    fd_event_list = self._selector.poll(timeout, max_ev)\n\
+    \  File \"/home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/lib/python3.13/site-packages/mobly/test_runner.py\"\
+    , line 501, in sigterm_handler\n    raise signals.TestAbortAll('Test received\
+    \ a SIGTERM.')\nmobly.signals.TestAbortAll: Details=Test received a SIGTERM.,\
+    \ Extras=None\n"
+Termination Signal Type: TestAbortAll
+Test Class: TC_Darwin_Pair
+Test Name: test_TC_Darwin_Pair
+Type: Record
+UID: null
+...
+---
+Error: 0
+Executed: 0
+Failed: 0
+Passed: 0
+Requested: 0
+Skipped: 0
+Type: Summary
+...

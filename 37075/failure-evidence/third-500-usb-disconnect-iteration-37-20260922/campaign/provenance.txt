@@ -1,0 +1,6 @@
+connectedhomeip_commit=e5031d7a8ca2f188575eed05620aaba7f8549e95
+connectedhomeip_branch=feature/37075-reproduction
+matter_qa_commit=9e878e38f8cfc75e77d928445a06ec0f5d068da9
+matter_qa_branch=main
+python=/home/feasel/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13
+Python 3.13.15

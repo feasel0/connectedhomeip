@@ -1,0 +1,30 @@
+2026-09-22T09:35:01,234310132-04:00
+--- serial symlinks ---
+total 0
+lrwxrwxrwx 1 root root 13 Sep 20 23:11 usb-Nordic_Semiconductor_ASA_Thread_Co-Processor_8388F563A730D925-if00 -> ../../ttyACM2
+lrwxrwxrwx 1 root root 13 Sep 22 09:14 usb-SEGGER_J-Link_001050208117-if00 -> ../../ttyACM1
+lrwxrwxrwx 1 root root 13 Sep 22 09:14 usb-SEGGER_J-Link_001050208117-if02 -> ../../ttyACM3
+--- USB inventory ---
+Bus 004 Device 004: ID 0b95:1790 ASIX Electronics Corp. AX88179 Gigabit Ethernet
+Bus 004 Device 003: ID 05e3:0626 Genesys Logic, Inc. USB3.1 Hub
+Bus 004 Device 002: ID 05e3:0612 Genesys Logic, Inc. Hub
+Bus 004 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 003 Device 007: ID 0c45:6367 Microdia NexiGo HD Webcam
+Bus 003 Device 005: ID 30fa:1140 INSTANT USB GAMING MOUSE 
+Bus 003 Device 017: ID 1366:1051 SEGGER J-Link
+Bus 003 Device 006: ID 046d:0a64 Logitech, Inc. Logi USB Headset
+Bus 003 Device 004: ID 05e3:0610 Genesys Logic, Inc. Hub
+Bus 003 Device 003: ID 046d:c31c Logitech, Inc. Keyboard K120
+Bus 003 Device 002: ID 05e3:0610 Genesys Logic, Inc. Hub
+Bus 003 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+Bus 002 Device 002: ID 17e9:4301 DisplayLink USB3 to HDMI
+Bus 002 Device 001: ID 1d6b:0003 Linux Foundation 3.0 root hub
+Bus 001 Device 003: ID 0bda:385a Realtek Semiconductor Corp. Bluetooth Radio
+Bus 001 Device 002: ID 0408:5365 Quanta Computer, Inc. HP TrueVision HD Camera
+Bus 001 Device 005: ID 1915:0000 Nordic Semiconductor ASA Thread Co-Processor
+Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+--- users of DUT serial path ---
+                     USER        PID ACCESS COMMAND
+/dev/ttyACM1:        feasel    3604296 F.... python
+--- service and Python processes ---
+3604296    1385 Tue Sep 22 07:51:22 2026 Ssl  /home/feasel/matter-oct14/connectedhomeip/out/python_env_host_313/bin/python /home/feasel/qa-mar6/matter-qa/src/matter_qa/scripts/operational_scripts/TC_Darwin_Pair.py --discriminator 3840 --passcode 20202021 --storage-path /home/feasel/matter-oct14/connectedhomeip/37075/admin-darwin-pair-500-third.json --timeout 72000 --commissioning-method ble-thread --logs-path /home/feasel/matter-oct14/connectedhomeip/37075/logs/stress-darwin-pair-500-third --string-arg reliability_tests_arg:/home/feasel/matter-oct14/connectedhomeip/37075/matter-qa-nordic-500.yaml --trace-to json:log --ble-controller 0 --thread-dataset-hex 0e08000000000001000000030000144a0300001535060004001fffe002089612ac5946f05eaf0708fd973da1002981060510127d3c1fb807e695fb0e6afe4db333340102621304104c58fd9a797e1195061d9d934ee3494e0c0402a0f7f8030b4d61747465723337303735 --paa-trust-store-path /home/feasel/matter-oct14/connectedhomeip/credentials/development/paa-root-certs
