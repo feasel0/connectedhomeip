@@ -197,8 +197,9 @@ Treats reusable controller state and Thread network state as one bundle. It
 persists and restores the exact complete Active Dataset when OTBR is recreated,
 preventing old `admin_storage.json` from being silently paired with a fresh
 random dataset. The live destroy/recreate/reuse test remains outstanding because
-the only available RCP is occupied by the Matter37075 environment; see
-[PR385_INTEGRATION_VALIDATION_20260926.md](PR385_INTEGRATION_VALIDATION_20260926.md).
+the only available RCP is occupied by the Matter37075 environment. A safe mocked
+dataset-mismatch control passed, but the full hardware lifecycle remains
+unvalidated.
 
 ### [certification-tool-backend #386: Unique new-Project defaults](https://github.com/project-chip/certification-tool-backend/pull/386)
 
