@@ -196,10 +196,11 @@ necessary.
 Treats reusable controller state and Thread network state as one bundle. It
 persists and restores the exact complete Active Dataset when OTBR is recreated,
 preventing old `admin_storage.json` from being silently paired with a fresh
-random dataset. The live destroy/recreate/reuse test remains outstanding because
-the only available RCP is occupied by the Matter37075 environment. A safe mocked
-dataset-mismatch control passed, but the full hardware lifecycle remains
-unvalidated.
+random dataset. The [physical destroy/recreate/reuse validation][pr385-validation]
+passed with exact dataset restoration, operational reads before and after OTBR
+recreation, and one commissioning invocation total.
+
+[pr385-validation]: PR385_INTEGRATION_VALIDATION_20260926.md
 
 ### [certification-tool-backend #386: Unique new-Project defaults](https://github.com/project-chip/certification-tool-backend/pull/386)
 
@@ -223,8 +224,10 @@ alone fixes every timeout reported under #37075.
   configurations across physical fixtures.
 - No historical 802.15.4 packet capture proves the exact parent/router identity
   selected during the October failures.
-- PR #385's live destroy/recreate/reuse validation remains pending because the
-  sole RCP is occupied by the Matter37075 environment.
+- PR #385's live validation used native x86_64 bindings from a nearby
+  connectedhomeip revision because the configured ARM64 SDK image was unreliable
+  under QEMU and the exact pinned native build was blocked by host toolchain
+  dependency errors.
 - The October intended OTBR's contemporaneous complete Active Dataset was not
   retained, so historical byte-for-byte controller/OTBR comparison is
   impossible.
