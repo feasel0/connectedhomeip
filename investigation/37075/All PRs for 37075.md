@@ -1,6 +1,6 @@
 # All PRs that address 37075 or were created while investigating that issue
 
-## Current Fix Index: 2026-10-16
+## Current Fix Index: 2026-10-17
 
 **ADDRESSED** means work in a PR fixes the named defect, not that the PR has
 merged, all hardware gates pass, or every #37075 symptom is solved. Use the
@@ -17,13 +17,21 @@ The later fixes supplement the original PR inventory below:
 | [QA544](https://github.com/CHIP-Specifications/matter-qa/pull/544) | Arithmetic XML bounds fail during payload generation | **ADDRESSED**; nine focused tests, full hardware matrix not rerun. |
 | [QA545](https://github.com/CHIP-Specifications/matter-qa/pull/545) | Nordic reset/reboot reports success without fresh UART evidence | **ADDRESSED** in the adapter; successful corrected-firmware validation pending. |
 | [QA547](https://github.com/CHIP-Specifications/matter-qa/pull/547) | Valve DefaultOpenLevel ignores live LevelStep | **ADDRESSED**; eight tests and 11 passing bulk outcomes. |
-| [QA548](https://github.com/CHIP-Specifications/matter-qa/pull/548) | Invalid read equality and cached write verification | **ADDRESSED**, head `a550450`; 105 CPU tests and bounded fresh-readback smoke. Full-load native failures remain open. |
+| [QA548](https://github.com/CHIP-Specifications/matter-qa/pull/548) | Invalid read equality, cached write verification and shared controller maps | **ADDRESSED**, published head `e8fcf30`; fresh 107-test PASS. Active endurance still uses `a550450`. Full-load native failures remain open. |
 | [QA549](https://github.com/CHIP-Specifications/matter-qa/pull/549) | Registered ctypes callback ownership and failure cleanup | **ADDRESSED**; six tests and combined 11/11 with QA550. Historical SIGSEGV causality remains open. |
 | [QA550](https://github.com/CHIP-Specifications/matter-qa/pull/550) | Unreachable SecurePairing reset callbacks and unpropagated reset errors | **ADDRESSED**, head `2b0feed`; nine tests and combined 11/11 with QA549. |
 | [SDK74676](https://github.com/project-chip/connectedhomeip/pull/74676) | BLE scanner local lifecycle and native-error propagation | **ADDRESSED**, head `6ebed18`; 59 ordinary and nine isolated native tests. No BlueZ recovery guarantee. |
 
 QA527 addresses the demonstrated stale-session/cleanup defect; QA528 adds
 topology detection, not a guarantee of healthy Thread routing/publication.
+QA527 `bd92c96` has a fresh 64-test cleanup PASS, including actual RT_1_2
+primary-error preservation after diagnostic and cleanup failures. It is not in
+the active five-PR snapshot. QA545 `a6ff4c1` is also absent from that snapshot.
+Iteration 75 failed before QA549/550's selected-stage paths; the demonstrated
+condition is wrong-peer PASE caused by shared short-discriminator discovery,
+not evidence that those callback fixes failed. See the
+[current continuation](../reports/2026-10-17_18-26-24.md). Historical attribution
+remains 80 addressed/78 open, with original FAIL outcomes retained.
 Backend385/386 are **PARTIALLY ADDRESSED** goals: their unchanged heads retain
 the [fresh review's five OPEN findings](PR385_PR386_FRESH_REVIEW_20261007.md).
 Native read/subscription/PASE failures, the original missing CASE response

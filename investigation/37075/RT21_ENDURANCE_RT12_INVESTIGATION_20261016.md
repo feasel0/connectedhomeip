@@ -1,6 +1,23 @@
 # RT_2_1 Endurance and RT_1_2 Investigation
 
-Execution update, 2026-10-17: [targeted RT_1_2 attribution](RT12_TARGETED_ATTRIBUTION_20261017.md)
+Current update, 2026-10-17 18:26 UTC:
+[targeted attribution](RT12_TARGETED_ATTRIBUTION_20261017.md) and the
+[continuation report](../reports/2026-10-17_18-26-24.md) supersede the checkpoints
+below. The original process remains running at 85 executed/84 PASS/one FAIL,
+with 15 unexecuted, as checked at 18:19:25 UTC. All 22 selected-stage/mode
+combinations are observed; reset acknowledgment and capture continuity remain
+unproved. Iteration 75's two failed PASE exchanges match the Wi-Fi Pi DUT's
+log exactly. Nordic discriminator `3840` was reduced to short discriminator 15
+by generated-manual-code discovery and matched the Pi enhanced window `4021`.
+Separate hardware locks did not prevent shared DNS-SD interference. This
+corrects the earlier claim that neither Pi probe affected Nordic. The failed
+iteration and all original results remain unchanged. A new probe launcher
+rejects overlap with the protected campaign; no next campaign was launched.
+QA548 has a fresh 107-test PASS; QA527's actual cleanup suite has a fresh
+64-test PASS including RT_1_2 primary-error preservation. Both verified heads
+remain outside the immutable five-PR endurance snapshot.
+
+Earlier execution update, 2026-10-17: [targeted RT_1_2 attribution](RT12_TARGETED_ATTRIBUTION_20261017.md)
 records the completed Pi baseline/current/map-isolation/serialized-read set:
 four executed iterations, four FAIL, no incomplete slots. Serialization changed
 read-task errors from 15/15 to 2/15 but did not pass the test. The map alias has
@@ -19,7 +36,8 @@ and gap-free capture coverage remain unproved. A separate serial response-shape
 probe completed with FAIL; its diagnostic verifier missed a cache-update
 precondition. The corrected separately counted probe also failed its two reads,
 but all 13 returned mappings passed 29 fresh written-value checks each. Both
-Pi attempts closed with exact fixture/key cleanup. Neither affected Nordic.
+Pi attempts closed with exact fixture/key cleanup. The former claim of no
+Nordic impact is disproved by the matched iteration-75 exchanges above.
 The original status and plan below remain historical, not current pending work.
 
 Status as of 2026-10-16T16:48:47Z. This is a new verification effort, not a

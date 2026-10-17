@@ -9,6 +9,11 @@ test infrastructure configuration live here. The archival branch is
   tooling, plus selected source/proof snapshots.
 - `reports/`: detailed UTC-stamped reports for individual assistant turns.
 - `tools/git_boundary.py`: relocation audit and publication-boundary checks.
+- `tools/trace_lifecycle.py`: bounded, value-free extraction of retained PASE,
+  MRP, CASE and attribute-status evidence; private derived output stays outside
+  this tree.
+- `tools/discovery_isolation.py`: future probe launcher that refuses overlap
+  with the protected endurance process, plus discriminator collision regressions.
 
 Raw logs, captures, controller private state, generated private indexes, firmware
 builds, environments and bulk archives remain on disk but are ignored. They must
@@ -28,6 +33,8 @@ Checks from the repository root:
 python3 -B investigation/tools/git_boundary.py self-test
 python3 -B investigation/tools/git_boundary.py audit
 python3 -B investigation/tools/git_boundary.py staged
+python3 -B investigation/tools/trace_lifecycle.py self-test
+python3 -B investigation/tools/discovery_isolation.py --self-test
 python3 -B investigation/pr539-failure-evidence/update_dossier.py --self-test
 python3 -B investigation/pr539-failure-evidence/prune_successful_runs.py --self-test
 ```
