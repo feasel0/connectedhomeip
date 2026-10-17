@@ -1,0 +1,78 @@
+{
+  "created_utc": "2026-10-15T14:43:23.452800+00:00",
+  "purpose": "Lossless preservation before guarded worktree cleanup; no PR source publication",
+  "worktrees": {
+    "matter-qa-527": {
+      "path": "/home/feasel/qa-mar6/matter-qa-527",
+      "head": "bd92c969f862251c01456df41c5ad56851324402",
+      "branch": "fix/darwin-pair-failure-safe-cleanup",
+      "status": [
+        " M src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py",
+        " M src/matter_qa/unit_tests/test_pairing_cleanup.py"
+      ],
+      "files": {
+        "src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py": {
+          "base_sha256": "7e3a2f9f9962c9cf740b3cdc5cb05f2e47cd6805b49014722a71df425c89c97d",
+          "working_sha256": "1f698120efd12aeafc3a95ec5be79989b9d8fe05ee3943bb11cae446306c20ba",
+          "working_bytes": 26752,
+          "mode": 436
+        },
+        "src/matter_qa/unit_tests/test_pairing_cleanup.py": {
+          "base_sha256": "bcde8b1a485c68180275a4dd9298e4a391caa1ef8999444826283547b6b45eb4",
+          "working_sha256": "7b5341c1d0b5569561877acb173c60c19f4988f986c7b4fb911dbfe386a9ead2",
+          "working_bytes": 69449,
+          "mode": 436
+        }
+      },
+      "patch_sha256": "6b32b0699ee6bf9bd9617c51e86c4825f2be7bcab1a310e215c8bd7dd18db9f4"
+    },
+    "matter-qa-527-integration": {
+      "path": "/home/feasel/qa-mar6/matter-qa-527-integration",
+      "head": "27c32c7589d08bbb189a098acd6f308cc22779cc",
+      "branch": "",
+      "status": [
+        " M src/matter_qa/library/helper_libs/attribute_value_generator.py",
+        " M src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py"
+      ],
+      "files": {
+        "src/matter_qa/library/helper_libs/attribute_value_generator.py": {
+          "base_sha256": "6a235c1c9c22791bebd2f25c2273d00a8e8fa9482d03129214725814304e9553",
+          "working_sha256": "6a54323afd485defdfb2a5c26a2825c0ad0e4bd5cf2402e27d1230f128a43119",
+          "working_bytes": 49046,
+          "mode": 384
+        },
+        "src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py": {
+          "base_sha256": "8fa864782f72d9dc0259cdea7cc1d321f884adbee132ef36e0859480501fcd8e",
+          "working_sha256": "108d0ab7eff73606ee55af61d538739baa62ee75d7259bae08ca44b0186ecbeb",
+          "working_bytes": 26801,
+          "mode": 384
+        }
+      },
+      "patch_sha256": "c05ee37a13dabbdc6b6ff2848fd6d0788175f8403395fc437a9f1797625f1c74"
+    },
+    "matter-qa-xml-constraints": {
+      "path": "/home/feasel/qa-mar6/matter-qa-xml-constraints",
+      "head": "f0fd44536ea15030131cb8c0d119fd99dd109f8b",
+      "branch": "fix/xml-arithmetic-constraints",
+      "status": [
+        " M src/matter_qa/library/helper_libs/attribute_value_generator.py",
+        " M src/matter_qa/unit_tests/test_constraint_parser.py"
+      ],
+      "files": {
+        "src/matter_qa/library/helper_libs/attribute_value_generator.py": {
+          "base_sha256": "6a235c1c9c22791bebd2f25c2273d00a8e8fa9482d03129214725814304e9553",
+          "working_sha256": "6a54323afd485defdfb2a5c26a2825c0ad0e4bd5cf2402e27d1230f128a43119",
+          "working_bytes": 49046,
+          "mode": 436
+        },
+        "src/matter_qa/unit_tests/test_constraint_parser.py": {
+          "base_sha256": "bffaaffed85e1254d9d9d6f0d090a41963ea71d0f565645c7886768aa28653b9",
+          "working_sha256": "bb5a4a361547c0cc85cd7eea20130cfeac152beb0102c8661f5ed2a7cc8e9db2",
+          "working_bytes": 11339,
+          "mode": 436
+        }
+      },
+      "patch_sha256": "d39721671ecc98a656386af56bfe7676d844e7d7a4eacc0f8b87216ae110b9f7"
+    }
+  }
+}

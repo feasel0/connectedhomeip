@@ -1,0 +1,19 @@
+{
+  "published_pr": 547,
+  "head": "6e93374eeec7cc7170f066bc257250fb0f222707",
+  "old_valve_implementations_ast_equal_to_published": true,
+  "archived_tests_against_published": [
+    "test_valve_default_open_level_preserves_allowed_values_and_range",
+    "test_valve_default_open_level_reads_live_step_instead_of_xml_default",
+    "test_valve_default_open_level_reads_uncached_level_step",
+    "test_valve_default_open_level_rejects_invalid_level_step",
+    "test_valve_default_open_level_respects_live_level_step",
+    "test_valve_without_optional_level_step_keeps_range_generation"
+  ],
+  "published_tests": 8,
+  "tests_run": 14,
+  "failures": 0,
+  "errors": 0,
+  "successful": true,
+  "production_sha256": "29d486234877c5462d2ea5387653f5dd752c7cc1562d2ddde764db4218eac1cb"
+}

@@ -1,0 +1,16 @@
+{
+  "pr": 548,
+  "base_head": "9a003ab5cd7852ee407dd90b97791b806d7aabb3",
+  "commit": "91c72691ef4bed6d9a20fc46f4f9a89268f3a9b3",
+  "branch": "fix/rt12-read-cache-metadata",
+  "fork": "feasel0/matter-qa",
+  "committed_files_match_validated_hashes": true,
+  "state": "PUBLISHED_AND_PR_BODY_VERIFIED",
+  "published_utc": "2026-10-15T15:28:17.176474+00:00",
+  "pr_url": "https://github.com/CHIP-Specifications/matter-qa/pull/548",
+  "fork_ref_verified": true,
+  "title_unchanged": true,
+  "draft_unchanged": true,
+  "body_sha256": "02e9e302f1ab3c8ee527f9740824f4f6564f65649d94b61cb1ce1650fbbaedb5",
+  "qa548_worktree_clean": true
+}

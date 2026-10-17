@@ -1,0 +1,85 @@
+{
+  "state": "RETIRED",
+  "created_utc": "2026-10-15T15:29:10.815465+00:00",
+  "pr547_head": "6e93374eeec7cc7170f066bc257250fb0f222707",
+  "pr548_head": "91c72691ef4bed6d9a20fc46f4f9a89268f3a9b3",
+  "pr548_tests": {
+    "existing": 75,
+    "new": 16,
+    "total": 91
+  },
+  "retired_patches": [
+    {
+      "path": "matter-qa-527/changes.patch",
+      "sha256": "6b32b0699ee6bf9bd9617c51e86c4825f2be7bcab1a310e215c8bd7dd18db9f4",
+      "disposition": "Read replacement rejected; per-controller verification, propagated errors and stale-cache protection superseded by PR548 real-workflow regressions."
+    },
+    {
+      "path": "matter-qa-527-integration/changes.patch",
+      "sha256": "c05ee37a13dabbdc6b6ff2848fd6d0788175f8403395fc437a9f1797625f1c74",
+      "disposition": "Mixed patch: Valve implementation redundant with PR547; useful read behavior superseded by additive PR548; comparator removal rejected."
+    },
+    {
+      "path": "matter-qa-xml-constraints/changes.patch",
+      "sha256": "d39721671ecc98a656386af56bfe7676d844e7d7a4eacc0f8b87216ae110b9f7",
+      "disposition": "Valve-only patch redundant with PR547 implementation and dedicated tests; no new Valve code or tests needed."
+    }
+  ],
+  "retained_files_sha256": {
+    "cleanup-proof.json": "4d19a8457eac0c8bd7d98946aa6c4e4e287718f128e36d18bb982f4b0026532f",
+    "pr548-followup-validation.json": "ec2b10b3badf371ae5c2b6602f33ae8126167de86c812affc7bc2104987f2629",
+    "pr548-description.md": "02e9e302f1ab3c8ee527f9740824f4f6564f65649d94b61cb1ce1650fbbaedb5",
+    "reconstruction-proof.json": "d62996e247a847ef77c7ee650575f4ac53f4b8673811961a31c5da1e88fb6989",
+    "read-alternative-proof.json": "5fc5d50ebfb5e2daf1919a22f9f9e402651da2722a30a9f1caeca5932d94896d",
+    "pr548-followup-publication.json": "3534dccc81e7ca05b259f7f00fa874810d68df4c4605b28fd625be47c259ac24",
+    "manifest.json": "253efdd39853ed367468b17c60ccb585d845b6b43e250913c19edc623cfb9d98",
+    "valve-cleanup-proof.json": "1da2305eff3843a8bdfe9a9c643b862fe93fecfb4a156bdcde92c39de0a5ee83",
+    "pr548-description-before.json": "2af6a11bc433597654b50bbeb23822ff59159f5f2ce4d3fad71e4ec01eef3dbc",
+    "valve-equivalence-proof.json": "346a69debd7c9faeb21ea58fe6033f6b249322a35eeed3189bdc7810b37af929",
+    "read_alternative_probe.py": "de22392c0a357d47f92cfed9c1b716e2c49490b8db32071770f1f41e684113cc",
+    "matter-qa-527-integration/working/src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py": "108d0ab7eff73606ee55af61d538739baa62ee75d7259bae08ca44b0186ecbeb",
+    "matter-qa-527-integration/working/src/matter_qa/library/helper_libs/attribute_value_generator.py": "6a54323afd485defdfb2a5c26a2825c0ad0e4bd5cf2402e27d1230f128a43119",
+    "matter-qa-527-integration/base/src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py": "8fa864782f72d9dc0259cdea7cc1d321f884adbee132ef36e0859480501fcd8e",
+    "matter-qa-527-integration/base/src/matter_qa/library/helper_libs/attribute_value_generator.py": "6a235c1c9c22791bebd2f25c2273d00a8e8fa9482d03129214725814304e9553",
+    "matter-qa-527/working/src/matter_qa/unit_tests/test_pairing_cleanup.py": "7b5341c1d0b5569561877acb173c60c19f4988f986c7b4fb911dbfe386a9ead2",
+    "matter-qa-527/working/src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py": "1f698120efd12aeafc3a95ec5be79989b9d8fe05ee3943bb11cae446306c20ba",
+    "matter-qa-527/base/src/matter_qa/unit_tests/test_pairing_cleanup.py": "bcde8b1a485c68180275a4dd9298e4a391caa1ef8999444826283547b6b45eb4",
+    "matter-qa-527/base/src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py": "7e3a2f9f9962c9cf740b3cdc5cb05f2e47cd6805b49014722a71df425c89c97d",
+    "matter-qa-xml-constraints/working/src/matter_qa/unit_tests/test_constraint_parser.py": "bb5a4a361547c0cc85cd7eea20130cfeac152beb0102c8661f5ed2a7cc8e9db2",
+    "matter-qa-xml-constraints/working/src/matter_qa/library/helper_libs/attribute_value_generator.py": "6a54323afd485defdfb2a5c26a2825c0ad0e4bd5cf2402e27d1230f128a43119",
+    "matter-qa-xml-constraints/base/src/matter_qa/unit_tests/test_constraint_parser.py": "bffaaffed85e1254d9d9d6f0d090a41963ea71d0f565645c7886768aa28653b9",
+    "matter-qa-xml-constraints/base/src/matter_qa/library/helper_libs/attribute_value_generator.py": "6a235c1c9c22791bebd2f25c2273d00a8e8fa9482d03129214725814304e9553"
+  },
+  "incorporated_test_behavior": {
+    "test_rt12_concurrent_reads_verify_each_controller_against_written_values": "test_all_controllers_return_expected_written_value",
+    "test_rt12_concurrent_read_value_mismatch_is_not_ignored": "test_consistently_incorrect_written_values_fail",
+    "test_rt12_missing_concurrent_read_cannot_reuse_previous_value": "test_previous_iteration_value_cannot_satisfy_missing_readback"
+  },
+  "discarded_behavior": "Removing cross-controller consistency checks; clearing cache as sole evidence of successful fresh readback.",
+  "retired_utc": "2026-10-15T15:30:09.309832+00:00",
+  "all_retained_artifact_hashes_unchanged": true,
+  "removed_only_three_obsolete_patch_files": true,
+  "decision_record_sha256": "2517607b5b05d6c019a71209354158565ee03c099d537062f23073a80eb38097",
+  "ci_checks": {
+    "Code Linters": "success",
+    "Restyled": "success"
+  },
+  "final_worktree_audit": {
+    "tool": "GitKraken git_status on each of 11 listed worktrees",
+    "audited_utc": "2026-10-15T15:32:16.208082+00:00",
+    "statuses": {
+      "matter-qa": "clean",
+      "matter-qa-38750": "clean",
+      "matter-qa-39503": "clean",
+      "matter-qa-527": "clean",
+      "matter-qa-527-integration": "clean",
+      "matter-qa-callback-lifetime": "clean",
+      "matter-qa-nordic-verification": "clean",
+      "matter-qa-read-consistency": "clean",
+      "matter-qa-stage-selection": "clean",
+      "matter-qa-valve-step": "clean",
+      "matter-qa-xml-constraints": "clean"
+    },
+    "all_11_clean": true
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "published_source": "/home/feasel/qa-mar6/matter-qa-read-consistency/src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py",
+  "published_head": "9a003ab5cd7852ee407dd90b97791b806d7aabb3",
+  "published_source_sha256": "72de65d9e38da129d0a6ca6e12ee279e02268b4a3780c45aa629da4e793c4e4f",
+  "archived_three_tests_preserved": true,
+  "both_archived_read_methods_ast_equal": true,
+  "all_production_sources_unchanged": true,
+  "synthetic_cpu_only_no_hardware": true,
+  "combined_variant_in_memory_only": true,
+  "tests_run": 6,
+  "subcase_comparisons": [
+    {
+      "variant": "alternative",
+      "scenario": "matching_written_and_stable_values",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "alternative",
+      "scenario": "unwritten_feature_mismatch",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "alternative",
+      "scenario": "unwritten_feature_missing",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "alternative",
+      "scenario": "written_value_mismatch",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "alternative",
+      "scenario": "both_written_values_wrong",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "alternative",
+      "scenario": "all_responses_omit_written_attribute",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "alternative",
+      "scenario": "read_operation_error",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "alternative",
+      "scenario": "cache_metadata_difference",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "combined",
+      "scenario": "matching_written_and_stable_values",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "combined",
+      "scenario": "unwritten_feature_mismatch",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "combined",
+      "scenario": "unwritten_feature_missing",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "combined",
+      "scenario": "written_value_mismatch",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "combined",
+      "scenario": "both_written_values_wrong",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "combined",
+      "scenario": "all_responses_omit_written_attribute",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "combined",
+      "scenario": "read_operation_error",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "combined",
+      "scenario": "cache_metadata_difference",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "published",
+      "scenario": "matching_written_and_stable_values",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "published",
+      "scenario": "unwritten_feature_mismatch",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "published",
+      "scenario": "unwritten_feature_missing",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "published",
+      "scenario": "written_value_mismatch",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "published",
+      "scenario": "both_written_values_wrong",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "published",
+      "scenario": "all_responses_omit_written_attribute",
+      "rejected": false,
+      "expected_rejected": false
+    },
+    {
+      "variant": "published",
+      "scenario": "read_operation_error",
+      "rejected": true,
+      "expected_rejected": true
+    },
+    {
+      "variant": "published",
+      "scenario": "cache_metadata_difference",
+      "rejected": false,
+      "expected_rejected": false
+    }
+  ],
+  "failures": 0,
+  "errors": 0,
+  "successful": true
+}

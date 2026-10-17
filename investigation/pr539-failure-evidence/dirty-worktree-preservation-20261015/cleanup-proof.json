@@ -1,0 +1,14 @@
+{
+  "all_six_restored_to_original_committed_bytes": [
+    "matter-qa-527/src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py",
+    "matter-qa-527/src/matter_qa/unit_tests/test_pairing_cleanup.py",
+    "matter-qa-527-integration/src/matter_qa/library/helper_libs/attribute_value_generator.py",
+    "matter-qa-527-integration/src/matter_qa/scripts/reliability_scripts/TC_RT_1_2.py",
+    "matter-qa-xml-constraints/src/matter_qa/library/helper_libs/attribute_value_generator.py",
+    "matter-qa-xml-constraints/src/matter_qa/unit_tests/test_constraint_parser.py"
+  ],
+  "all_original_working_snapshots_hash_verified": true,
+  "three_original_dirty_worktrees_clean": true,
+  "original_heads_unchanged": true,
+  "syntax_valid": true
+}

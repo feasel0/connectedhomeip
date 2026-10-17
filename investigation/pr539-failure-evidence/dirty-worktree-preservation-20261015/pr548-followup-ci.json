@@ -1,0 +1,22 @@
+{
+  "checked_utc": "2026-10-15T15:30:49.384453+00:00",
+  "head_sha": "91c72691ef4bed6d9a20fc46f4f9a89268f3a9b3",
+  "runs": [
+    {
+      "id": 38760525377,
+      "name": "Code Linters",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "91c72691ef4bed6d9a20fc46f4f9a89268f3a9b3",
+      "html_url": "https://github.com/CHIP-Specifications/matter-qa/actions/runs/38760525377"
+    },
+    {
+      "id": 38760525535,
+      "name": "Restyled",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "91c72691ef4bed6d9a20fc46f4f9a89268f3a9b3",
+      "html_url": "https://github.com/CHIP-Specifications/matter-qa/actions/runs/38760525535"
+    }
+  ]
+}
