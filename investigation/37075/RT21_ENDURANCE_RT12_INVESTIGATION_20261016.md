@@ -1,6 +1,23 @@
 # RT_2_1 Endurance and RT_1_2 Investigation
 
-Current update, 2026-10-17 18:26 UTC:
+Current update, checked 2026-10-18 13:47 UTC: **all 100 iterations finished**.
+The supervisor's `finished.json` records closure at
+**2026-10-17 22:41:51 UTC**, with **100 executed / 99 PASS / one FAIL / zero
+unexecuted**, native exit 0 and no interruption. `external-closeout.json`
+independently records the same counts. Iteration 75 remains the failure;
+the wrong-peer PASE interference described below is not converted to PASS.
+This is a completed campaign, not a clean 100/100 acceptance result.
+
+The old `current.json` is a stale live checkpoint: 99 executed / 98 PASS /
+one FAIL at 22:41:49 UTC. It still says `ENDURANCE_RUNNING`, but the original
+PID/start identity is absent and the final records supersede it. Do not use
+that live file alone to report completion or authorize another campaign.
+The read-only capture audit found 598 closed segments, no incomplete closed
+segments, no closure errors and no pending segments. That does not prove
+gap-free capture, authenticated Matter decoding or DUT reset acknowledgment.
+See the [completion report](../reports/2026-10-18_13-47-28.md).
+
+Earlier update, 2026-10-17 18:26 UTC:
 [targeted attribution](RT12_TARGETED_ATTRIBUTION_20261017.md) and the
 [continuation report](../reports/2026-10-17_18-26-24.md) supersede the checkpoints
 below. The original process remains running at 85 executed/84 PASS/one FAIL,
