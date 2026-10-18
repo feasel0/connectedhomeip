@@ -123,6 +123,11 @@ def sources():
         'src/crypto/CHIPCryptoPALOpenSSL.cpp': (1165, 1181),
         'src/controller/SetUpCodePairer.cpp': (100, 250, 270, 315, 390, 420, 560, 640, 790, 1000),
         'src/controller/python/ChipDeviceController-ScriptDevicePairingDelegate.cpp': (80, 120),
+        'src/app/ReadHandler.cpp': (230, 280, 630, 675),
+        'src/app/reporting/Engine.cpp': (875, 955, 1130, 1170),
+        'src/app/OperationalSessionSetup.cpp': (75, 175, 450, 535),
+        'src/app/CASESessionManager.cpp': (50, 220),
+        'src/app/ReadClient.cpp': (1352, 1425, 1485, 1500),
     }
     for name, ranges in selections.items():
         result = subprocess.run(['git', '-C', repository, 'show', revision + ':' + name], capture_output=True, text=True)
@@ -134,6 +139,83 @@ def sources():
         for lower, upper in zip(ranges[::2], ranges[1::2]):
             for number in range(lower, min(upper, len(lines)) + 1):
                 print(f'{number}: {lines[number - 1]}')
+
+
+def coordination_sources():
+    repository = '/home/feasel/matter-oct14/connectedhomeip-pr527-fixture'
+    revision = '24a1bc052a7dfd3db809e43bb0da7c93b20bfad6'
+    markers = {
+        'src/app/reporting/Engine.cpp': ('void Engine::Run()', 'void Engine::OnReportConfirm()', 'mNumReportsInFlight--'),
+        'src/app/ReadHandler.cpp': ('ReadHandler::OnStatusResponse', 'void ReadHandler::MoveToState'),
+        'src/app/CASESessionManager.cpp': ('FindExistingSessionSetup(peerId', 'session->Connect('),
+        'src/app/CASESessionManager.h': ('uint8_t attemptCount = 1',),
+        'src/app/OperationalSessionSetup.cpp': ('EnqueueConnectionCallbacks(', 'case State::Connecting:',
+            'CHIP_ERROR_TIMEOUT == error || CHIP_ERROR_BUSY == error', 'NotifyConnectionCallbacks(',
+            '--mRemainingAttempts;', '--attemptCount;'),
+        'src/app/ReadClient.cpp': ('ReadClient::HandleDeviceConnectionFailure', 'mMinimalResubscribeDelay =',
+            'ReadClient::EstablishSessionToPeer()'),
+    }
+    records = []
+    for name, needles in markers.items():
+        content = subprocess.check_output(['git', '-C', repository, 'show', revision + ':' + name])
+        lines = content.decode().splitlines()
+        found = {needle: [number for number, line in enumerate(lines, 1) if needle in line] for needle in needles}
+        assert all(found.values()), name
+        records.append({'file': name, 'revision': revision, 'sha256': hashlib.sha256(content).hexdigest(), 'markers': found})
+    result = {'pinned_source_receipts': records, 'binary_compile_flags_not_inferred': True}
+    save('coordination-pinned-sources.json', result)
+    print(json.dumps(result, indent=2))
+
+
+def dut_reporting_binary():
+    specification = importlib.util.spec_from_file_location('rt12_binary_access', PREVIOUS / 'work.py')
+    driver = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(driver)
+    code = r'''from pathlib import Path
+import hashlib,json,subprocess
+assert Path('/etc/machine-id').read_text().strip()=='fa898f2a8e5c487489c516aaa233f86a'
+expected='cbc6f50f2641ec5d93fdf074e2890ce8d5363fe3dce641e325bdfc1ad0ff947b'
+binary=Path.home()/'matter-pr539-dut-20261007/bin/chip-pr539-dut'
+assert hashlib.sha256(binary.read_bytes()).hexdigest()==expected, 'The retained DUT binary differs from the sealed reproduction'
+symbol='_ZN4chip3app9reporting6Engine3RunEv'
+output=subprocess.check_output(['objdump','-d','--disassemble='+symbol,str(binary)],text=True,timeout=30)
+assert '<'+symbol+'>:' in output, 'Retained binary has no separately inspectable reporting Engine::Run symbol'
+print(json.dumps({'binary':str(binary),'sha256':expected,'symbol':symbol,'disassembly':output}))
+'''
+    result = json.loads(driver.ssh('raspberrypi-2.local', code))
+    save('dut-reporting-binary.json', result)
+    print(json.dumps(result, indent=2))
+
+
+def controller_retry_binary():
+    specification = importlib.util.spec_from_file_location('rt12_retry_access', PREVIOUS / 'work.py')
+    driver = importlib.util.module_from_spec(specification)
+    specification.loader.exec_module(driver)
+    code = r'''from pathlib import Path
+import hashlib,json,subprocess
+assert Path('/etc/machine-id').read_text().strip()=='ef72df43fba94793ab724dc3013cec17'
+binary=Path.home()/'matter-sdk74676-hardware-20261013/controller/matter/_ChipDeviceCtrl.so'
+expected='a04c667b4adba6df6041674acf8787e54e0935b80bb0e3e46c98933af984dd11'
+assert hashlib.sha256(binary.read_bytes()).hexdigest()==expected
+symbols=subprocess.check_output(['nm',str(binary)],text=True,timeout=30)
+selected=[line.split()[-1] for line in symbols.splitlines() if 'OperationalSessionSetup' in line and 'OnSessionEstablishmentError' in line]
+assert len(selected)==1, 'Expected one concrete operational-session error handler'
+output=subprocess.check_output(['objdump','-d','--disassemble='+selected[0],str(binary)],text=True,timeout=30)
+assert '<'+selected[0]+'>:' in output
+callers=[line.split()[-1] for line in symbols.splitlines() if 'ReadClient' in line and 'EstablishSessionToPeer' in line]
+assert len(callers)==1
+caller=subprocess.check_output(['objdump','-d','--disassemble='+callers[0],str(binary)],text=True,timeout=30)
+needles=('TryNextResult','ScheduleSessionSetupReattempt','NotifyRetryHandlers','DequeueConnectionCallbacks')
+print(json.dumps({'binary':str(binary),'sha256':expected,'symbol':selected[0],
+    'call_markers':{needle:[line.strip() for line in output.splitlines() if needle in line] for needle in needles},
+    'subscription_caller':{'symbol':callers[0],'disassembly':caller,
+        'argument_and_call_instructions':[line.strip() for line in caller.splitlines()
+            if 'mov\tw4,' in line or 'FindOrEstablishSession' in line]},
+    'disassembly':output,'presence_does_not_establish_remaining_attempt_count':True}))
+'''
+    result = json.loads(driver.ssh('192.168.1.221', code))
+    save('controller-retry-binary.json', result)
+    print(json.dumps({key: value for key, value in result.items() if key != 'disassembly'}, indent=2))
 
 
 def metadata():
@@ -351,6 +433,52 @@ def serial_timing():
             exchange = (row['message'] or row['nearest_preceding_header'] or {}).get('exchange')
             if row['fields'] and not set(row['fields']).intersection(('mrp_ack', 'retransmission', 'chunked', 'im_status')) or row['labels']:
                 print(json.dumps(row))
+
+
+def reporting_state(line):
+    patterns = {
+        'reports_in_flight': r'<RE> OnReportConfirm: NumReports = (\d+)',
+        'handler_state': r'IM RH moving to \[([A-Za-z]+)\]',
+        'build_generation': r'Building Reports for ReadHandler with LastReportGeneration = (\d+)',
+    }
+    return {name: match[1] for name, pattern in patterns.items() if (match := re.search(pattern, line))}
+
+
+def reporting_gap():
+    manifest = json.loads((PREVIOUS / 'controller-object-manifest.json').read_text())
+    selected = [name for name in manifest if name.startswith('serial-reads/') and '/Dut_log_iteration_' in name]
+    assert len(selected) == 1
+    name = selected[0]
+    digest = hashlib.sha256()
+    rows = []
+    epoch = None
+    with tarfile.open(PREVIOUS / 'controller-sealed-collection.tar.gz') as archive:
+        for number, encoded in enumerate(archive.extractfile('objects/' + manifest[name]['sha256']), 1):
+            digest.update(encoded)
+            line = encoded.decode(errors='replace')
+            stamp = re.search(r'\[(\d{10}\.\d+)\]', line)
+            if stamp:
+                epoch = float(stamp[1])
+            if epoch is None or not 1792242562.6 <= epoch <= 1792242570:
+                continue
+            fields = reporting_state(line)
+            header = HEADER.search(line)
+            if fields or header:
+                rows.append({'line': number, 'epoch': epoch, 'fields': fields,
+                    'message': event(line).get('message') if header else None})
+    assert digest.hexdigest() == manifest[name]['sha256']
+    assert any(row['message'] and row['message']['counter'] == 47688567 for row in rows)
+    result = {'source': name, 'sha256': digest.hexdigest(), 'events': rows,
+        'handler_states_are_not_individually_identified': True}
+    save('reporting-gap.json', result)
+    states = [row for row in rows if row['fields']]
+    print(json.dumps({'sha256': digest.hexdigest(), 'events': len(rows), 'state_events': len(states),
+        'state_distribution': dict(Counter(str(row['fields']) for row in states)),
+        'first_states': states[:12], 'last_states': states[-12:],
+        'message_types': dict(Counter(f"{row['message']['direction']}:{row['message']['protocol']}:{row['message']['opcode']}"
+            for row in rows if row['message'])),
+        'th2_messages': [row for row in rows if row['message'] and row['message']['exchange'] == 12712],
+        'handler_states_are_not_individually_identified': True}, indent=2))
 
 
 def serial_summary():
@@ -584,6 +712,11 @@ def publication_check():
 
 
 class ExtractionTest(unittest.TestCase):
+    def test_reporting_state_excludes_values(self):
+        self.assertEqual(reporting_state('<RE> OnReportConfirm: NumReports = 0'), {'reports_in_flight': '0'})
+        self.assertEqual(reporting_state('IM RH moving to [CanStartReporting]'), {'handler_state': 'CanStartReporting'})
+        self.assertEqual(reporting_state('Attribute value = DO_NOT_EXPORT'), {})
+
     def test_attribute_status_scope_and_no_values(self):
         sample = ['AttributeStatusIB =\n', '{\n', 'Path =\n', '{\n', 'Endpoint = 0x1,\n',
             'Cluster = 0xFFF1FC05,\n', 'Attribute = 0x31,\n', '}\n', 'ErrorStatus =\n', '{\n',
@@ -621,7 +754,7 @@ class ExtractionTest(unittest.TestCase):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=('self-test', 'pase', 'sources', 'metadata', 'remote_probe', 'qa_units', 'attribute_metadata', 'discovery_filter', 'serial_timing', 'serial_summary', 'serial_findings', 'history_audit', 'remote_window_status', 'decode_statuses', 'publication_check'))
+    parser.add_argument('action', choices=('self-test', 'pase', 'sources', 'metadata', 'remote_probe', 'qa_units', 'attribute_metadata', 'discovery_filter', 'serial_timing', 'serial_summary', 'serial_findings', 'history_audit', 'remote_window_status', 'decode_statuses', 'publication_check', 'reporting_gap', 'coordination_sources', 'dut_reporting_binary', 'controller_retry_binary'))
     action = parser.parse_args().action
     if action == 'self-test':
         unittest.main(argv=[__file__])

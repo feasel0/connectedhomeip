@@ -457,7 +457,7 @@ def render(catalog, manifest):
     lines.extend(['## Automatic Additions and Next Work', '',
         f'Observer unit: `{UNIT}`. Linux inotify watches only current result/summary/capture-proof metadata, plus the batch ledger. It never resets, pairs, flashes, opens UART, changes SDK/firmware/configuration or publishes PRs. New failures default to the uncertain category unless deciding evidence matches a known mechanism. Stable IDs prevent duplicate additions; old catalog entries are never dropped.',
         'Closed artifacts are copied privately and hash-checked. Active logs/captures are indexed first and copied after closure. Observer persists independently of VS Code and exits when its durable hardware batch closes; no polling or sleeps. Failure investigation follows the requested category order, with no automatic PR publication.',
-        'Manual refresh: `python3 pr539-failure-evidence/update_dossier.py --update`. Verification controls: `python3 pr539-failure-evidence/update_dossier.py --self-test`. The writeup remains visible as an unstaged/untracked file; nothing has been staged or committed. Only generated indexes and temporary files are locally ignored. Raw logs and preserved copies stay outside the repository.', ''])
+        'Manual refresh: `python3 investigation/pr539-failure-evidence/update_dossier.py --update`. Verification controls: `python3 investigation/pr539-failure-evidence/update_dossier.py --self-test`. Writeups and tooling are versioned on the fork-only investigation branch. Generated indexes, raw logs, private controller state and bulk preserved copies remain excluded from commits.', ''])
     temporary = HERE / 'FAILURES.md.tmp'
     temporary.write_text('\n'.join(lines))
     os.replace(temporary, HERE / 'FAILURES.md')
@@ -768,12 +768,13 @@ class DossierTests(unittest.TestCase):
             self.assertEqual(final_result(path), {'executed': 1})
 
     def test_writeup_git_visibility(self):
-        workspace = HERE.parent
-        visible = subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard', '--', 'pr539-failure-evidence'], cwd=workspace, text=True).splitlines()
-        self.assertIn('pr539-failure-evidence/FAILURES.md', visible)
-        self.assertIn('pr539-failure-evidence/PR_REVIEW_20261013.md', visible)
-        self.assertNotIn('pr539-failure-evidence/catalog.json', visible)
-        self.assertNotIn('pr539-failure-evidence/preserved-files.json', visible)
+        workspace = Path(subprocess.check_output(['git', 'rev-parse', '--show-toplevel'], cwd=HERE, text=True).strip())
+        prefix = HERE.relative_to(workspace).as_posix()
+        visible = subprocess.check_output(['git', 'ls-files', '--cached', '--others', '--exclude-standard', '--', prefix], cwd=workspace, text=True).splitlines()
+        self.assertIn(prefix + '/FAILURES.md', visible)
+        self.assertIn(prefix + '/PR_REVIEW_20261013.md', visible)
+        self.assertNotIn(prefix + '/catalog.json', visible)
+        self.assertNotIn(prefix + '/preserved-files.json', visible)
         self.assertFalse(ARCHIVE.is_relative_to(workspace))
 
 

@@ -1,6 +1,109 @@
 # Targeted RT_1_2 Attribution: 2026-10-17
 
-## Scope and Status
+## Current Reconciliation: 2026-10-18
+
+The Ubuntu/Nordic same-process RT_2_1 campaign is closed: 100 requested and
+executed, 99 PASS, one FAIL (iteration 75), zero unfinished, native exit 0.
+`finished.json.result`, `endurance.json` and the external closeout agree on all
+100 native records. The older `current.json` is a stale running checkpoint,
+not the completion authority. The historical running observations below remain
+unchanged and must not be read as current fixture ownership.
+
+Iteration 75's PASE failure is now attributed to cross-fixture discovery:
+Nordic discriminator 3840 and the concurrently opened Wi-Fi Pi window's 4021
+both map to manual-code short discriminator 15. All 12 matched message headers
+and counters on exchanges 54314/54315 match that Wi-Fi DUT. Pinned
+`SetUpCodePairer` starts DNS-SD discovery even for BLE commissioning. The
+internal `0xAC` PAKE2 MAC failure is translated to the generic Python `0x03`
+pairing failure; the latter is not proof of stale commissioner state. The
+original FAIL remains FAIL. BLE completion details remain unresolved.
+
+For the independent serialized RT_1_2 diagnostic, TH-2's last successful IM
+status counter 223246083 was received by the DUT at epoch 1792242562.989;
+the DUT removed the corresponding MRP entry and processed IM success. The next
+TH-2 report counter 47688567 was not logged for send until 1792242569.767,
+6.778 seconds later. Four explicit retransmits followed. The controller first
+logged that report after its timeout and then acknowledged it. This is not a
+missing acknowledgment for the previous chunk, nor packet-absence proof.
+
+The sealed DUT log (SHA-256
+`ddc01b92b90544a0eec40222ff2ecb4cc646f98443a768df4a1de94d8a19e6b8`)
+adds a narrower scheduling observation: between epochs 1792242562.6 and
+1792242570 there are 18 report confirmations, 18 build markers and 18 report
+sends, plus continuing inbound IM statuses and standalone acknowledgments.
+Every confirmation logs three reports still in flight. Pinned SDK
+`24a1bc052a7dfd3db809e43bb0da7c93b20bfad6` decrements that count before
+logging it, so these are repeated four-to-three credit releases. Its reporting
+engine serves active handlers round-robin subject to a shared in-flight limit.
+The last build marker before the late TH-2 send is at 1792242569.756, only
+11 ms earlier, with no intervening build marker. These observations favor
+waiting for scheduling/eligibility amid report traffic over a single
+6.778-second report-construction call. The retained Linux DUT ELF is separately
+bound to reproduction SHA-256
+`cbc6f50f2641ec5d93fdf074e2890ce8d5363fe3dce641e325bdfc1ad0ff947b`:
+`Engine::Run` at `0x52a97c` loads the in-flight field, compares against three
+at `0x52a980`, and branches out on unsigned greater-than at `0x52a984`.
+This verifies the deployed four-report gate independently of source defaults.
+Handler-state logs still lack individual identity, so exact TH-2 queue
+residence remains unproved. No SDK fix or timeout increase is justified yet.
+
+TH-3's later Busy is distinct: subscription recovery on fabrics 2/3/4 starts
+concurrent forced CASE attempts after their report timeouts. Pinned
+`CASESessionManager` coalesces callers by `ScopedNodeId`, including fabric, and
+`OperationalSessionSetup::Connect` queues callers while that peer is connecting.
+It does not serialize the same physical DUT across different fabric peers.
+TH-3 therefore shares its fabric's establishment failure before issuing an IM
+ReadRequest while another fabric is accepted. Busy/backoff is consistent with
+that design; evidence does not establish a lost retry or coordination defect.
+The hash-matched ARM64 controller library contains automatic retry calls, so
+retry support is not compiled out. Its actual
+`ReadClient::EstablishSessionToPeer` call site passes one attempt (`mov w4, #1`
+at `0x16732a0`, call at `0x16732ac`). Pinned source consumes that attempt before
+connecting, does not replenish it for another one-attempt caller joining the
+same setup, and fans failure out when no attempts remain. The subscription
+failure callback then closes through its own resubscription backoff, matching
+the observed 5,000/7,084/5,592 ms delays. This is an expected one-attempt
+establishment plus subscription-retry sequence, not evidence of a lost automatic
+retry. It does not establish that every foreground caller requested the same
+budget or justify changing production retry policy.
+
+The four decode-status attributes are deliberate UnitTesting server error
+paths, not evidence of malformed value decoding. The corrected diagnostic
+retains its native FAIL, 13 returned maps and two read errors; returned maps
+are not silently relabeled as valid readbacks. Historical accounting remains
+80 repaired-mechanism attributions and 78 open outcomes among 158 failures,
+with the same five historical IDs below.
+
+A separate Pi-controller/Nordic one-iteration captured RT_2_1 smoke started
+2026-10-18 at 18:02:42 UTC and closed at 18:21:40 UTC: one executed, one PASS,
+zero FAIL, native exit zero. Its closed captures contain 2,662 Pi BLE ACL packets
+and 550 IPv6 packets, with no cleanup error. It uses the original immutable five-PR snapshot,
+143 verified source files and the held ARM64 native controller. This tests the
+controller-host factor, not all newer QA heads. A separate noncommissioning
+archive-path check passed before launch. The same-process 100-iteration campaign
+started at 18:22:40 UTC under user service
+`pi-nordic-endurance-20261018.service`. At 18:44:52 UTC its original worker and
+native child remained alive with one completed iteration, one PASS and zero
+FAIL; 99 iterations were not yet complete. This is not a 100-iteration completion
+or PASS claim. Seven closed capture segments were hash-verified and archived
+privately on the Pi before exact local duplicates are removed. Segment rollover
+has gaps and does not establish gap-free packet coverage. Known-host competing
+QA/app checks run periodically; they are not global network isolation. Other
+commissioning windows must remain closed.
+
+An independent `pi-nordic-closeout-20261018.service` waits for the recorded
+coordinator identity, reconciles the final ledger and performs guarded
+successful-detail retention. It never starts another test. Interrupted runs are
+preserved; failed iterations and adjacent controls are protected. Root-owned Pi
+broker HCI copies require an administrator-reviewed prune operation and are not
+reported as deleted.
+
+The ten-PR engineering review is already complete. Remaining external gates are
+QA PullApprove team configuration, QA527 Restyled infrastructure retry,
+SDK74676 Gemini review and normal human approval. They are not hardware PASS
+claims or reasons to rewrite the already reviewed PR descriptions.
+
+## Historical Scope and Status: 2026-10-17
 
 Execution is proceeding under the user's acceptance of 65 successful Nordic
 endurance iterations as sufficient to start independent investigation. The
