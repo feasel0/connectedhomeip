@@ -5,6 +5,66 @@ Original outcomes remain unchanged. The historical dossier still contains
 158 failed outcomes, 80 repaired-mechanism attributions and 78 OPEN outcomes.
 The later RT12 experiments and endurance campaigns are separate ledgers.
 
+## Segment 322: Forensics Closed, Exact Exception Unresolved
+
+The original endurance remains interrupted: 55 PASS, one interruption-contaminated
+native FAIL and 44 without native outcomes. No restart or outcome rewrite occurred.
+The coordinator imports `captured()` from the original
+`/home/feasel/qa-mar6/pr527-followup-preparation-20261008/run_readiness_batch.py`;
+complete-file SHA256
+`a08b120ab2b68f0000c9908a8d6743b6568e57e65f6df6cab5c161970daf43eb`,
+mtime October 15, before campaign launch. Its source archive contains the earlier
+worker bootstrap, not this dependency; do not overstate frozen-source provenance.
+
+The helper stops/retrieves both captures, writes incomplete proof, checks ring
+boundaries, counts three packet filters, then marks complete. Archiving follows
+only a successful capture context.
+
+| UTC on October 19 | Retained Observation |
+| --- | --- |
+| 11:01:07.426644 | Segment 321 complete proof written: IPv6 250, Pi ACL 1281. |
+| 11:01:10.296687 | Segment 321 archive receipt written; remote archive remains present, 7,941,551 bytes. |
+| 11:01:10.297981 | Segment 322 capture context begins. |
+| 11:04:13.306401 | Pi broker ends cleanly; child exit 0. |
+| 11:04:18.923878 | Ubuntu broker ends cleanly; child exit 0. |
+| 11:04:20.551391 | Segment 322 incomplete proof written, cleanup_errors empty. |
+| 11:06:28.429357 | Worker alive, 55 PASS, remote free disk 49,330,388,992 bytes. |
+| 11:06:30.914906 | Outer interruption: Endurance capture closure failed. |
+| about 11:06:31 | Coordinator exits status 1, not killed by OOM. |
+| 11:06:49.322303 | Kernel kills cpptools PID 2917847; anon RSS 21,887,840 KiB, global OOM, no swap. |
+
+Segment 322 retains both captures and one 2,440,392-byte infrastructure pcapng;
+dumpcap reports 8559 captured packets. Both broker units are inactive/dead, with
+error null and child exit zero. No local archive, receipt or remote segment-322
+archive exists. The incomplete proof and source ordering locate the failure
+before archiving. The original exception is absent from the three retained
+coordinator/closeout logs and bounded accessible service/kernel journal windows.
+The thread kept only its class in memory. Later recount success does not restore
+that information. The roughly 130-second gap fits a 120-second count timeout,
+but no TimeoutExpired or failing packet-counter return code is retained.
+
+| Candidate | Finding |
+| --- | --- |
+| Acquisition failure | Actual traffic and clean capture-child exits; no demonstrated acquisition error or proof of gap-free coverage. |
+| Broker closure/retrieval | Contradicted by clean native/broker states and empty cleanup errors. |
+| Validation interruption | Strongly supported boundary; final counts/complete fields were never written. Exact exception unknown. |
+| Archive/transfer failure | No segment-322 archive artifact; incomplete proof and ordering place failure before this stage. |
+| Resource exhaustion | Global RAM exhaustion confirmed after coordinator exit, not an earlier OOM kill. Earlier pressure is plausible but unmeasured; historical local disk reserve unavailable. |
+| Supervisor logic error | No demonstrated wrong stop decision or invalid validation predicate. |
+
+Historical forensic status: INSUFFICIENT EVIDENCE for the underlying exception;
+task closed after exhausting retained records. Private correlation/hashes:
+`/home/feasel/qa-mar6/37075-increment-20261017/segment322-forensic.private.json`.
+Do not repeat missing-record searches or launch a replacement campaign.
+
+A demonstrated investigation-tool defect is corrected: future capture-thread
+failures retain phase, segment, message and traceback in owner-only
+`capture-thread-failure.private.json`. The regression fails before and passes
+after for capture-context and archive errors, requiring unchanged terminal
+shutdown error and archive ordering. All 11 coordinator-tool tests pass.
+Validation, timeout and stop policy are unchanged. This cannot recover the old
+exception, repair the interrupted run or reclassify iteration 56.
+
 ## TH-2: Eligibility and Fairness
 
 Affected observation: the original `serial-reads` RT12 iteration 1 under
@@ -77,7 +137,9 @@ offline method probe, not a full SDK regression or deployed-DUT test.
 ### Deciding Experiment and Ownership
 
 Owner: this investigation. Status: OPEN, runtime experiment blocked by the
-original Pi/Nordic endurance fixture ownership. No production fix.
+current local disk reserve, not a live original endurance process. MainPID is
+zero and both fixture locks have no owner. Current local free disk is about
+7.34 GB, below the unchanged 8-GiB reserve. No matched run or production fix.
 
 The smallest next instrumentation must be confined to an isolated pinned DUT
 snapshot, never the active campaign. Use a fixed-capacity binary event buffer
@@ -108,7 +170,20 @@ MRP acknowledgment is separately instrumented at a matching retransmission
 entry, not inferred from an IM status or generic credit release. The private
 overlay is `/home/feasel/qa-mar6/th2-reporting-trace-20261019-mrp`.
 
-After the original Nordic run releases ownership, use a small matched original
+The harmless recorder-only `runtime-test` now passes: actual SIGUSR2/SIGUSR1
+arming/export, placement allocation/release/address reuse with new generations,
+ordered decoded events, sequence/time, ring loss and identity overflow. Private
+0700 directory plus child umask 077 yields verified 0600 exports; temporary
+outputs are removed. This host measured 49 ns/event armed with 64 identities,
+2 ns disabled, and 579 microseconds/full-ring export, within provisional
+10-us/event and 100-ms/export test budgets. These are not DUT performance limits.
+
+The runtime objects are ProbeHandler, not SDK ReadHandler. Actual SDK lifecycle
+hooks, linked-app transport callbacks, runtime completeness and workload overhead
+remain unverified. This does not make the DUT diagnostic ready or prove absent
+events mean non-execution. No additional instrumentation layer was added.
+
+After fixture and resource gates pass, use a small matched original
 parallel RT12 control and a diagnostic closing subscriptions only after the
 original required subscription-report verification succeeds. Keep all 15 added
 controllers, commissioning, writes/reads, timeouts, consistency and fresh-value
@@ -163,6 +238,27 @@ gap. The retained Ubuntu native library has runtime SHA256
 the invocations do not individually record an SDK revision. Reading matching
 source is not a sufficient historical source-to-binary attestation.
 
+### Historical Evidence Exhaustion
+
+Original PR539 scan/discovery runs start at 16:06-16:42 UTC October 11; baseline
+timeout runs at 19:16-19:18; recovery runs at 19:29:16 and 19:30:39. The retained
+kernel hci0 scan-command 0x2042 timeout (-110) at log-local 10:26:56 is earlier,
+not an index/availability sample at each failure. The 17-byte Bluetooth journal
+has no useful daemon history. No additional original Ubuntu controller-host HCI
+capture exists in the bounded provenance/capture locations inspected.
+
+| Group | Supported / Contradicted | Smallest Deciding Reproduction |
+| --- | --- | --- |
+| A: 44 | Native timeout before stop InProgress; primary stop-error attribution contradicted. No demonstrated PASE exchange. | Same-time MAC/index/D-Bus binding, known DUT advertising, controller-host HCI and native callbacks during one scan. |
+| B: 11 | Empty discovery/stop error observed; group A's native timeout marker absent. | Public discovery result/filtering versus measured advertisements, with same-time adapter binding. |
+| C: 11 | Local availability/initialization failure after service restart; identity does not prove current D-Bus availability. | Same-process kernel identity, exported BlueZ objects, configured index and initialization result. |
+
+These searches are exhausted: retain exact IDs OPEN / INSUFFICIENT EVIDENCE.
+Do not repeatedly investigate unavailable historical records. Present-day
+reproduction could distinguish hypotheses but cannot automatically attribute
+old IDs. None was launched without its deciding state; no stop/readiness/index
+production correction is justified.
+
 ### Exact IDs
 
 All IDs below keep `OPEN_PENDING_PROVENANCE`, their original FAIL, run and
@@ -211,11 +307,47 @@ is reproduced under an appropriate focused regression.
 
 ## Other Retained Families
 
+### Five GATT Failures Narrowed
+
+All five retained HCI captures show successful connection to the exact native
+selected peer `2C:CF:67:EC:14:9F`, handle 0x0040, then a peer-to-controller
+Read By Group Type response (ATT 0x11), fixed CID 0x0004, returning primary
+service 0xfff6. This is a response, not an advertisement or request. Direction
+comes from dissector source/destination columns; H4 direction and Bluetooth
+src/dst fields are empty and were not treated as proof.
+
+| Original ID | Attempt | Connection Frame | Service Frame | Service End Handle |
+| --- | --- | ---: | ---: | --- |
+| 326b6e82a2407b74 | a03 | 42 | 62 | 0x0042 |
+| 9b2a44b24023d8e5 | a05 | 35 | 53 | 0x004e |
+| f47c1cab6351cf41 | a06 | 40 | 60 | 0x0054 |
+| 27790c2fe89dcbd1 | a07 | 33 | 52 | 0x005a |
+| 415e90edd5f1e1b4 | a08 | 35 | 54 | 0x0060 |
+
+No radio activity, wrong selected peer and no Matter primary service do not
+explain these five failures. Native CHIP-service selection nevertheless fails.
+This does not establish characteristic discovery, ServicesResolved completion,
+D-Bus proxy export or native service-list correctness. AttributeNotFound 0x0a
+also occurs at discovery boundaries and is not independently a defect.
+
+The smallest next check is this peer's exported BlueZ service/characteristic
+objects and readiness transition at native lookup time, tied to the known ATT
+exchange. Cache, daemon discovery and native proxy timing remain hypotheses;
+later corrected single-ATT setup is not historical causal proof. All five stay
+OPEN; no speculative GATT production correction is justified.
+
+### Smallest Remaining Checks
+
 | Exact Evidence ID | Symptom / Evidence | Hypothesis and Confidence | Deciding Check / Status |
 | --- | --- | --- | --- |
 | January 2025 iteration 99 | CASE E44918: Sigma3 counter 140688176 at 15:00:19.433; repeated Sigma2 counter 73580410 at 15:00:21.320; final CASESession.cpp:633 timeout. | Failure before CASE completion, high confidence; why Sigma3 was not accepted remains unknown. | Correlate controller capture with responder receive/validation evidence; relevant DUT/OTBR evidence missing. OPEN, investigation owner. |
 | January 2025 iteration 78 | CASE E43681 Sigma3 at 14:15:35.228 followed by secure-channel status at 14:15:35.929; native final CommandSender.cpp:343 timeout. Earlier catalog identifies subsequent encrypted CommissioningComplete. | Distinct post-CASE command-progress failure, high confidence in phase, not root cause. | Authenticate command/response capture and responder delivery; missing relevant DUT/OTBR evidence. OPEN, investigation owner. |
 | PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | Late-state/status handling or delivery loss remain candidates; neither proved. | Correlate exact report/status exchange with handler close/reuse; historical packet capture absent. OPEN, investigation owner. |
+| Wi-Fi IP PASE IncorrectState | Native exception alone does not identify protocol phase. | Discovery, initialization and transport/session hypotheses remain distinct. | Exact original call, peer-discovery evidence, PASE headers and native error origin; not an inferred BLE defect. |
+| BLE-Wi-Fi a02 subscription | Separate notification/subscription-stage failure. | Native-versus-daemon cause unproved. | Exact CCCD/notification request and response, BlueZ Notify state and native completion for this peer. |
+| Three BLE-Wi-Fi operational timeouts | Post-provisioning phase, separate from BLE pairing. | IPv6 reachability, publication, DNS-SD and CASE remain distinct. | Actual interface/global address and route at failure, corresponding discovery result and CASE exchange. |
+| Native SIGSEGV / prolonged PASE | Crashes and long pending protocol work are distinct observations. | No new independent mechanism established. | Matching core/backtrace/build/faulting callback per crash; last actual protocol/callback progress per hang. |
+| Thread/SRP/publication | Timeout does not establish a failed network layer. | Dataset, attachment, address, SRP and delivery remain separate. | Exact peer's dataset fingerprint, SRP record, operational address and routed packet timestamps. |
 
 The January check now binds its controller logs to SHA256
 `21c2341f41f0f3675f00a2984bf16e79a2d7dba153da79dd61865dfec064ce3e`

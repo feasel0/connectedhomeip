@@ -21,6 +21,9 @@ test infrastructure configuration live here. The archival branch is
 - `tools/ReportingTrace.h` and `tools/prepare_reporting_trace.py`: bounded Linux
   reporting diagnostic and guarded pinned-source overlay generator. Not deployed
   firmware or a production scheduling change.
+- `tools/pi_nordic_campaign.py`: future capture errors retain owner-only private
+  phase/message/traceback without changing validation or stop policy. The original
+  endurance is closed and must not restart.
 
 Raw logs, captures, controller private state, generated private indexes, firmware
 builds, environments and bulk archives remain on disk but are ignored. They must
@@ -45,6 +48,8 @@ python3 -B investigation/tools/reporting_fairness.py self-test
 python3 -B investigation/tools/discovery_isolation.py --self-test
 python3 -B investigation/tools/historical_ble.py self-test
 python3 -B investigation/tools/prepare_reporting_trace.py self-test
+python3 -B investigation/tools/prepare_reporting_trace.py runtime-test
+python3 -B -m unittest investigation.tools.pi_nordic_campaign.CampaignTest
 python3 -B investigation/pr539-failure-evidence/update_dossier.py --self-test
 python3 -B investigation/pr539-failure-evidence/prune_successful_runs.py --self-test
 ```

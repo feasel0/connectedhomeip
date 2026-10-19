@@ -16,6 +16,7 @@ import sys
 import tarfile
 import threading
 import time
+import traceback
 from types import SimpleNamespace
 import tempfile
 import unittest
@@ -295,13 +296,23 @@ def segmented_captures(coordinator):
         number = 0
         while not stop.is_set():
             number += 1
+            phase = 'capture_context'
             try:
                 with coordinator.captured(f'endurance-{number:04}', None):
                     ready.set()
                     stop.wait(180)
+                phase = 'archive'
                 archive_capture(ROOT / 'captures' / f'endurance-{number:04}')
             except BaseException as error:
                 errors.append(type(error).__name__)
+                try:
+                    save('capture-thread-failure.private.json', {
+                        'utc': datetime.now(timezone.utc).isoformat(), 'segment': f'endurance-{number:04}',
+                        'phase': phase, 'exception_type': type(error).__name__, 'message': str(error),
+                        'traceback': traceback.format_exc()})
+                    (ROOT / 'capture-thread-failure.private.json').chmod(0o600)
+                except OSError as write_error:
+                    print('Capture diagnostic write failed: ' + type(write_error).__name__, file=sys.stderr, flush=True)
                 ready.set()
                 return
 
@@ -511,6 +522,35 @@ print(json.dumps({{'worker_alive':bool(owner and fields and fields[19]==str(owne
 
 
 class CampaignTest(unittest.TestCase):
+    def test_capture_thread_preserves_original_error_without_changing_shutdown(self):
+        for phase in ('capture_context', 'archive'):
+            with self.subTest(phase=phase), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+
+                @contextlib.contextmanager
+                def captured(label, host):
+                    yield {}
+                    if phase == 'capture_context':
+                        raise subprocess.TimeoutExpired(['tshark', '-r', '/private/capture'], 120)
+
+                failure = OSError('archive transfer diagnostic') if phase == 'archive' else None
+                coordinator = SimpleNamespace(captured=captured)
+                with patch(__name__ + '.ROOT', root), patch(__name__ + '.archive_capture', side_effect=failure) as archive:
+                    with self.assertRaisesRegex(RuntimeError, 'Endurance capture closure failed'):
+                        with segmented_captures(coordinator):
+                            pass
+                record = json.loads((root / 'capture-thread-failure.private.json').read_text())
+                self.assertEqual((root / 'capture-thread-failure.private.json').stat().st_mode & 0o777, 0o600)
+                self.assertEqual(record['phase'], phase)
+                self.assertEqual(record['segment'], 'endurance-0001')
+                self.assertEqual(record['exception_type'], 'TimeoutExpired' if phase == 'capture_context' else 'OSError')
+                self.assertIn(record['exception_type'], record['traceback'])
+                self.assertIn('120' if phase == 'capture_context' else 'archive transfer diagnostic', record['message'])
+                if phase == 'capture_context':
+                    archive.assert_not_called()
+                else:
+                    archive.assert_called_once_with(root / 'captures/endurance-0001')
+
     def test_closeout_preserves_interrupted_campaign_without_retention(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

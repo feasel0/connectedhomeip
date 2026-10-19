@@ -190,8 +190,102 @@ def compile_overlay() -> None:
     print('PASS: all three real SDK translation units syntax-checked with native build flags; no objects overwritten')
 
 
+def runtime_test() -> None:
+    """Exercise the recorder in an isolated process, not an SDK DUT."""
+    import os
+    import stat
+    import struct
+
+    program = r'''
+#include "ReportingTrace.h"
+#include <cassert>
+#include <new>
+#include <string>
+struct ProbeHandler { bool subscription; };
+int main() {
+    auto & trace = investigation::ReportingTrace::Get();
+    alignas(ProbeHandler) unsigned char storage[sizeof(ProbeHandler)];
+    auto * handler = new (storage) ProbeHandler{true};
+    const auto identity = reinterpret_cast<uintptr_t>(handler);
+    trace.Allocate(identity, handler->subscription);
+    investigation::TraceEvent event; event.identity = identity;
+    event.kind = investigation::TraceKind::Allocate;
+    trace.Record(event); assert(trace.total == 0);
+    std::raise(SIGUSR2); assert(trace.armRequested);
+    trace.Record(event);
+    event.kind = investigation::TraceKind::Release; trace.Record(event);
+    trace.Release(identity); handler->~ProbeHandler();
+    handler = new (storage) ProbeHandler{false};
+    assert(reinterpret_cast<uintptr_t>(handler) == identity);
+    trace.Allocate(identity, handler->subscription);
+    event.kind = investigation::TraceKind::Allocate; trace.Record(event);
+    event.kind = investigation::TraceKind::MrpAck; trace.Record(event);
+    event.kind = investigation::TraceKind::Confirm; trace.Record(event);
+    std::raise(SIGUSR1); assert(trace.dumpRequested);
+    event.kind = investigation::TraceKind::Pass; trace.Record(event);
+    assert(!trace.dumpRequested && trace.total == 6);
+    std::array<ProbeHandler, 65> handlers{};
+    for (auto & allocated : handlers) {
+        trace.Allocate(reinterpret_cast<uintptr_t>(&allocated), false);
+    }
+    assert(trace.lostIdentities == 2);
+    event.identity = reinterpret_cast<uintptr_t>(&handlers[62]);
+    constexpr unsigned samples = 300000;
+    auto measure = [&]() {
+        const auto begin = std::chrono::steady_clock::now();
+        for (unsigned index = 0; index < samples; index++) { trace.Record(event); }
+        return std::chrono::duration_cast<std::chrono::nanoseconds>(
+            std::chrono::steady_clock::now() - begin).count() / samples;
+    };
+    trace.armed = false; const auto disabledNs = measure();
+    trace.armed = true; trace.total = 0; trace.lost = 0;
+    const auto armedNs = measure();
+    assert(trace.total == samples && trace.lost == samples - trace.kCapacity);
+    const std::string overflowPath = std::string(std::getenv("MATTER_REPORT_TRACE")) + ".overflow";
+    assert(setenv("MATTER_REPORT_TRACE", overflowPath.c_str(), 1) == 0);
+    const auto exportBegin = std::chrono::steady_clock::now();
+    assert(trace.Dump());
+    const auto exportUs = std::chrono::duration_cast<std::chrono::microseconds>(
+        std::chrono::steady_clock::now() - exportBegin).count();
+    std::printf("%lld %lld %lld\n", static_cast<long long>(disabledNs),
+        static_cast<long long>(armedNs), static_cast<long long>(exportUs));
+    trace.Release(identity); handler->~ProbeHandler();
+}
+'''
+    with tempfile.TemporaryDirectory(prefix='reporting-trace-runtime-') as directory:
+        root = Path(directory)
+        binary = root / 'test'
+        output = root / 'trace.private.bin'
+        subprocess.run(['c++', '-O2', '-std=c++17', '-Wall', '-Wextra', '-Werror', '-I', str(TOOLS),
+            '-x', 'c++', '-', '-o', str(binary)], input=program, text=True, check=True, capture_output=True)
+        result = subprocess.run([str(binary)], env=dict(os.environ, MATTER_REPORT_TRACE=str(output)),
+            umask=0o077, capture_output=True, text=True, check=True, timeout=30)
+        data = output.read_bytes()
+        header = struct.unpack_from('<8Q', data)
+        record = struct.Struct('<QQQQIIIIIIIiIHHHBBBBBx')
+        assert header[:6] == (0x4d54525452414345, 80, 6, 0, 0, 0), header
+        events = list(record.iter_unpack(data[64:]))
+        assert [event[16] for event in events] == [0, 1, 0, 10, 6, 9]
+        assert [event[4] for event in events[:3]] == [1, 1, 2]
+        assert events[0][2] == events[2][2] and events[0][9] == 1 and events[2][9] == 0
+        assert [event[0] for event in events] == list(range(6))
+        assert [event[1] for event in events] == sorted(event[1] for event in events)
+        overflow = Path(str(output) + '.overflow')
+        overflow_header = struct.unpack_from('<8Q', overflow.read_bytes())
+        assert overflow_header[2:5] == (300000, 300000 - 4096, 2)
+        assert overflow.stat().st_size == 64 + 80 * 4096
+        assert stat.S_IMODE(root.stat().st_mode) == 0o700
+        assert all(stat.S_IMODE(path.stat().st_mode) == 0o600 for path in (output, overflow))
+        disabled_ns, armed_ns, export_us = map(int, result.stdout.split())
+        assert armed_ns < 10000 and export_us < 100000, (armed_ns, export_us)
+        print(json.dumps({'isolated_recorder_runtime': 'PASS', 'sdk_readhandler_runtime': 'NOT_TESTED',
+            'disabled_ns_per_event': disabled_ns, 'armed_ns_per_event_64_identities': armed_ns,
+            'export_4096_events_us': export_us, 'directory_mode': '0700', 'export_mode': '0600',
+            'provisional_budget': '10us/event and 100ms/export on this host only'}, indent=2))
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=('self-test', 'prepare', 'compile'))
+    parser.add_argument('action', choices=('self-test', 'runtime-test', 'prepare', 'compile'))
     action = parser.parse_args().action
-    {'self-test': self_test, 'prepare': prepare, 'compile': compile_overlay}[action]()
+    {'self-test': self_test, 'runtime-test': runtime_test, 'prepare': prepare, 'compile': compile_overlay}[action]()
