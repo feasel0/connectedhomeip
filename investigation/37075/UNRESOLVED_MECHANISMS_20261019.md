@@ -88,7 +88,25 @@ eligibility result/reason, cursor, allocated count and in-flight count. Record
 allocation/release, pass scheduled/coalesced/started, ScheduleWork result,
 each cursor visit, build result, IM confirmation and MRP acknowledgment
 separately. Buffer overflow invalidates complete queue-residence claims.
-This instrumentation is specified, not yet implemented or run.
+The bounded Linux diagnostic is now implemented in
+`tools/ReportingTrace.h` and `tools/prepare_reporting_trace.py`. It generates
+only private overlays from revision `24a1bc0`, with original and generated
+source hashes. Its recorder test and syntax checks of all three actual SDK
+translation units pass. No production checkout was edited. No instrumented
+application was linked, deployed or run; no new runtime inference follows.
+
+The fixed ring contains 4096 80-byte records and 64 allocation identities.
+Generation reuse, subscription accounting, record overflow, identity overflow
+and binary export have isolated checks. Linux signals request arming/export;
+the actual export occurs at a subsequent stack-thread event, never in the
+signal handler. Runtime artifacts must stay private. This Linux recorder is
+not Nordic firmware and its approximately 320 KiB event ring must not be
+ported unchanged to the DK. Overflow or unmatched identities invalidate a
+complete residence claim. Scheduler eligibility is sampled at actual visits,
+not continuously; a missing visit is not proof of continuously eligible state.
+MRP acknowledgment is separately instrumented at a matching retransmission
+entry, not inferred from an IM status or generic credit release. The private
+overlay is `/home/feasel/qa-mar6/th2-reporting-trace-20261019-mrp`.
 
 After the original Nordic run releases ownership, use a small matched original
 parallel RT12 control and a diagnostic closing subscriptions only after the
@@ -105,6 +123,76 @@ run or interpret the diagnostic arm as subscription-free. Apply a matched
 barrier to the control so elapsed time is not an uncontrolled second factor.
 Record each native result, read latency, handler eligibility/visits/credits,
 CASE and MRP activity. Never automatically launch another endurance campaign.
+
+## Historical Ubuntu BLE: 66 Outcomes Remain OPEN
+
+The hash-checked extraction in `tools/historical_ble.py` reads the original
+catalog-selected logs and structured private invocations, exporting only
+fixed labels, numeric errors and protocol/source identities. All 66 invocations
+selected `--ble-controller 0`. Configured index is not actual hardware identity.
+The 55 PASE IncorrectState and 11 empty-discovery outcomes split as follows:
+
+| Original Signature | Count | Direct Observation | Primary Cause |
+| --- | ---: | --- | --- |
+| PASE IncorrectState | 44 | Native scan timeout at BLEManagerImpl.cpp:937, then BlueZ InProgress during scan-stop cleanup, then IncorrectState at ScriptDevicePairingDelegate.cpp:101 | OPEN |
+| Empty discovery | 11 | Scan-start marker and InProgress/stop-failure markers; no matching native BLEManager timeout marker | OPEN |
+| Recovery PASE IncorrectState | 11 | Adapter unavailable at local initialization/scan, followed by IncorrectState | OPEN |
+
+InProgress is not evidence that discovery start failed. In the 44 cases its
+position is after the timeout; cleanup failure does not establish the primary
+cause of discovery failure. A scan-start message is also not independent HCI
+coverage. No explicit PASE packet header was found in any selected controller
+log. This establishes an observed local pre-PASE failure stage, not proof that
+no radio traffic occurred or that a peer protocol defect caused it.
+
+At 2026-10-11 19:28:31 UTC the original recovery snapshot records controller
+MAC `48:E7:DA:C3:30:40`. Its rfkill snapshot explicitly identifies unblocked
+`hci0`. The kernel snapshot also contains hci0 observations. A bounded service
+restart is recorded at 19:29:14 UTC, without source revision changes. A later
+BlueZ snapshot identifies only hci1 at that same MAC, powered and idle. The
+later working index-1 configuration does not establish historical index-0
+absence, particularly for the earlier 55 discovery/stop-error cases. Historical
+MAC-to-index binding at each failure and the exact renumbering interval remain
+missing. Wrong-index attribution is SUSPECTED, not an eligible production fix.
+
+The original Ubuntu capture profile contains infrastructure packets, not a
+controller-host HCI capture. Its zero Ubuntu ACL count is therefore not proof
+of zero BLE activity. Pi HCI capture is a different host and cannot fill this
+gap. The retained Ubuntu native library has runtime SHA256
+`01ccbe6c4b2f6c6c17a275b409ffe1ae61b652dbb687bc8cb89181ae4b23079a`;
+the invocations do not individually record an SDK revision. Reading matching
+source is not a sufficient historical source-to-binary attestation.
+
+### Exact IDs
+
+All IDs below keep `OPEN_PENDING_PROVENANCE`, their original FAIL, run and
+iteration. Nothing is merged or removed from the 158-outcome ledger.
+The following run names are relative to the original root
+`/home/feasel/qa-mar6/pr539-full-testing-20261011/runs/`, except the two
+explicit recovery runs under that root's `../ubuntu-ble-recovery/runs/`.
+
+| Run | Count | IDs |
+| --- | ---: | --- |
+| baseline-nordic-ubuntu-TC_RT_1_1-1 | 1 | 8588996a79109b9a |
+| baseline-nordic-ubuntu-TC_RT_1_1-10 | 10 | 87a85a6c954e897f, c2f8c1111243cda1, e417af69fb50c241, c800c8e8091dd702, ef789d779df06d11, d14468a1250a20f5, c924db8bd0f889ae, 0d82548aa489bc83, 5dcbd66a71248487, e446c1bac17df3d4 |
+| pr539-nordic-ubuntu-TC_Android_Pair-1 | 1 | 1799111f3b752bb8 |
+| pr539-nordic-ubuntu-TC_Android_Pair-10 | 10 | d41797bef0aa5d35, a136d1ae323dd41b, c054288656972f51, f8ebead5a863f9fb, 84ac45432c00f9f8, 1bf3d64d7cd2424d, 507e04a3f5f7bd7b, 13f82a4be6307a7b, 945793c57c00e40c, 37dcad67bbb0aed5 |
+| pr539-nordic-ubuntu-TC_Darwin_Pair-1 | 1 | b94ec3a4c7ebc911 |
+| pr539-nordic-ubuntu-TC_Darwin_Pair-10 | 10 | 38f38e4418c6b9fd, 1e00dad854fe5e99, 321ddd2dd408604e, 1c4782f7d743f35f, b4a8160f7049fff3, 95936f2fb1f53dcb, a4bb4a2c2f6c7913, 7d935f9c394cabcc, 524bfb0aa0be7e58, b15ba55a9b5689d2 |
+| pr539-nordic-ubuntu-TC_RT_1_1-1 | 1 | 87c9fe2f03552d6c |
+| pr539-nordic-ubuntu-TC_RT_1_1-10 | 10 | 553a496ea727ada2, ba40ddbafe007c10, ff47adb8c12a4292, 6911e61d9c0c73d7, 67d24e011354369b, ca13dc9249566e8e, f0ed0adf98ec4968, a3f457c89b3e8e1a, a658e4a057dbdacf, 5c9a28603b3d853d |
+| pr539-nordic-ubuntu-TC_RT_2_1-1 | 1 | 6a8a99bb8fbc2d27 |
+| pr539-nordic-ubuntu-TC_RT_2_1-10 | 10 | 3f9414bbaf9f6dda, 2680d9fc607bdbcc, 6213ab44eb21a0e8, 84f043c79428ca2c, 316885f26ffaa7d2, f28debac1866b54e, 7aff8c5ed1354930, 67bdcb409983777c, d7f195bdbad1c7c5, fa6ab04b3a425912 |
+| recovery/baseline-nordic-ubuntu-TC_RT_1_1-1 | 1 | 5d8926a308e70e27 |
+| recovery/baseline-nordic-ubuntu-TC_RT_1_1-10 | 10 | a53e51acd9734b89, 6cf5a8a82dc0f02c, 522cccb922be4296, 2b717d6c1fc81512, 3705dffcfaf0985e, b930efee0cced71a, 2cde073e7ff361d6, 40500505afc76042, 9fc9e346b2c6c2bb, 93ebcddf6291e6c9 |
+
+Private derived hashes and event line identities are in
+`/home/feasel/qa-mar6/37075-increment-20261017/historical-ble-accounting.json`.
+Four regression tests cover redaction, configured-vs-actual identity,
+protocol-vs-source-name detection and ordered same-log timeout classification,
+including JSON reload. Deciding evidence is timestamped controller-host
+adapter/index ownership and HCI/advertising coverage, not a new preventive SDK
+change. No new campaign was launched to fill these historical gaps.
 
 ## TH-3: Secondary CASE Busy
 

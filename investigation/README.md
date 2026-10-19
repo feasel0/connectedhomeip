@@ -16,6 +16,11 @@ test infrastructure configuration live here. The archival branch is
   with the protected endurance process, plus discriminator collision regressions.
 - `tools/reporting_fairness.py`: isolated execution of pinned reporting methods
   with deterministic stubs and a deliberately starving negative control.
+- `tools/historical_ble.py`: exact-ID, value-free original BLE phase accounting;
+  neither configured adapter index nor a cleanup error assigns a root cause.
+- `tools/ReportingTrace.h` and `tools/prepare_reporting_trace.py`: bounded Linux
+  reporting diagnostic and guarded pinned-source overlay generator. Not deployed
+  firmware or a production scheduling change.
 
 Raw logs, captures, controller private state, generated private indexes, firmware
 builds, environments and bulk archives remain on disk but are ignored. They must
@@ -38,6 +43,8 @@ python3 -B investigation/tools/git_boundary.py staged
 python3 -B investigation/tools/trace_lifecycle.py self-test
 python3 -B investigation/tools/reporting_fairness.py self-test
 python3 -B investigation/tools/discovery_isolation.py --self-test
+python3 -B investigation/tools/historical_ble.py self-test
+python3 -B investigation/tools/prepare_reporting_trace.py self-test
 python3 -B investigation/pr539-failure-evidence/update_dossier.py --self-test
 python3 -B investigation/pr539-failure-evidence/prune_successful_runs.py --self-test
 ```
