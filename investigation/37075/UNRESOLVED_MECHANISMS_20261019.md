@@ -316,25 +316,126 @@ service 0xfff6. This is a response, not an advertisement or request. Direction
 comes from dissector source/destination columns; H4 direction and Bluetooth
 src/dst fields are empty and were not treated as proof.
 
-| Original ID | Attempt | Connection Frame | Service Frame | Service End Handle |
+| Original ID | Attempt | Connection Frame | Service Frame | Verified Matter Range |
 | --- | --- | ---: | ---: | --- |
-| 326b6e82a2407b74 | a03 | 42 | 62 | 0x0042 |
-| 9b2a44b24023d8e5 | a05 | 35 | 53 | 0x004e |
-| f47c1cab6351cf41 | a06 | 40 | 60 | 0x0054 |
-| 27790c2fe89dcbd1 | a07 | 33 | 52 | 0x005a |
-| 415e90edd5f1e1b4 | a08 | 35 | 54 | 0x0060 |
+| 326b6e82a2407b74 | a03 | 42 | 62 | 0x003d-0x0042 |
+| 9b2a44b24023d8e5 | a05 | 35 | 53 | 0x0049-0x004e |
+| f47c1cab6351cf41 | a06 | 40 | 60 | 0x004f-0x0054 |
+| 27790c2fe89dcbd1 | a07 | 33 | 52 | 0x0055-0x005a |
+| 415e90edd5f1e1b4 | a08 | 35 | 54 | 0x005b-0x0060 |
 
 No radio activity, wrong selected peer and no Matter primary service do not
 explain these five failures. Native CHIP-service selection nevertheless fails.
+All five original consoles specifically report `BluezConnection.cpp:109`,
+`Ble Error 0x0000040F` and `CHIP service (...) not found` for that peer.
+This is the service-selection error, distinct from the subsequent
+`No valid C1` / `No valid C2` predicates; neither characteristic error appears
+in these five consoles. Retained library/source provenance is checked below;
+exact lookup-time D-Bus event ordering remains unavailable.
 This does not establish characteristic discovery, ServicesResolved completion,
 D-Bus proxy export or native service-list correctness. AttributeNotFound 0x0a
 also occurs at discovery boundaries and is not independently a defect.
 
-The smallest next check is this peer's exported BlueZ service/characteristic
-objects and readiness transition at native lookup time, tied to the known ATT
-exchange. Cache, daemon discovery and native proxy timing remain hypotheses;
-later corrected single-ATT setup is not historical causal proof. All five stay
-OPEN; no speculative GATT production correction is justified.
+The tuple boundaries above are independently verified within each response's
+UUID-specific attribute group. All ranges contain six handles. Each attempt
+has a distinct retained DUT PID/start tick and exactly one successful GATT
+application registration. This supports restart/re-registration correlation,
+not duplicate live services or cached-definition causality. Each response lists
+only one Matter primary service.
+
+#### Observed EATT Bearer Mismatch
+
+Independent `btmon` decoding reveals enhanced-channel ATT operations omitted by
+the installed `tshark` decoder. A fixed-channel-only absence claim is invalid:
+a05 does send characteristic discovery. The original capture hashes match the
+previous report; decoded UTC headers map exactly to original frame timestamps.
+
+In every attempt the DUT requests PSM 0x0027 with ordered source CIDs
+`[0x0041, 0x0040]`; the controller accepts with destination CIDs
+`[0x0040, 0x0041]`. Thus controller TX CID 0x0040 belongs to the bearer whose
+controller receive CID is 0x0041. Nevertheless the following discovery response
+arrives on controller receive CID 0x0040, the other bearer:
+
+| Attempt | Controller TX Request Frame | Wrong-Bearer RX Frame | ATT Operation | Immediate TX Channel Disconnect Frame |
+| --- | ---: | ---: | --- | ---: |
+| a03 | 78 | 89 | Include 0x2802; error 0x0a | 91 |
+| a05 | 74 | 86 | Characteristic 0x2803; response 0x09 | 88 |
+| a06 | 78 | 90 | Include 0x2802; error 0x0a | 92 |
+| a07 | 68 | 80 | Include 0x2802; error 0x0a | 82 |
+| a08 | 71 | 82 | Include 0x2802; error 0x0a | 84 |
+
+There is no preceding outgoing request on the receive bearer's corresponding
+TX CID 0x0041 that would explain those responses. Reverse-direction DUT requests
+are separately visible, not mistaken for controller requests. `Attribute Not
+Found` is normally a valid Include-discovery terminator; its wrong bearer is
+the defect evidence. The a05 response is not an ATT error at all, yet produces
+the same immediate teardown. No descriptor discovery is observed in these five.
+L2CAP channel teardown is not an HCI link disconnection; no HCI Disconnection
+Complete appears in these short retained windows.
+
+All five native libraries match retained runtime proof SHA256
+`a04c667b4adba6df6041674acf8787e54e0935b80bb0e3e46c98933af984dd11`.
+The compiled revision proof is `9c797242f1a1f89dbc010255c77d38307304448a`;
+the selection and endpoint files are byte-identical there and at the documented
+SDK base `b1c4e7514cecc49cbffd6647504c3611b9cf6e60`. The central path gates on
+Connected/ServicesResolved and selects a GattService1 with the exact owning
+Device path and UUID, before examining characteristics. Its service predicate
+fails, not the C1/C2 predicates. Exact lookup-entry/proxy enumeration callbacks
+are not logged.
+
+Post-failure GetManagedObjects snapshots for a07/a08 have Connected=true,
+ServicesResolved=true, UUIDs=[] and zero peer GattService1/GattCharacteristic1
+objects. These are not lookup-time event traces. No original object-added,
+removed or property-change ordering is retained; a07's daemon journal is empty.
+The packet sequence strongly supports EATT discovery abort before service
+export, rather than an absent Matter service over the air. Exact daemon/kernel
+responsibility for the mismatched bearer and its discovery-completion callback
+remain unobserved. Do not label this a demonstrated SDK filtering race.
+
+One deciding future smoke, only after capacity/fixture gates pass: reproduce
+primary BLE-Wi-Fi with the pinned native library and the original multi-bearer
+configuration, retaining both peers' HCI, bounded BlueZ discovery debug and
+D-Bus ObjectManager/Device1 events, plus native lookup-time proxy paths/UUIDs.
+Resolve which peer socket/CID generated the mismatched response and whether
+that abort clears the database before ServicesResolved. Do not switch to one
+ATT channel before observing the failure. No broad matrix, new infrastructure
+or hardware execution is justified while below the protected reserve.
+
+All five original outcomes remain OPEN. Later single-ATT success is not proof
+of a corrected daemon/kernel mechanism. No production correction is validated.
+
+The retained a04 control, original ID `ca3d300af4dc9e9e`, also moved the Matter
+range, to 0x0043-0x0048, but
+found the service and C1/C2 and advanced to an operational commissioning
+timeout. It negotiated simultaneous two-sided enhanced-channel requests and
+additional CIDs 0x0042/0x0043, unlike the five failures' single ordered pair.
+This contradicts handle movement alone as sufficient explanation; it is not
+proof that every enhanced-channel topology works or a complete test PASS.
+
+#### Separate a02 Subscription Failure
+
+Original ID `7530ec8a82f24ce5` finds the Matter service at 0x0015-0x001a,
+valid C1 and C2, then fails StartNotify with D-Bus ATT error 0x0e. It is not a
+missing-service failure. Its capture uses the same reversed ordered EATT CID
+pair. Controller frame 156 writes handle 0x0018 on TX CID 0x0040, but frame
+159's Write Response arrives on RX CID 0x0040, the other bearer. Frame 161
+immediately requests channel disconnection; native StartNotify fails at
+01:12:10.505 UTC, after that channel teardown response.
+
+The C2 declaration/value are 0x0016/0x0017, and the next declaration is 0x0019;
+the 0x0018 write is consistent with its CCCD, but no Find Information descriptor
+response directly names that UUID in the retained trace. Do not upgrade that
+inference to an observed descriptor declaration. No ATT Error Response 0x0e is
+seen even in the independent enhanced-channel decode; it is the local D-Bus
+failure result, not a demonstrated on-air rejection by the DUT. One bearer also
+has a correctly matched concurrent write on the other channel, strengthening
+the distinction between a generic broken link and the failed transaction.
+
+This advances the same observed bearer-routing family at a later protocol
+phase, without reclassifying the original outcome or validating a fix. The
+smallest remaining check is the two peers' exact EATT socket/CID mapping and
+BlueZ notification-completion error at the mismatched response, not another
+readiness check or speculative change to SDK subscription callbacks.
 
 ### Smallest Remaining Checks
 
