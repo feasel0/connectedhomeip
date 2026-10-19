@@ -24,3 +24,11 @@ closeout sections describe the superseded placement, not the current workflow.
 The mistaken investigation-branch commit was removed from that branch's history
 with the user's explicit authorization. Recordings, transcripts, response caches,
 and API credentials are not included in this directory or its commits.
+
+## SVE Data Model Update
+
+- [Mandate interpretation and initial generation attempt](reports/2026-10-19_16-39-38.md)
+
+The first gate is a complete, error-free run of the existing-directory update
+script against specification `master`. The baseline attempt failed on obsolete
+specification Make targets; its partial generated XML is not a release candidate.
