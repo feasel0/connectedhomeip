@@ -14,6 +14,8 @@ test infrastructure configuration live here. The archival branch is
   this tree.
 - `tools/discovery_isolation.py`: future probe launcher that refuses overlap
   with the protected endurance process, plus discriminator collision regressions.
+- `tools/reporting_fairness.py`: isolated execution of pinned reporting methods
+  with deterministic stubs and a deliberately starving negative control.
 
 Raw logs, captures, controller private state, generated private indexes, firmware
 builds, environments and bulk archives remain on disk but are ignored. They must
@@ -34,6 +36,7 @@ python3 -B investigation/tools/git_boundary.py self-test
 python3 -B investigation/tools/git_boundary.py audit
 python3 -B investigation/tools/git_boundary.py staged
 python3 -B investigation/tools/trace_lifecycle.py self-test
+python3 -B investigation/tools/reporting_fairness.py self-test
 python3 -B investigation/tools/discovery_isolation.py --self-test
 python3 -B investigation/pr539-failure-evidence/update_dossier.py --self-test
 python3 -B investigation/pr539-failure-evidence/prune_successful_runs.py --self-test

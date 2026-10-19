@@ -441,7 +441,91 @@ def reporting_state(line):
         'handler_state': r'IM RH moving to \[([A-Za-z]+)\]',
         'build_generation': r'Building Reports for ReadHandler with LastReportGeneration = (\d+)',
     }
-    return {name: match[1] for name, pattern in patterns.items() if (match := re.search(pattern, line))}
+    result = {name: match[1] for name, pattern in patterns.items() if (match := re.search(pattern, line))}
+    sent = re.search(r'<RE> ReportsInFlight = (\d+) with readHandler (\d+), RE has (more|no more) messages', line)
+    if sent:
+        result['report_sent'] = {'in_flight': int(sent[1]), 'cursor': int(sent[2]), 'more_chunks': sent[3] == 'more'}
+    return result
+
+
+def reporting_progress(rows, after_line, before_line):
+    selected = [row for row in rows if after_line < row['line'] < before_line]
+    reports = [row for row in selected if (message := row.get('message'))
+        and (message['direction'], message['protocol'], message['opcode']) == ('<<<', 1, 5)]
+    confirmations = [row for row in selected if 'reports_in_flight' in row['fields']]
+    sent = [row for row in selected if 'report_sent' in row['fields']]
+    return {'after_line_exclusive': after_line, 'before_line_exclusive': before_line,
+        'report_send_headers': [{'line': row['line'], 'epoch': row['epoch'], 'message': row['message']} for row in reports],
+        'distinct_report_exchanges': len({(row['message']['exchange'], row['message']['session']) for row in reports}),
+        'confirmations': [{'line': row['line'], 'epoch': row['epoch'], 'post_release_in_flight': int(row['fields']['reports_in_flight'])}
+            for row in confirmations],
+        'cursor_observations': [{'line': row['line'], 'epoch': row['epoch'], **row['fields']['report_sent']} for row in sent],
+        'cursor_is_not_handler_identity_or_allocation_count': True,
+        'generic_states_not_assigned_to_exchanges': True}
+
+
+def subscription_lifecycle(line):
+    established = re.search(r'Subscription established in (\d+)ms with SubscriptionID = 0x([0-9a-fA-F]+) '
+        r'MinInterval = (\d+)s MaxInterval = (\d+)s Peer = ([0-9a-fA-F]+):([0-9a-fA-F]+)', line)
+    if established:
+        return {'kind': 'client_established', 'subscription': int(established[2], 16),
+            'fabric': int(established[5], 16), 'peer_node': int(established[6], 16),
+            'min_interval': int(established[3]), 'max_interval': int(established[4])}
+    torn_down = re.search(r'Subscription id 0x([0-9a-fA-F]+) from node .* torn down', line)
+    if torn_down:
+        return {'kind': 'server_torn_down', 'subscription': int(torn_down[1], 16)}
+    timeout = re.search(r'Subscription Liveness timeout with SubscriptionID = 0x([0-9a-fA-F]+)', line)
+    if timeout:
+        return {'kind': 'client_timeout', 'subscription': int(timeout[1], 16)}
+    return None
+
+
+def reporting_census():
+    manifest = json.loads((PREVIOUS / 'controller-object-manifest.json').read_text())
+    names = [name for name in manifest if name.startswith('serial-reads/')
+        and ('/controller_log_iteration_' in name or '/Dut_log_iteration_' in name)]
+    assert len(names) == 2
+    logs = []
+    with tarfile.open(PREVIOUS / 'controller-sealed-collection.tar.gz') as archive:
+        for name in names:
+            digest = hashlib.sha256()
+            rows = []
+            requests = []
+            target_session = 16494 if '/controller_log_' in name else 22676
+            epoch = None
+            for number, encoded in enumerate(archive.extractfile('objects/' + manifest[name]['sha256']), 1):
+                digest.update(encoded)
+                line = encoded.decode(errors='replace')
+                stamp = re.search(r'\[(\d{10}\.\d+)\]', line)
+                if stamp:
+                    epoch = float(stamp[1])
+                header = HEADER.search(line)
+                if header and (int(header[2]), int(header[4]), int(header[5]), int(header[6], 16), int(header[7], 16)) == (
+                        12712, target_session, 223246027, 1, 2):
+                    requests.append(number)
+                row = subscription_lifecycle(line)
+                if row:
+                    rows.append({'line': number, 'epoch': epoch, **row})
+            assert digest.hexdigest() == manifest[name]['sha256']
+            assert requests
+            logs.append({'source': name, 'sha256': digest.hexdigest(), 'th2_read_request_line': requests[0],
+                'matched_request_counter': 223246027, 'matched_request_header_lines': requests, 'events': rows})
+    controller = next(log for log in logs if '/controller_log_' in log['source'])
+    dut = next(log for log in logs if '/Dut_log_' in log['source'])
+    established = [row for row in controller['events'] if row['kind'] == 'client_established'
+        and row['line'] < controller['th2_read_request_line']]
+    ids = {row['subscription'] for row in established}
+    closed_before_request = [row for row in dut['events'] if row['kind'] == 'server_torn_down'
+        and row['subscription'] in ids and row['line'] < dut['th2_read_request_line']]
+    closed_during_gap = [row for row in dut['events'] if row['kind'] == 'server_torn_down'
+        and row['subscription'] in ids and row['epoch'] is not None and 1792242562.989 <= row['epoch'] <= 1792242569.767]
+    result = {'logs': logs, 'client_established_before_th2': established,
+        'unique_client_established_ids_before_th2': len(ids), 'matching_server_closures_before_th2': closed_before_request,
+        'matching_server_closures_during_gap': closed_during_gap,
+        'absence_of_teardown_logs_is_not_an_allocation_or_closure_proof': True,
+        'server_active_handler_count_observed': None}
+    save('reporting-census.json', result)
+    print(json.dumps({key: value for key, value in result.items() if key != 'logs'}, indent=2))
 
 
 def reporting_gap():
@@ -469,6 +553,7 @@ def reporting_gap():
     assert digest.hexdigest() == manifest[name]['sha256']
     assert any(row['message'] and row['message']['counter'] == 47688567 for row in rows)
     result = {'source': name, 'sha256': digest.hexdigest(), 'events': rows,
+        'after_th2_status_before_late_report': reporting_progress(rows, 489793, 492109),
         'handler_states_are_not_individually_identified': True}
     save('reporting-gap.json', result)
     states = [row for row in rows if row['fields']]
@@ -478,6 +563,7 @@ def reporting_gap():
         'message_types': dict(Counter(f"{row['message']['direction']}:{row['message']['protocol']}:{row['message']['opcode']}"
             for row in rows if row['message'])),
         'th2_messages': [row for row in rows if row['message'] and row['message']['exchange'] == 12712],
+        'after_th2_status_before_late_report': result['after_th2_status_before_late_report'],
         'handler_states_are_not_individually_identified': True}, indent=2))
 
 
@@ -717,6 +803,47 @@ class ExtractionTest(unittest.TestCase):
         self.assertEqual(reporting_state('IM RH moving to [CanStartReporting]'), {'handler_state': 'CanStartReporting'})
         self.assertEqual(reporting_state('Attribute value = DO_NOT_EXPORT'), {})
 
+    def test_reporting_cursor_is_numeric_not_identity(self):
+        self.assertEqual(reporting_state('<RE> ReportsInFlight = 4 with readHandler 23, RE has more messages'),
+            {'report_sent': {'in_flight': 4, 'cursor': 23, 'more_chunks': True}})
+        self.assertEqual(reporting_state('<RE> ReportsInFlight = 1 with readHandler 2, RE has no more messages'),
+            {'report_sent': {'in_flight': 1, 'cursor': 2, 'more_chunks': False}})
+
+    def test_reporting_progress_strict_bounds_and_no_identity_inference(self):
+        message = {'direction': '<<<', 'protocol': 1, 'opcode': 5, 'exchange': 8, 'session': 2}
+        rows = [
+            {'line': 10, 'epoch': 1, 'fields': {}, 'message': message},
+            {'line': 11, 'epoch': 2, 'fields': {'reports_in_flight': '3'}, 'message': None},
+            {'line': 12, 'epoch': 3, 'fields': {'handler_state': 'CanStartReporting'}, 'message': None},
+            {'line': 13, 'epoch': 4, 'fields': {}, 'message': message},
+            {'line': 14, 'epoch': 5, 'fields': {'report_sent': {'cursor': 23, 'in_flight': 4, 'more_chunks': True}}, 'message': None},
+            {'line': 15, 'epoch': 6, 'fields': {}, 'message': {**message, 'direction': '>>>'}},
+            {'line': 16, 'epoch': 7, 'fields': {}, 'message': message},
+        ]
+        result = reporting_progress(rows, 10, 16)
+        self.assertEqual([row['line'] for row in result['report_send_headers']], [13])
+        self.assertEqual(result['distinct_report_exchanges'], 1)
+        self.assertEqual(result['confirmations'][0]['post_release_in_flight'], 3)
+        self.assertEqual(result['cursor_observations'][0]['cursor'], 23)
+        self.assertNotIn('handler_state', json.dumps(result))
+        self.assertTrue(result['generic_states_not_assigned_to_exchanges'])
+
+    def test_reporting_progress_empty(self):
+        result = reporting_progress([], 1, 2)
+        self.assertEqual(result['confirmations'], [])
+        self.assertEqual(result['distinct_report_exchanges'], 0)
+
+    def test_subscription_lifecycle_has_direct_identity_only(self):
+        row = subscription_lifecycle('Subscription established in 500ms with SubscriptionID = 0x1234abcd '
+            'MinInterval = 0s MaxInterval = 60s Peer = 02:0000000000000001')
+        self.assertEqual(row, {'kind': 'client_established', 'subscription': 0x1234abcd,
+            'fabric': 2, 'peer_node': 1, 'min_interval': 0, 'max_interval': 60})
+        self.assertEqual(subscription_lifecycle('Subscription id 0x1234abcd from node 2:1 torn down'),
+            {'kind': 'server_torn_down', 'subscription': 0x1234abcd})
+        self.assertEqual(subscription_lifecycle('Subscription Liveness timeout with SubscriptionID = 0x1234abcd, Peer = 2:1'),
+            {'kind': 'client_timeout', 'subscription': 0x1234abcd})
+        self.assertIsNone(subscription_lifecycle('SubscriptionId = 0x1234abcd, Attribute = DO_NOT_EXPORT'))
+
     def test_attribute_status_scope_and_no_values(self):
         sample = ['AttributeStatusIB =\n', '{\n', 'Path =\n', '{\n', 'Endpoint = 0x1,\n',
             'Cluster = 0xFFF1FC05,\n', 'Attribute = 0x31,\n', '}\n', 'ErrorStatus =\n', '{\n',
@@ -754,7 +881,7 @@ class ExtractionTest(unittest.TestCase):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=('self-test', 'pase', 'sources', 'metadata', 'remote_probe', 'qa_units', 'attribute_metadata', 'discovery_filter', 'serial_timing', 'serial_summary', 'serial_findings', 'history_audit', 'remote_window_status', 'decode_statuses', 'publication_check', 'reporting_gap', 'coordination_sources', 'dut_reporting_binary', 'controller_retry_binary'))
+    parser.add_argument('action', choices=('self-test', 'pase', 'sources', 'metadata', 'remote_probe', 'qa_units', 'attribute_metadata', 'discovery_filter', 'serial_timing', 'serial_summary', 'serial_findings', 'history_audit', 'remote_window_status', 'decode_statuses', 'publication_check', 'reporting_gap', 'reporting_census', 'coordination_sources', 'dut_reporting_binary', 'controller_retry_binary'))
     action = parser.parse_args().action
     if action == 'self-test':
         unittest.main(argv=[__file__])
