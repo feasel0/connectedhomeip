@@ -437,6 +437,95 @@ smallest remaining check is the two peers' exact EATT socket/CID mapping and
 BlueZ notification-completion error at the mismatched response, not another
 readiness check or speculative change to SDK subscription callbacks.
 
+#### Upstream Linux L2CAP Lead
+
+[BlueZ issue 1094](https://github.com/bluez/bluez/issues/1094) describes a
+confirmed kernel defect in the receiver of a multi-channel ECRED request.
+The final [upstream correction](https://github.com/torvalds/linux/commit/b25120e1d5f2ebb3db00af557709041f47f7f3d0)
+appends channels with `list_add_tail` in `__l2cap_chan_add` and excludes outgoing
+or non-deferred channels in `l2cap_ecred_rsp_defer`, using
+`!test_and_clear_bit(FLAG_DEFER_SETUP, &chan->flags)`. The latter prevents
+identifier reuse from including an established channel in a new response.
+[Linux 6.12.18](https://cdn.kernel.org/pub/linux/kernel/v6.x/ChangeLog-6.12.18)
+contains stable backport `5c9921f1da47c0b4f12e836ef8778f024a241ada`.
+
+Our six captures have two SCIDs and two successful DCIDs, with a later response
+on the other advertised bearer. That is compatible with inconsistent channel
+association, but the numerical reversal `[65,64] -> [64,65]` alone does not
+prove the upstream bug: CIDs are local, and a valid responder may allocate
+them in either numerical order. In these transactions the controller is the
+ECRED responder, the role directly affected by this patch; the DUT is requester.
+The retained controller capture identifies Linux `6.12.47+rpt-rpi-2712`, later
+than the stable fix, but release labels alone do not prove deployed code.
+
+Read-only checks at 2026-10-19 18:50-18:53 UTC bind both peers to package
+`1:6.12.47-1+rpt1~bookworm`, BlueZ `5.66-1+rpt1+deb12u2`, and loaded Bluetooth
+build ID `339af1100e6808b0899e1ae97fd505bea4aa7548`. Both loaded notes match
+the decompressed installed module; package verification reports no changes.
+The controller boot began September 24 at 15:29:31 UTC, the DUT at 16:22:14;
+October 11-12 kernel journal records have their respective current boot IDs.
+No livepatch directory is present and both kernel taint values are zero.
+This is boot-continuity/package provenance, not a contemporaneous socket trace.
+
+The package changelog names Raspberry Pi commit
+`359f37f0faefb712add32a39f98751aea67d5c1f`. Both accepted correction components
+are present in its `net/bluetooth/l2cap_core.c` (SHA256
+`40b71702ffee7a0e47d3f3c12861d3fc1cb235a67fa3e1bd3407fd56a860aaa8`). The
+matching Debian patch archive was checksum-verified and contains no patch to
+that file. The complete original source archive also passed its descriptor's
+SHA256 and size checks in memory; its L2CAP file is byte-identical to that
+commit. An absent BlueZ #1094 correction is therefore not supported.
+
+A distinct requester-side ordering candidate exists in this same source:
+`l2cap_ecred_connect` places its triggering channel first in the request, then
+appends deferred channels in connection-list order. `l2cap_ecred_conn_rsp`
+instead consumes response DCIDs in connection-list order without remembering
+the transmitted SCID order. For connection-list `[64,65]`, triggering65,
+request `[65,64]` and response `[64,65]`, it assigns DUT64 -> controller64 and
+DUT65 -> controller65, contrary to the advertised positional pairs. An ATT
+request sent to DUT64 would then receive a same-socket reply at controller64,
+exactly the observed direction, rather than advertised controller65. This is
+case B (bad internal association), not proof of case A (bad response builder)
+or case C (correct association but wrong ATT socket). Actual per-socket state
+was not retained. `tools/ecred_order_probe.py` compiles the hash-pinned request
+builder, deferred-grouping helper and response handler unchanged, using host
+stubs. The two-channel triggering65 case reproduces the wrong association;
+one channel and a two-channel triggering64 control preserve positional pairs.
+A three-channel triggering66 case also mismatches. These are isolated native
+function checks, not execution of the loaded kernel, BlueZ or an actual DUT.
+Historical attribution still needs the bounded dual-peer/socket observation
+when capacity permits. No accepted correction for this distinct candidate was
+identified; a generic modern-kernel upgrade is not a demonstrated fix.
+
+No SDK workaround, kernel change, or corrective hardware result is established
+here. All six original outcomes remain OPEN.
+
+#### Separate Operational Discovery Failures
+
+The original a04 `ca3d300af4dc9e9e`, a09 `dbb5d8f70aca047e` and a10
+`012d5d5b000dd3b3` reach `FindOperationalForStayActive` after receiving the
+ConnectNetwork response. All three report three operational-discovery failures
+from `AddressResolve_DefaultImpl.cpp:124`, error `0x00000032`, before cleanup.
+The native CASE error mentions Sigma1, but that string alone is not evidence
+that Sigma1 was sent: the producing error is address resolution. These remain
+original FAIL outcomes, separate from the EATT discovery/subscription cases.
+
+a10 retained 48 network snapshots. It is disconnected at
+2026-10-12 02:53:47.511796 UTC, associated at 02:53:57.522676 but without
+captured IPv6 addresses through 02:54:37.573161. The first global IPv6 address
+appears at 02:54:47.588216, with an on-link `/64` route, and persists through
+the controller's 02:56:14.500719 failure and later DUT snapshots. IPv6 is
+enabled (`disable_ipv6=0`, `accept_ra=2`, `autoconf=1`); no default route is
+captured. A default route is not required for an on-link peer, so this alone
+does not prove a routing fault. Permanent absence of a global address is
+disproved for a10; timely DNS-SD publication, resolution and packet delivery
+are not established. a04 has no equivalent snapshots, and a09's retained
+original address is not a failure-time address/route history.
+
+The next deciding check is the original operational instance's publication,
+address-resolution result and controller/DUT IP packets during discovery,
+not a BLE readiness delay or a speculative CASE fix. All three remain OPEN.
+
 ### Smallest Remaining Checks
 
 | Exact Evidence ID | Symptom / Evidence | Hypothesis and Confidence | Deciding Check / Status |
