@@ -1,10 +1,12 @@
 """Execute pinned kernel ECRED functions with host stubs, never a live fixture."""
 
 import argparse
+from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
 import re
+import struct
 import subprocess
 import tempfile
 import urllib.request
@@ -34,6 +36,7 @@ typedef uint16_t __le16;
 #define BT_CONNECT 1
 #define BT_CONNECTED 2
 #define L2CAP_ECRED_CONN_REQ 23
+#define L2CAP_DISCONN_RSP 7
 #define L2CAP_CR_LE_AUTHENTICATION 5
 #define L2CAP_CR_LE_ENCRYPTION 8
 #define L2CAP_CR_LE_BAD_PSM 2
@@ -43,7 +46,11 @@ struct hci_conn { int sec_level; };
 struct l2cap_chan;
 struct channel_list { struct l2cap_chan *items[5]; int count; };
 struct l2cap_conn { struct channel_list chan_l; struct hci_conn *hcon; };
-struct l2cap_ops { struct pid *(*get_peer_pid)(struct l2cap_chan *); };
+struct l2cap_ops {
+    struct pid *(*get_peer_pid)(struct l2cap_chan *);
+    void (*set_shutdown)(struct l2cap_chan *);
+    void (*close)(struct l2cap_chan *);
+};
 struct l2cap_chan {
     struct l2cap_conn *conn;
     struct l2cap_ops *ops;
@@ -53,11 +60,18 @@ struct l2cap_chan {
 };
 struct l2cap_ecred_conn_req_hdr { u16 psm, mtu, mps, credits; };
 struct l2cap_ecred_conn_rsp { u16 mtu, mps, credits, result, dcid[]; };
+struct l2cap_disconn_req { u16 dcid, scid; };
+struct l2cap_disconn_rsp { u16 dcid, scid; };
 struct l2cap_cmd_hdr { u8 ident; };
 static struct pid peer_pid;
 static u16 sent_scids[5];
 static int sent_count;
+static struct l2cap_chan *disconnect_target;
+static struct l2cap_disconn_rsp disconnect_response;
+static int disconnect_steps;
 static struct pid *get_peer_pid(struct l2cap_chan *chan) { (void)chan; return &peer_pid; }
+static void set_shutdown(struct l2cap_chan *chan) { assert(chan == disconnect_target); disconnect_steps++; }
+static void close_channel(struct l2cap_chan *chan) { assert(chan == disconnect_target); disconnect_steps++; }
 static int test_bit(int bit, unsigned long *flags) { return !!(*flags & (1ul << bit)); }
 static int test_and_clear_bit(int bit, unsigned long *flags) {
     int result = test_bit(bit, flags); *flags &= ~(1ul << bit); return result;
@@ -75,7 +89,14 @@ static void __l2cap_chan_list(struct l2cap_conn *conn,
     }
 }
 static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 length, void *data) {
-    (void)conn; assert(ident == 7); assert(code == L2CAP_ECRED_CONN_REQ);
+    (void)conn; assert(ident == 7);
+    if (code == L2CAP_DISCONN_RSP) {
+        assert(length == sizeof(disconnect_response));
+        memcpy(&disconnect_response, data, length);
+        disconnect_steps++;
+        return;
+    }
+    assert(code == L2CAP_ECRED_CONN_REQ);
     sent_count = (length - sizeof(struct l2cap_ecred_conn_req_hdr)) / sizeof(u16);
     assert(sent_count > 0 && sent_count <= 5);
     memcpy(sent_scids, (u8 *)data + sizeof(struct l2cap_ecred_conn_req_hdr), sent_count * sizeof(u16));
@@ -85,7 +106,10 @@ static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 lengt
         ((entry) = (head)->items[channel_index], (next) = (entry), (void)(next), 1); channel_index++)
 static void l2cap_chan_lock(struct l2cap_chan *chan) { (void)chan; }
 static void l2cap_chan_unlock(struct l2cap_chan *chan) { (void)chan; }
-static void l2cap_chan_del(struct l2cap_chan *chan, int error) { (void)chan; (void)error; assert(0); }
+static void l2cap_chan_del(struct l2cap_chan *chan, int error) {
+    assert(chan == disconnect_target); assert(error == ECONNRESET); disconnect_steps++;
+}
+static void l2cap_chan_put(struct l2cap_chan *chan) { assert(chan == disconnect_target); disconnect_steps++; }
 static void l2cap_chan_ready(struct l2cap_chan *chan) { chan->state = BT_CONNECTED; }
 static void smp_conn_security(struct hci_conn *conn, int level) { (void)conn; (void)level; assert(0); }
 static struct l2cap_chan *__l2cap_get_chan_by_dcid(struct l2cap_conn *conn, u16 dcid) {
@@ -94,13 +118,22 @@ static struct l2cap_chan *__l2cap_get_chan_by_dcid(struct l2cap_conn *conn, u16 
     }
     return NULL;
 }
+static struct l2cap_chan *l2cap_get_chan_by_scid(struct l2cap_conn *conn, u16 scid) {
+    for (int index = 0; index < conn->chan_l.count; index++) {
+        if (conn->chan_l.items[index]->scid == scid) { return conn->chan_l.items[index]; }
+    }
+    return NULL;
+}
+static void cmd_reject_invalid_cid(struct l2cap_conn *conn, u8 ident, u16 dcid, u16 scid) {
+    (void)conn; (void)ident; (void)dcid; (void)scid; assert(0);
+}
 '''
 
 CASES = r'''
 static void run_case(int count, int trigger, bool expect_mismatch) {
     struct hci_conn hcon = {0};
     struct l2cap_conn conn = {.hcon = &hcon};
-    struct l2cap_ops ops = {.get_peer_pid = get_peer_pid};
+    struct l2cap_ops ops = {.get_peer_pid = get_peer_pid, .set_shutdown = set_shutdown, .close = close_channel};
     struct l2cap_chan channels[5] = {0};
     conn.chan_l.count = count;
     for (int index = 0; index < count; index++) {
@@ -132,6 +165,21 @@ static void run_case(int count, int trigger, bool expect_mismatch) {
         printf("%s%u:%u", index ? "," : "", channels[index].scid, channels[index].dcid);
     }
     puts("");
+    disconnect_target = &channels[count - 1];
+    disconnect_steps = 0;
+    u16 advertised_peer = 0;
+    for (int index = 0; index < count; index++) {
+        if (sent_scids[index] == disconnect_target->scid) { advertised_peer = response->dcid[index]; }
+    }
+    assert(advertised_peer != 0);
+    struct l2cap_disconn_req request = {.dcid = disconnect_target->scid, .scid = advertised_peer};
+    assert(l2cap_disconnect_req(&conn, &command, sizeof(request), (u8 *)&request) == 0);
+    assert(disconnect_steps == 5);
+    assert(disconnect_response.dcid == disconnect_target->scid);
+    assert(disconnect_response.scid == disconnect_target->dcid);
+    assert((disconnect_response.scid != request.scid) == expect_mismatch);
+    printf("disconnect_request=%u:%u disconnect_response=%u:%u association_mismatch=%d\n",
+        request.dcid, request.scid, disconnect_response.dcid, disconnect_response.scid, expect_mismatch);
 }
 int main(void) {
     run_case(1, 0, false);
@@ -150,7 +198,8 @@ def program(source: bytes) -> str:
     text = source.decode()
     grouping = text[text.index('struct l2cap_ecred_conn_data {'):text.index('\nstatic void l2cap_le_start(')]
     response = text[text.index('static inline int l2cap_ecred_conn_rsp('):text.index('\nstatic inline int l2cap_ecred_reconf_req(')]
-    return SHIM + grouping + response + CASES
+    disconnect = text[text.index('static inline int l2cap_disconnect_req('):text.index('\nstatic inline int l2cap_disconnect_rsp(')]
+    return SHIM + grouping + response + disconnect + CASES
 
 
 def negotiations(path: Path) -> list[dict]:
@@ -192,8 +241,115 @@ def negotiations(path: Path) -> list[dict]:
     return result
 
 
+def decode_teardowns(content: bytes) -> list[dict]:
+    """Extract only complete disconnect fields from Bluetooth Monitor snoops."""
+    if len(content) < 16 or content[:8] != b'btsnoop\0' or struct.unpack_from('>II', content, 8) != (1, 2001):
+        raise ValueError('Expected version 1 Bluetooth Monitor snoop, not H4')
+    offset, frame = 16, 0
+    result = []
+    while offset < len(content):
+        if len(content) - offset < 24:
+            raise ValueError('Truncated snoop record header')
+        original, included, flags, drops, timestamp = struct.unpack_from('>IIIIQ', content, offset)
+        offset += 24
+        if included != original or included > len(content) - offset or drops:
+            raise ValueError('Incomplete capture record or recorded drops')
+        packet = content[offset:offset + included]
+        offset += included
+        frame += 1
+        opcode = flags & 0xffff
+        if opcode not in (4, 5):
+            continue
+        if len(packet) < 4:
+            raise ValueError('Truncated ACL header')
+        handle_flags, acl_length = struct.unpack_from('<HH', packet)
+        if acl_length != len(packet) - 4:
+            raise ValueError('ACL length mismatch')
+        if (handle_flags >> 12) & 3 == 1:
+            continue
+        if len(packet) < 8:
+            raise ValueError('Truncated L2CAP header')
+        length, cid = struct.unpack_from('<HH', packet, 4)
+        if cid != 5:
+            continue
+        if length != len(packet) - 8:
+            raise ValueError('This probe requires complete unfragmented LE signaling')
+        command_offset = 8
+        while command_offset < len(packet):
+            if len(packet) - command_offset < 4:
+                raise ValueError('Truncated signaling command header')
+            code, ident, command_length = struct.unpack_from('<BBH', packet, command_offset)
+            command_offset += 4
+            if command_length > len(packet) - command_offset:
+                raise ValueError('Truncated signaling command')
+            if code in (6, 7):
+                if command_length != 4:
+                    raise ValueError('Unexpected disconnect command length')
+                dcid, scid = struct.unpack_from('<HH', packet, command_offset)
+                seconds, microseconds = divmod(timestamp - 0x00E03AB44A676000, 1000000)
+                utc = datetime.fromtimestamp(seconds + 946684800, timezone.utc).replace(microsecond=microseconds)
+                result.append({'frame': frame, 'utc': utc.isoformat(), 'direction': 'TX' if opcode == 4 else 'RX',
+                    'adapter': flags >> 16, 'handle': handle_flags & 0x0fff, 'code': code,
+                    'ident': ident, 'dcid': dcid, 'scid': scid})
+            command_offset += command_length
+    return result
+
+
+def historical_teardowns(root: Path) -> list[dict]:
+    """Check the exact six original request/response signatures without values."""
+    expected = {2: (161, 167, 10), 3: (91, 103, 4), 5: (88, 100, 4),
+        6: (92, 105, 4), 7: (82, 94, 4), 8: (84, 97, 4)}
+    result = []
+    for attempt, (request_frame, response_frame, ident) in expected.items():
+        content = (root / f'wifi-primary-smokes-01-a{attempt:02}/pi/hci.btsnoop').read_bytes()
+        events = decode_teardowns(content)
+        request = [event for event in events if event['frame'] == request_frame]
+        response = [event for event in events if event['frame'] == response_frame]
+        if len(request) != 1 or len(response) != 1:
+            raise ValueError('Expected exactly one original teardown command in each selected frame')
+        for event, direction, code, scid in ((request[0], 'TX', 6, 64), (response[0], 'RX', 7, 65)):
+            fields = tuple(event[key] for key in ('direction', 'adapter', 'handle', 'code', 'ident', 'dcid', 'scid'))
+            if fields != (direction, 0, 64, code, ident, 65, scid):
+                raise ValueError('Original teardown signature does not match')
+        result.append({'attempt': attempt, 'capture_sha256': hashlib.sha256(content).hexdigest(),
+            'request': request[0], 'response': response[0]})
+    return result
+
+
+def check_teardown_decoder() -> None:
+    """Require typed positive controls and reject malformed or incomplete input."""
+    header = struct.pack('>8sII', b'btsnoop\0', 1, 2001)
+    packet = struct.pack('<HHHHBBHHH', 0x2040, 12, 8, 5, 6, 7, 4, 65, 64)
+
+    def record(payload: bytes, flags: int = 4, original: int | None = None, drops: int = 0) -> bytes:
+        return struct.pack('>IIIIQ', len(payload) if original is None else original,
+            len(payload), flags, drops, 0x00E03AB44A676000) + payload
+
+    expected = {'frame': 2, 'utc': '2000-01-01T00:00:00+00:00', 'direction': 'TX',
+        'adapter': 0, 'handle': 64, 'code': 6, 'ident': 7, 'dcid': 65, 'scid': 64}
+    valid = header + record(b'PRIVATE_VALUE_MUST_NOT_EXPORT', flags=12) + record(packet)
+    assert decode_teardowns(valid) == [expected]
+    assert 'PRIVATE_VALUE' not in json.dumps(decode_teardowns(valid))
+    response = packet[:8] + struct.pack('<BBHHH', 7, 7, 4, 65, 65)
+    assert decode_teardowns(header + record(response, flags=(2 << 16) | 5)) == [
+        dict(expected, frame=1, direction='RX', adapter=2, code=7, scid=65)]
+    malformed = [b'btsnoop', header[:12] + struct.pack('>I', 1002), valid[:-1], header + b'123',
+        header + record(packet, original=len(packet) + 1), header + record(packet, drops=1),
+        header + record(b'123'), header + record(packet[:2] + struct.pack('<H', 11) + packet[4:]),
+        header + record(packet[:4] + struct.pack('<H', 9) + packet[6:]),
+        header + record(packet[:10] + struct.pack('<H', 5) + packet[12:]),
+        header + record(packet[:10] + struct.pack('<H', 3) + packet[12:])]
+    for content in malformed:
+        try:
+            decode_teardowns(content)
+        except ValueError:
+            continue
+        raise AssertionError('Malformed monitor record was accepted')
+
+
 def check(source: bytes, compiler: str) -> str:
     """Compile the pinned functions with ordered-list stubs, not a kernel or BlueZ."""
+    check_teardown_decoder()
     native = program(source)
     try:
         program(source + b'\n')
@@ -208,6 +364,8 @@ def check(source: bytes, compiler: str) -> str:
         output = subprocess.check_output([binary], text=True)
     if 'count=2 trigger=65 mismatch=1 request=65,64 assignments=64:64,65:65' not in output:
         raise AssertionError('Native probe did not reproduce the predicted assignment')
+    if 'disconnect_request=65:64 disconnect_response=65:65 association_mismatch=1' not in output:
+        raise AssertionError('Native probe did not reproduce the historical teardown fields')
     return output
 
 
@@ -216,6 +374,7 @@ if __name__ == '__main__':
     parser.add_argument('--source', type=Path, help='Use a local hash-matching kernel source instead of HTTPS')
     parser.add_argument('--compiler', default='cc')
     parser.add_argument('--metadata', type=Path, help='Optional private value-free btmon reconstruction')
+    parser.add_argument('--captures', type=Path, help='Optional original captures root; emit only teardown headers')
     args = parser.parse_args()
     if args.source:
         content = args.source.read_bytes()
@@ -228,4 +387,6 @@ if __name__ == '__main__':
         raise SystemExit(error.stderr or str(error)) from error
     if args.metadata:
         print(json.dumps({'historical_negotiations': negotiations(args.metadata)}, sort_keys=True))
+    if args.captures:
+        print(json.dumps({'historical_teardowns': historical_teardowns(args.captures)}, sort_keys=True))
     print('PASS: pinned-function host probe; not live kernel, socket, BlueZ, or corrective hardware validation')

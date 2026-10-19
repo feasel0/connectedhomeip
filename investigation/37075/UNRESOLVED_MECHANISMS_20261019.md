@@ -493,9 +493,38 @@ stubs. The two-channel triggering65 case reproduces the wrong association;
 one channel and a two-channel triggering64 control preserve positional pairs.
 A three-channel triggering66 case also mismatches. These are isolated native
 function checks, not execution of the loaded kernel, BlueZ or an actual DUT.
-Historical attribution still needs the bounded dual-peer/socket observation
-when capacity permits. No accepted correction for this distinct candidate was
+The channel-list scheduling itself was not captured; the additional teardown
+evidence below strengthens the historical association finding. No accepted
+correction for this distinct requester-side candidate was
 identified; a generic modern-kernel upgrade is not a demonstrated fix.
+
+The retained teardown fields supply an additional historical mapping check:
+all six controller Disconnection Requests carry `(DCID65, SCID64)`, but the
+matching DUT responses carry `(DCID65, SCID65)`. The pinned
+`l2cap_disconnect_req` looks up the channel by the request DCID and builds the
+response from `chan->scid` and `chan->dcid`, rather than echoing the request's
+SCID. Under that deployed handler, this exposes DUT local65 -> controller65,
+contrary to the advertised DUT65 -> controller64 pair. a02 and a03 also have
+DUT-originated Disconnection Requests `(DCID64, SCID64)`, consistent with the
+other erroneous DUT64 -> controller64 association. This is original wire
+evidence of stored association, not a newly captured socket trace.
+
+An independent byte check now confirms all six teardown pairs, adapter0,
+HCI handle64, matching command identifiers and original frame/UTC timestamps.
+It reads Bluetooth Monitor-format snoop records directly, without btmon or
+tshark labels, and emits only fixed disconnect fields and file hashes. All
+recorded drop counts are zero; this is not a claim of independent air coverage.
+The probe now also compiles the unchanged pinned `l2cap_disconnect_req`.
+Chaining that handler after the misordered ECRED assignment yields the exact
+`65:64` request / `65:65` response, whereas aligned controls preserve matching
+fields. Eleven malformed-format/length/drop controls are rejected. A separate
+echo-only handler mutation compiled and ran but failed the intended stored-CID
+assertion. The tool and original byte checks therefore support case B with
+historical evidence, not merely an ATT wrong-bearer inference. Correct stored
+associations plus an ATT-only socket-selection error (case C alone) do not
+explain these teardown fields under the verified handler. A new dual-peer
+socket trace is still needed for list scheduling and corrective validation,
+not to pretend these retained original association fields are absent.
 
 No SDK workaround, kernel change, or corrective hardware result is established
 here. All six original outcomes remain OPEN.
@@ -526,6 +555,22 @@ The next deciding check is the original operational instance's publication,
 address-resolution result and controller/DUT IP packets during discovery,
 not a BLE readiness delay or a speculative CASE fix. All three remain OPEN.
 
+The original Ubuntu-side IP captures now provide a narrower publication check.
+Each contains 84 queries for its exact DUT operational instance, but no
+positive-TTL DUT SRV record during the controller's resolver window. a04 has
+no matching response record in the retained observer capture. a09 first shows
+DUT SRV at 02:46:59.079468 UTC, after its 02:45:46.514203 failure; a10 at
+02:57:27.067753, after its 02:56:14.500719 failure. Both late bursts contain
+SRV port5540/TTL120 and TTL0 withdrawals. The same structural extraction finds
+six positive-TTL commissioner SRV records per capture. SRV owner fields are
+split by this dissector into `dns.srv.service`, `dns.srv.proto` and
+`dns.srv.name`; using only `dns.resp.name` would incorrectly omit SRV records.
+These are observations on Ubuntu's Ethernet interface, not captures of either
+Pi's send/receive path. Late observer visibility supports a publication or
+multicast-delivery hypothesis; it does not distinguish DUT emission, Pi
+reception, caching or interface handling. No CASE or setup correction follows
+from this evidence alone.
+
 ### Smallest Remaining Checks
 
 | Exact Evidence ID | Symptom / Evidence | Hypothesis and Confidence | Deciding Check / Status |
@@ -534,7 +579,7 @@ not a BLE readiness delay or a speculative CASE fix. All three remain OPEN.
 | January 2025 iteration 78 | CASE E43681 Sigma3 at 14:15:35.228 followed by secure-channel status at 14:15:35.929; native final CommandSender.cpp:343 timeout. Earlier catalog identifies subsequent encrypted CommissioningComplete. | Distinct post-CASE command-progress failure, high confidence in phase, not root cause. | Authenticate command/response capture and responder delivery; missing relevant DUT/OTBR evidence. OPEN, investigation owner. |
 | PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | Late-state/status handling or delivery loss remain candidates; neither proved. | Correlate exact report/status exchange with handler close/reuse; historical packet capture absent. OPEN, investigation owner. |
 | Wi-Fi IP PASE IncorrectState | Native exception alone does not identify protocol phase. | Discovery, initialization and transport/session hypotheses remain distinct. | Exact original call, peer-discovery evidence, PASE headers and native error origin; not an inferred BLE defect. |
-| BLE-Wi-Fi a02 subscription | Separate notification/subscription-stage failure. | Native-versus-daemon cause unproved. | Exact CCCD/notification request and response, BlueZ Notify state and native completion for this peer. |
+| Six BLE-Wi-Fi EATT failures, including a02 subscription | Wrong-bearer ATT replies followed by teardown contradicting advertised CID pairs. | Original bytes plus pinned disconnect handler expose DUT local65 -> controller65; requester ordering reproduces this state. Case B supported; full list scheduling unobserved. | Bounded multi-bearer dual-peer socket observation and correction at the original GATT/notification phase. Hardware remains disk-blocked; all six OPEN. |
 | Three BLE-Wi-Fi operational timeouts | Post-provisioning phase, separate from BLE pairing. | IPv6 reachability, publication, DNS-SD and CASE remain distinct. | Actual interface/global address and route at failure, corresponding discovery result and CASE exchange. |
 | Native SIGSEGV / prolonged PASE | Crashes and long pending protocol work are distinct observations. | No new independent mechanism established. | Matching core/backtrace/build/faulting callback per crash; last actual protocol/callback progress per hang. |
 | Thread/SRP/publication | Timeout does not establish a failed network layer. | Dataset, attachment, address, SRP and delivery remain separate. | Exact peer's dataset fingerprint, SRP record, operational address and routed packet timestamps. |
