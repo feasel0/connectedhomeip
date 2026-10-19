@@ -28,7 +28,15 @@ and API credentials are not included in this directory or its commits.
 ## SVE Data Model Update
 
 - [Mandate interpretation and initial generation attempt](reports/2026-10-19_16-39-38.md)
+- [Combined-book compatibility fix and verified full generation](reports/2026-10-19_17-02-05.md)
 
 The first gate is a complete, error-free run of the existing-directory update
 script against specification `master`. The baseline attempt failed on obsolete
-specification Make targets; its partial generated XML is not a release candidate.
+specification Make targets. With the compatibility fix, the complete pinned run
+exited 0 with no error diagnostics, and all 280 generated XML files passed
+structural and manifest checks. Release acceptance still requires ballot-flag
+verification and semantic/conformance review; generated models remain in scratch.
+
+Publish all work under `datamodel/` and SDK changes needed for this task on the
+dedicated data-model branch. Do not include changes from `investigation/`, private
+specification content, scratch outputs, or unrelated work owned by another task.
