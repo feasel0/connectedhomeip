@@ -435,6 +435,7 @@ int main(void) {
     run_case(3, 2, true);
     pending_removal_case();
     run_case(3, 1, true);
+    run_case(4, 3, true);
     run_case(5, 4, true);
     const u16 accepted[] = {80, 81, 82};
     const u16 partial[] = {80, 0, 82};
@@ -763,8 +764,8 @@ def check(source: bytes, compiler: str, sanitize: bool = False) -> str:
         proposed_run = execute('proposed', proposed)
         proposed_run.check_returncode()
         corrected = proposed_run.stdout
-        if any(record['reported_scenarios'] != 25 for record in executions):
-            raise AssertionError('Expected all 25 diagnostic scenarios in each positive variant')
+        if any(record['reported_scenarios'] != 26 for record in executions):
+            raise AssertionError('Expected all 26 diagnostic scenarios in each positive variant')
         if any('identifier-reuse-isolation=NOT_SATISFIED' not in result.stdout
                 for result in (original_run, proposed_run)):
             raise AssertionError('Missing pending-identifier collision qualification result')

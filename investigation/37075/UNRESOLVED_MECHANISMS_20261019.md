@@ -590,6 +590,18 @@ production qualification. The proposal remains unapplied/undeployed; disk,
 fixture ownership, consistent linked build and native GATT/StartNotify gates
 remain. All historical outcomes and ledger counts are unchanged.
 
+The [14:05 final review and resource report](../reports/2026-10-20_14-05-43.md)
+finds no further patch regression. One count4 case closes valid-count coverage
+in the existing probe:26 scenarios per positive variant; normal/sanitized and
+both behavioral negatives pass their expected checks. The patch is unchanged;
+linked-kernel/native GATT validation remains capacity/ownership-blocked.
+Guarded cleanup removed364,544 allocated bytes of old successful investigation
+unit-log copies, retaining summaries and multi-GiB shared/other-agent stores.
+Repeated large cpptools OOM kills confirm a lab issue, but historical growth/
+pressure duration and the controller's exact wait remain unmeasured. Early a09/a10
+DUT-source PTR/AAAA packets reach Ubuntu before failure; their OS hostname
+records do not establish the missing Matter operational SRV or Pi reception.
+
 #### Separate Operational Discovery Failures
 
 The original a04 `ca3d300af4dc9e9e`, a09 `dbb5d8f70aca047e` and a10
