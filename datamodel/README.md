@@ -4,9 +4,22 @@ Use branches named `datamodel/YYYY-MM-DD_data-model` for this work. The current
 branch is `datamodel/2026-10-19_data-model`.
 
 Keep summaries under `datamodel/` and UTC datetime-named reports under
-`datamodel/reports/YYYY-MM-DD_HH-MM-SS.md`. Do not write or publish this work
+`datamodel/reoprts/YYYY-MM-DD_HH-MM-SS.md`. Do not write or publish this work
 under `investigation/` or on an investigation branch. Push only to the user's
 `feasel0/connectedhomeip` fork.
+
+## Per-Turn Closeout
+
+Standing order: after every turn, including instruction-only turns, write a new
+report describing the actions taken, results, verification, and remaining limits.
+Use the exact `reoprts/` spelling requested by the user. Leave historical reports
+under `reports/` in place.
+
+At the end of each turn, commit and push all `datamodel/` changes and SDK changes
+authored for this task to the dedicated data-model branch. Exclude investigation
+changes, unrelated work, private sources, raw logs, and generated scratch outputs.
+
+- [Standing per-turn reporting and publication order](reoprts/2026-10-20_03-30-32.md)
 
 ## Transcription
 
