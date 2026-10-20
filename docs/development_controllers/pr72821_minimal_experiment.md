@@ -4,18 +4,22 @@ Date: 2026-10-20. Issue: project-chip/connectedhomeip#72252.
 
 ## Recommendation
 
-Use D as the basis for the scoped ownership fix, retaining its demonstrated
-commissioner-cancellation and Linux scan-retirement safeguards. Do not transplant
-C's request registry, delegate-destruction tracking, or asynchronous BlueZ
-operations automatically. B alone is insufficient: an executed teardown test
-reports a commissioner use-after-free under AddressSanitizer.
+Use the reduced implementation with the follow-up corrections described below:
+asynchronous Disconnect, pending-until-terminal Linux connect cancellation, and
+normal factory-restart state reset. The held-reply fallback probe demonstrates
+that Disconnect responsiveness is relevant to this PR. B alone is insufficient:
+an executed teardown test reports a commissioner use-after-free under ASan.
 
-D and C pass the same final 13-case behavioral specification. This establishes
-equivalence for those executions, not general equivalence of the two BLE
-implementations. Physical commissioning, arbitrary delayed GLib notifications,
-and destroying/reinitializing a BLE layer with unfinished backend work remain
-outside D's qualification. These limitations must remain visible before replacing
-the published implementation; the experiment does not change that branch.
+The final candidate retains no global request registry, delegate-destruction
+tracking, full Linux event generations, or asynchronous Connect. It is integrated
+as `fa4963d16ad` on the existing PR branch, without rewriting its history or
+creating another PR. Normal singleton-backed factory shutdown/restart is tested;
+arbitrary destruction of a layer/delegate during backend work is not supported.
+Physical commissioning and general delayed-event equivalence to C remain
+unqualified.
+
+The original A/B/C/D comparison below is historical. Its 13-case results and
+size counts describe D before the follow-up, not the final PR implementation.
 
 ## Revisions
 
@@ -24,7 +28,9 @@ the published implementation; the experiment does not change that branch.
 | A | `c0747b78f00f61b4c36d20db474fc9721b437f5d` | Upstream baseline |
 | B | `2be76f9678543b9a62d4797ef7775a7d38b5872e` | Initial six-file correction |
 | C | `c6010b2f8c461857f9bfe81921a33d2d026fa68f` | Published expanded implementation |
-| D | `fd3d1ae14240b6d1a75a1f568759c08d292d38a9` | Final tested reduced production implementation |
+| D | `fd3d1ae14240b6d1a75a1f568759c08d292d38a9` | Initially qualified reduced implementation |
+| Follow-up | `7b5757e8fce` | Reduced candidate plus measured Disconnect, cancellation and restart corrections |
+| PR integration | `fa4963d16ad` | Same source tree on the original PR branch, parent C |
 
 D consists of `607dc3dd7f926b0c355dd99af0ac3c565991a714` followed by
 `fd3d1ae14240b6d1a75a1f568759c08d292d38a9`, on
@@ -34,9 +40,12 @@ after the tested implementation so its exact revision can be recorded.
 Separate B and C worktrees supplied comparison builds. Their production
 implementation was preserved; test-access hooks and the common test source were
 supplied locally. Local dependency symlinks and environment setup are not part of
-D's commits. The published PR ref was verified at C after testing.
+D's commits. The published PR ref was verified at C after the initial comparison.
+The follow-up was subsequently integrated on that original branch.
 
 ## Implementation Size
+
+This table records the initial comparison; final follow-up counts appear below.
 
 Counts are `git diff --numstat A REV -- src`, excluding paths containing
 `/tests/`. Header-only test friendship in production headers is included, making
@@ -67,7 +76,7 @@ D reduces production changed lines by approximately 78% relative to C. B's
 ## Behavioral Specification
 
 The common source is `src/controller/tests/TestBleFallback.cpp`.
-Final SHA-256:
+Initial comparison SHA-256:
 `961307f073242c22cef502ad6786f4874102303c771325fc6fb6e2813ce88da3`.
 The comparison worktrees include this source and compile it against their own
 controller, BLE layer, and Linux implementation.
@@ -136,6 +145,14 @@ StopDiscovery regression.
    detachment, even if the remote StopDiscovery call fails. The manager treats
    that locally quiescent state as canceled, instead of permanently retaining a
    busy request. A failed notification detachment is still propagated.
+6. Initiate Disconnect asynchronously without capturing a connection or endpoint.
+   The deferred-discovery close must not await a remote reply on the Matter loop.
+7. Linux connecting cancellation cancels its GIO operation but returns BUSY:
+   a terminal event may already be queued or may be produced by cancellation.
+   The detached layer rejects replacement until the terminal result retires it.
+8. Successful layer initialization resets callback state, and Linux shutdown
+   retires scan state along with its timers. These are required by the executed
+   normal factory shutdown/restart regression, not arbitrary layer destruction.
 
 The commissioner cannot implement all of item 3 alone: the old API handed its
 raw application pointer to the backend, and offered no owner-specific detach
@@ -156,13 +173,13 @@ reproductions.
 | Caller callback detachment, owner-aware cancel and pending single-request exclusion | REQUIRED | B's executable failures and commissioner UAF; implemented locally in D |
 | Global request identity registry | NOT ESTABLISHED | C/D pass common lifetime cases without it in D; shared layer survives the unfinished request |
 | Platform-delegate destructor/lifetime registry | NOT ESTABLISHED | Not needed for tested commissioner teardown; D requires the delegates to survive backend work |
-| BLE-layer shutdown/reinit callback identity | SEPARATE ISSUE | C protects a broader layer lifetime than the pairer defect; D does not promise this behavior |
+| BLE-layer shutdown/reinit callback identity | BROADER THAN NORMAL FACTORY RESTART | Follow-up resets normal restart state and tests stopped-loop factory teardown; arbitrary late callbacks into destroyed/replaced layers remain unsupported |
 | Single-device versus multi-discriminator coordination | REQUIRED for single-request exclusion | D retains a busy guard so a multi-result request cannot replace a live single-result request; no new multi-result ownership system |
 | Queued Linux scan-start invalidation | REQUIRED | Actual queued cancellation/replacement regression; small counter retained in D |
 | Full scan-result and terminal-event generation tagging | UNDETERMINED | C protects additional delayed-event orderings; the common D tests do not prove all GLib-to-Matter races safe |
 | Scanner StopDiscovery failure retirement | REQUIRED with D's pending-request guard | D before final correction becomes stranded after local unsubscribe plus remote error; final D and C pass actual injected RPC |
 | Asynchronous BlueZ Connect | SEPARATE ISSUE | Synchronous RPC existed in A and discriminator reconnect already existed; C's held-RPC test demonstrates responsiveness improvement, not necessity of async for this ownership correction |
-| Asynchronous BlueZ Disconnect | SEPARATE ISSUE | Synchronous close existed in A; B adds another close caller and can expose its latency. D retains that latency and does not claim held-RPC responsiveness |
+| Asynchronous BlueZ Disconnect | REQUIRED BY FOLLOW-UP EVIDENCE | Actual deferred-discovery close stalls Matter progress with a held reply on initial D; unchanged C and the small async correction pass |
 | Adapter-removal cleanup | SEPARATE ISSUE | General platform error retirement, predating this queueing strategy; not reproduced in D's scoped sequence |
 | Already-connected-device handling | SEPARATE ISSUE | Existing reconnect backend behavior; C's generated-proxy test covers the independent cached-state/no-new-notification case |
 | Stale completion after failed cancellation with commissioner gone | REQUIRED | B ASan failure; D detaches caller and blocks replacement until terminal result |
@@ -175,6 +192,7 @@ The report does not use automated review suggestions alone as evidence.
 
 ## Validation
 
+This table records the initial comparison, not the final follow-up totals.
 All results below are executed binaries with exit zero, except the intentional
 baseline failures described separately. ASan used `ASAN_OPTIONS=detect_leaks=1`.
 No sanitizer diagnostics or GLib criticals occurred in final C/D qualification.
@@ -257,6 +275,122 @@ those compilation failures were fixed in the test harness and are not counted
 as behavioral regressions. The original queueing negative control and 19-test
 registry-bypass experiment were accepted as completed evidence, not repeated.
 
+## Follow-up Qualification and PR Integration
+
+This continues from report commit `f806578a302` without repeating the complete
+A/B/C/D investigation. Candidate `7b5757e8fce` is integrated as
+`fa4963d16adb94080e8d5db2d14ec0051cdbd93f`, with C as its parent, on
+`feature/segfault-OnDiscoveredDeviceOverBle`. The integrated `src` tree was
+verified identical to the candidate before committing. No global registries,
+delegate-destructor changes, asynchronous Connect, or full Linux event generations
+were restored. The report remains only on the experimental branch.
+
+### Held Disconnect in the Actual Deferred Path
+
+`DeferredDisconnectDoesNotBlockControllerProgress` starts real UDP PASE, then
+schedules the real pairer's BLE-discovery callback on the Matter system layer.
+Its discarded-link close reaches the actual `BluezConnection::CloseConnection`
+and generated Device1 proxy through the test platform delegate. An authenticated
+private peer-to-peer GDBus server holds the actual Disconnect message. Another
+Matter task must progress before the peer replies. The peer allows 500 ms for
+that progress and then returns an injected UnknownObject/device-disappearance
+error; the proxy timeout is five seconds.
+
+- Initial D: 13 pass, one intended failure; progress-before-reply is false and
+   the dispatch records approximately 501 ms. This is dispatcher blocking, not
+   a physical BlueZ failure reproduction.
+- Unchanged C production with the identical 14-case probe source: 14 pass.
+- D with only the small asynchronous Disconnect correction: 14 pass.
+
+The test destroys the BluezConnection while the reply is outstanding. The
+asynchronous completion uses only GIO's retained proxy, not the destroyed
+connection or endpoint. The final version also runs under ASan/leak detection.
+The test does not separately assert proxy-finalization timing or error logging.
+Comparison logs are locally retained as `/tmp/pr72821-disconnect-{d,c}.log` and
+`/tmp/pr72821-disconnect-corrected.log`; these paths are not published raw logs.
+
+### Real Linux Cancellation Notifications
+
+The first cancellation probe holds an actual generated Device1.Connect RPC and
+calls the real endpoint cancellation. GIO cancellation causes the real
+ConnectDevice failure path to post a manager event. Before correction, Linux
+reported successful cancellation, allowed replacement, and the old failure
+notified the replacement (`newCallbacks == 1`, expected zero). Thus the missing
+isolation was demonstrated using a backend-produced event, not just a fabricated
+callback after successful cancellation. The failure remains in
+`/tmp/pr72821-cancel-d.log`.
+
+The final `LinuxCancelledConnectFailureCannotCompleteReplacement` checks BUSY
+both before and after the canceled RPC returns, until the real event queue is
+drained. Neither detached caller is notified, and a new request is accepted
+afterward. The queued scan-start identity is invalidated in test setup so that
+an unrelated scan-start error cannot supply the apparent terminal event.
+
+`LinuxQueuedSuccessAfterCancellationClosesDiscardedLink` uses the actual manager
+success-event producer, actual platform queue, real connection and generated
+Disconnect proxy. Cancellation detaches the caller and rejects replacement;
+dispatch closes the unclaimed connection exactly once and then permits retry.
+An explicit condition-variable wait observes the Disconnect request. This does
+not exercise radio discovery or full service-resolved/GATT initialization.
+
+Connecting cancellation now reports BUSY instead of promising quiescence.
+Typically the canceled RPC supplies the terminal event; a successful Connect
+awaiting services can remain pending until the existing 20-second connection
+timer. This is not a new hard responsiveness guarantee if the event loop or
+another synchronous backend operation is blocked. Multi-event timeout races and
+arbitrary GLib event orderings are not generally qualified by these cases.
+
+### Normal Factory Lifetime
+
+The Linux manager and its BleLayer/delegates are process-lifetime singleton
+objects. Factory system-state shutdown drops its pointer rather than deleting
+that layer, and the documented shutdown contract stops the Matter event loop
+before shutting down controllers/system state. Platform shutdown stops the
+scanner, endpoint, object manager and GLib loop. The tests retain the shared
+layer while commissioner destruction delivers a late result.
+
+`LinuxFactoryShutdownWithQueuedCancelledCompletion` additionally queues an
+actual manager failure notification, cancels the request, and shuts down the
+commissioner and factory without dispatching that notification. It checks the
+same layer survives and the caller is not notified, then initializes the factory
+and commissioner again and starts/cancels a fresh request. The initial restart
+probe failed with a stranded layer BUSY flag; after resetting that flag it
+exposed stale manager connecting state. Resetting initialized callback state
+and retiring scan state during shutdown makes the same test pass. This supports
+normal teardown/restart, not callbacks surviving arbitrary backend/layer reuse.
+
+### Final Branch Gates and Size
+
+All following binaries were freshly built and executed in the original-branch
+worktree after integration, with the same GN arguments documented above.
+The integrated test source SHA-256 is
+`d2fdde1ee9cfb63a64f92ad809f22fc7ac7389c813dd144d9879e58ed6ab2e78`.
+
+| Configuration | Passing cases | Total |
+| --- | --- | ---: |
+| Native | TestBleFallback 17; TestSetUpCodePairer 12; TestAutoCommissioner 34; TestBleLayer 37; TestBleEndPoint 3; TestBtpEngine 23 | 126 |
+| ASan, detect_leaks=1 | TestBleFallback 17; TestSetUpCodePairer 12; TestBleLayer 37 | 66 |
+| True BLE-disabled | TestBleFallback 1; TestSetUpCodePairer 11 | 12 |
+
+Three pre-existing AutoCommissioner cases remain disabled and are not counted
+as passes. No final sanitizer/leak diagnostics or GLib criticals were observed.
+Touched follow-up files pass clang-format 16 dry-run, editor diagnostics report
+no errors, and staged `git diff --check` passes. Initial fresh-build attempts
+stopped before compilation because GN was not on PATH and an ignored Pigweed
+environment wrapper was absent; local setup was corrected before these gates.
+Local environment/dependency symlinks are excluded from both commits.
+
+Against A, the final PR has 17 changed files, +1079/-34 lines in total. Production
+has 11 changed files, +160/-29 lines: 189 changed lines versus C's 697, a 72.9%
+reduction. The integration commit relative to C changes 22 files, +955/-1616,
+replacing implementation-specific tests with the 17-case fallback/lifecycle
+suite while retaining the original pairer and baseline BLE coverage.
+
+The original PR is retained, non-draft, targeting master; no merge or history
+rewrite is performed. Its description must report only the final gates and
+explicit limits, linking this experimental report for comparison details rather
+than inheriting C's larger test counts or its prior CI result.
+
 ## Physical Qualification and Remaining Limits
 
 The nRF Connect inventory identified DK `001050208117` and a separate RCP
@@ -272,8 +406,11 @@ work, and relies on successful platform cancellation suppressing callbacks.
 Failed cancellation keeps a request busy until its terminal result; there is no
 forced replacement if a broken backend never terminates. General delayed GLib
 events after successful cancellation, cached already-connected proxy behavior,
-adapter removal, held D-Bus responsiveness, and layer shutdown/reinitialization
-were not qualified on D. C offers additional protection at those boundaries.
+adapter removal, held Connect responsiveness, and arbitrary layer/delegate
+destruction remain unqualified. The follow-up qualifies only the held Disconnect
+and normal factory teardown/restart paths described above. C offers additional
+protection outside these boundaries. Thread Meshcop and other platform backends
+were not qualified.
 
 The evidence supports the smaller D approach for the original ownership problem
 and the exercised cancellation paths. It does not support an unconditional claim
