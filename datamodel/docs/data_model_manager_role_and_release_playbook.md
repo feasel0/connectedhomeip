@@ -114,6 +114,8 @@ Produce a concise, itemized diff from `spec_revision_diff_summary.py`, supplemen
 6. Change only what the evidence supports. If a generated API change is backward-incompatible, evaluate an explicitly documented and correctly scoped errata/compatibility approach with owners; don't silently rewrite the normative XML.
 7. Validate the smallest relevant regression first, then rerun affected suites; record any remaining block and PR/issue link.
 
+**Verified 2026-10-20 lesson:** use the actual prior/current directory pair when updating the same revision; a different-version summary is not a substitute. Count definitions separately from nested references: apparent GKM feature loss, DEM attribute additions and Push AV enum/field additions were references, not those API changes. Passing broad parser suites did not catch reproduced inheritance/constraint information loss; retain focused positive-control probes for newly changed constructs.
+
 The onboarding specifically recommends reviewing Arya's [Matter 1.7 integration PR #73842](https://github.com/project-chip/connectedhomeip/pull/73842), especially its **Required manual modifications**, to learn the real failure modes, rather than reading hundreds of XMLs without a diff summary.
 
 ### Phase E — Validate integration into SDK testing
@@ -121,6 +123,8 @@ The onboarding specifically recommends reviewing Arya's [Matter 1.7 integration 
 For a **new** model revision, follow the README's packaging and selection steps: `BUILD.gn`, generated `data_model_xmls.gni`, `PrebuiltDataModelDirectory`, `dm_from_spec_version()`, model version tests, `SpecificationDefinedRevisions.h`, and the directory-update workflow. For an **existing** revision, verify that these remain correct; change only what is needed.
 
 Follow the official Python setup and run the documented `TestSpecParsingSupport.py`, `TestSpecParsingSelection.py`, `TestSpecParsingDeviceType.py` and additional appropriate `TestSpec*` suites. Run IDM and related SDK/test-harness regression tests relevant to the changed requirements. If a version default is updated, anticipate additional ZAP, implementation, and test failures beyond direct IDM model parsing.
+
+**Verified 2026-10-20 execution method:** at SDK `24fafe816f7a5db9aeb514d6504ff6b57384b4f1`, these suites are under `src/python_testing/test_testing/`; DataType and Namespace are also relevant. When reusing an installed host controller, prove both the loaded `matter.testing.spec_parsing.__file__` and model-resource ZIP path/hash refer to the intended pinned sources/candidate. PYTHONPATH alone can lose to an installed regular package through namespace resolution. A private pinned-source overlay plus resource assertions passed all five suites (79 tests) without changing tests. Record reused native modules separately from freshly built binaries; resolve loader failures before attributing a failure to model content. Keep private storage/logs outside public commits.
 
 **Do not claim integration pass merely because XML parses or the generator exits zero.** Do not disable failing tests solely to make the release appear green. A known, justified exception needs explicit ownership, documentation, and reviewer acceptance.
 
@@ -142,7 +146,7 @@ Get the necessary multi-person review. Coordinate the final spec tag, test event
 | G5 Release acceptance | Reviewers approve the correct tagged snapshot and handoff / PR, including permitted exceptions |
 | G6 Post-release lessons | Record what broke, owners, cycle time, validated tooling improvements, and playbook changes |
 
-**Current state (2026-10-19):** G1 complete and substantial G2 evidence; G0 include flags not fully verified, G3–G5 not complete. Do not promote G1 to G5 by inference.
+**Current state (2026-10-20):** G1 complete and substantial G2 evidence; G3 has a complete 20-file itemization with open semantic findings; G4 has 79 parsing/selection passes but no full SDK sign-off. G0 still lacks ballot/tag authority; G5 is not complete. See the [review](2026-10-20_SVE_semantic_review.md) and [ledger](SVE_mismatch_ledger.md). Do not promote G1 to G5 by inference.
 
 ## 7. Per-release working artifacts
 

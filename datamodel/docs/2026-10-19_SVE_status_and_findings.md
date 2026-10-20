@@ -5,6 +5,14 @@
 **Status:** **Initial generation/execution gate PASSED. Release readiness NOT established.**  
 **Primary evidence:** [Initial blocked run](../reports/2026-10-19_16-39-38.md) · [successful rerun and detailed validation](../reports/2026-10-19_17-02-05.md) · [SDK procedure](../../data_model/README.md)
 
+## Semantic-review checkpoint, 2026-10-20
+
+All **20/20 XML differences** are now itemized against the exact previous/current specification commits in the [semantic review](2026-10-20_SVE_semantic_review.md), with proposed owners/actions in the [mismatch ledger](SVE_mismatch_ledger.md). Five candidate-bound TestSpec suites passed **79/79** tests: Support 15, Selection 2, DeviceType 29, DataType 26, Namespace 7; zero errors/failures/skips. Pinned Python source and generated-resource provenance were explicitly checked, using existing native controller modules rather than a fresh native build.
+
+**Confirmed issues outside that coverage:** Thermostat Mode derived command inheritance becomes optional, DEM loses its `maxOf` lower constraint in the consumer parser, Thermostat Mode command access metadata is absent despite source Manage, and a PairingHint example operator is lost during extraction. SDK/ZAP bounds, ACL and behavioral drift have separate owner actions. No normative/generated XML or production parser was changed; the candidate remains scratch.
+
+**Gates:** G1 remains passed; G2 has structural evidence; G3 itemization is complete but findings and milestone decisions remain open; G4 is partially exercised, not implementation-ready; G0/G5 remain blocked. The Current list is frozen at 40 entries / 39 unique flags, but no applicable ballot email/list, chosen release tag or coordinator approval was available. No ballot/SVE approval is claimed.
+
 ## Presentation summary
 
 - **Assignment:** Run the existing-directory data-model update documented by the Matter SDK, using specification `master`. The **first requested deliverable** was an error-free execution of the update script—not a finalized SVE data-model release.
@@ -13,7 +21,7 @@
 - **Result:** Complete non-dry-run generation exited **0** in **275.67 seconds**, with **zero error diagnostics, zero tracebacks, and two reported warnings**. Six targeted regression tests and Ruff passed. Existing historical-book behavior was checked with controlled test fixtures, not a complete old-spec generation.
 - **Output quality:** **280/280 XML files** are nonempty and parse successfully: **139 cluster files, 105 device-type files, 31 namespaces, and 5 global files**. SDK parsers found **148 cluster definitions and 104 device types with zero parsing problems**. No XML files, cluster/device IDs, or ID names were added or removed; the regenerated build manifest matches the prior version. Independent Alchemy output canonically matches all resulting XML files.
 - **What changed:** **20 XML files** differ from the checked-in 1.7 snapshot (14 cluster, 5 device-type, 1 global). The specification SHA changed; the previous tag was removed because the selected `master` commit is untagged. The generated XML and full logs remain in scratch, **not committed as an SVE release candidate**.
-- **What remains:** Confirm the `Current` include flags against the applicable ballot email; review the 20-file semantic diff and provisional markings; investigate the specific reductions and conformance changes below; run the broader `TestSpec*` and appropriate SDK/test-harness checks before seeking a model-release PR.
+- **What remains:** Confirm `Current` and the official source/tag against ballot authority; resolve the itemized semantic/parser/extraction findings and owner decisions; run relevant native/ACL/IDM/test-harness checks before seeking a model-release PR. Five parsing/selection suites have now passed, not full SDK integration.
 
 ## Reproducible input checkpoint
 
@@ -44,21 +52,23 @@ No specifications, tokens, private logs, or generated unapproved XML need to be 
 4. **The generated differences are not artifacts of the include-list repair:** an independent same-input Alchemy scrape yielded canonical XML identical to the finished generator output.
 5. **Version provenance matters:** an untagged `master` input correctly records its SHA without claiming an official release tag. This is useful for the requested experimentation but does not substitute for an SVE tag/ballot checkpoint.
 
-## Follow-up investigation queue (observations, not yet confirmed bugs)
+## Resolved Investigation Routing
 
-| Priority | Observed difference or warning | Question to resolve / expected evidence |
+The original aggregate XML counts were leads, not semantic facts. The following replaces that coarse queue; detailed evidence and open dispositions are in the linked review and ledger.
+
+| Priority | Reviewed difference or warning | Outcome / remaining action |
 |---|---|---|
-| P1 | **Group Key Management:** loss of one feature, struct, field, entry, and related conformance/metadata | Find the responsible spec change, understand provisional/obsolete/inclusion rules, confirm whether deletion is intended, and identify any SDK/ZAP/test implications. **Do not re-add by assumption.** |
-| P1 | **Closure Dimension:** one constraint removed | Determine the exact affected constraint and why it disappeared; confirm normative intent and test consequences. |
-| P1 | **Device Energy Management:** four additional attribute elements, plus changed conformance-element counts | Classify each addition and changed condition against spec; establish whether SDK/ZAP/tests are current. |
-| P1 | **Thermostat Mode:** three added command elements and changed conformance counts | Confirm command requirements, provisional state, implementation compatibility, and testing impact. |
-| P2 | **Electrical Protection Alarm** and **Humidistat:** additional constraints | Check constraints against spec and parser semantics; look for genuine changed test expectations. |
-| P2 | **Push AV Stream Transport:** enum/field addition | Confirm definition and whether generated APIs or implementations need coordinated changes. |
-| P2 | Five device-type XML files and one global bitmap file differ | Produce itemized semantic comparisons and assess release/provisional effects. |
-| P2 | Warning: inconsistent PICS codes for cluster ID **1875**, **Joint Fabric Administrator** (identified by the SDK's existing 1.7 cluster ID map), across spec versions | Identify the involved versions and codes; distinguish intentional evolution from inconsistency needing upstream clarification. |
+| P2 | **Group Key Management** | No actual feature loss. Source retires adoption struct/attribute, reserves ID 0x0004; ZAP/runtime already align. Revision policy and independent adoption boundary tests remain open. |
+| P2 | **Closure Dimension** | Encoded integer-hundredths correction; empty Speed constraint removed, conformance unchanged. ZAP default/minimum drift and boundary tests remain. |
+| P1 | **Device Energy Management** | Four added nodes are constraint references, not attributes. Optional non-null power bounds/source contract mostly align with SDK; parser demonstrably loses MaxPower `maxOf` lower bound. |
+| P1 | **Thermostat Mode** | Existing-command overlays/maturity changes; source Manage absent from XML, generated access Operate; parser replaces inherited command conformance with Optional. |
+| P2 | **Electrical Protection Alarm** and **Humidistat** | Source minima/nullability changes; concrete ZAP/test/runtime gaps require owner decisions and targeted validation. |
+| P2 | **Push AV Stream Transport** | No enum/field addition. Existing MaxPreRollLen condition adds AmbientContext; implementation aligns, focused test missing in inspected cases. |
+| P2 | Five device-type files and global bitmap | Device-type eligibility unchanged; rendering question isolated. Bitmap example loses operator despite unchanged source: confirmed extraction discrepancy. |
+| P3 | **Joint Fabric Administrator**, cluster 1875 | Historical JFPKI -> JFADMIN transition at 1.5.1 -> 1.6; same warning before/after candidate. Validate history, do not normalize old XML. |
 | Normal | Warning: no tag on specification `master` | Expected for an untagged input; obtain the official chosen release/tag later rather than inventing one. |
-| Required gate | `Current` include defines not matched against ballot email | Retrieve authorized ballot include list, compare exact flags, and regenerate if necessary. |
-| Required gate | Broader model `TestSpec*` tests, semantic/provisional review, SDK/test-harness integration | Execute and capture evidence after agreeing on selected spec snapshot and include flags. |
+| Required gate | `Current` not matched against ballot authority | Exact list/hash recorded; authoritative email/list and release SHA/tag unavailable. |
+| Required gate | SDK/test-harness integration | 79 TestSpec passes complete; native cluster, ACL/IDM and certification checks not run. |
 
 **Important classification:** changes in XML structure are **investigation leads**, not automatically defects. First confirm behavior against the intended specification and release include set; change code or spec only for a demonstrated discrepancy.
 
@@ -66,15 +76,15 @@ No specifications, tokens, private logs, or generated unapproved XML need to be 
 
 **Completed:** execute generator end to end without errors; preserve historical Make-target layout; prove correct structural output and manifest; reproduce and regress the observed failure.
 
-**Not claimed:** ballot-correct selection, official SVE model acceptance, provisional-marking approval, backward compatibility of all generated APIs, SDK implementation conformance, test-harness readiness, or verification that all 20 XML differences are desired.
+**Not claimed:** ballot-correct selection, official SVE model acceptance, provisional-marking approval, backward compatibility of all generated APIs, SDK implementation conformance, test-harness readiness, or approval of the 20 reviewed XML differences.
 
 ## Near-term next actions
 
 1. Communicate the successful first gate and the tool fix with its evidence. **Draft tooling PR:** [feasel0/connectedhomeip #1](https://github.com/feasel0/connectedhomeip/pull/1), containing only the generator change and its six-test regression file. This is a **fork-local draft targeting the fork's master**, not an upstream PR; creation directly in project-chip/connectedhomeip was denied by the connected GitHub integration. The unreviewed generated XML is excluded.
 2. Confirm with release/spec contacts which official SHA/tag and include flags apply to this SVE milestone.
-3. Generate an **itemized semantic diff** for 20 changed files, working independent mismatch threads in parallel (Group Key Management, Closure Dimension, Device Energy Management, Thermostat Mode, remaining changes).
-4. For each mismatch, document spec reference, original/updated XML, ZAP/SDK/test impact, owner, decision, and specific required fix—or close as intended.
-5. Run documented `TestSpec*` coverage and the appropriate integration/IDM suite against the accepted revision; publish a separate release-update PR only when its scope and evidence are ready.
+3. Review the completed [20-file semantic comparison](2026-10-20_SVE_semantic_review.md) and resolve the [ledger](SVE_mismatch_ledger.md) with proposed cluster/parser/scraper owners.
+4. Develop targeted reproducing regressions before bounded fixes; do not patch generated XML, invent normative requirements, or silently waive open findings.
+5. Preserve the completed 79 TestSpec outcomes and execute appropriate native/ACL/IDM/test-harness validation after selection and fixes; publish a separate model-release PR only after approval.
 
 ## Source and interpretation hierarchy
 

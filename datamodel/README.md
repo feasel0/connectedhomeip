@@ -47,6 +47,10 @@ The reusable role and process guidance and the current presentation summary live
 - [Data Model Manager role and release playbook](docs/data_model_manager_role_and_release_playbook.md) — **start here for future agents**; responsibilities, milestone workflow, validation gates, triage, and release handoff. Update after each meaningful tested process change.
 - [Data model process improvements and automation backlog](docs/data_model_process_improvements.md) — lower-authority hypotheses, prototype proposals, and lessons to develop between releases. Promote successful improvements into the role playbook.
 
+- [20-file SVE semantic review](docs/2026-10-20_SVE_semantic_review.md)
+- [SVE mismatch ledger and proposed owners](docs/SVE_mismatch_ledger.md)
+- [Semantic-review execution report](reoprts/2026-10-20_05-05-31.md)
+
 A clean, two-file tooling fix is in [fork-local draft PR #1](https://github.com/feasel0/connectedhomeip/pull/1). The GitHub connector could not create the upstream PR directly; **no upstream PR is claimed**. Unreviewed generated 1.7 XML remains outside the public branch.
 
 ## SVE Data Model Update
@@ -59,7 +63,10 @@ script against specification `master`. The baseline attempt failed on obsolete
 specification Make targets. With the compatibility fix, the complete pinned run
 exited 0 with no error diagnostics, and all 280 generated XML files passed
 structural and manifest checks. Release acceptance still requires ballot-flag
-verification and semantic/conformance review; generated models remain in scratch.
+verification and resolution of semantic/conformance findings; generated models
+remain in scratch. The 20-file review is now itemized and five candidate-bound
+TestSpec suites passed 79/79 tests. Focused probes still reproduce extraction and
+parser discrepancies, so these passes do not establish SVE or SDK readiness.
 
 Publish all work under `datamodel/` and SDK changes needed for this task on the
 dedicated data-model branch. Do not include changes from `investigation/`, private
