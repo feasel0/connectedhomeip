@@ -70,7 +70,7 @@ No specifications, tokens, private logs, or generated unapproved XML need to be 
 
 ## Near-term next actions
 
-1. Communicate the successful first gate and the tool fix with its evidence; keep the generator repair as a **separate draft PR**, without bundling the unreviewed generated XML.
+1. Communicate the successful first gate and the tool fix with its evidence. **Draft tooling PR:** [feasel0/connectedhomeip #1](https://github.com/feasel0/connectedhomeip/pull/1), containing only the generator change and its six-test regression file. This is a **fork-local draft targeting the fork's master**, not an upstream PR; creation directly in project-chip/connectedhomeip was denied by the connected GitHub integration. The unreviewed generated XML is excluded.
 2. Confirm with release/spec contacts which official SHA/tag and include flags apply to this SVE milestone.
 3. Generate an **itemized semantic diff** for 20 changed files, working independent mismatch threads in parallel (Group Key Management, Closure Dimension, Device Energy Management, Thermostat Mode, remaining changes).
 4. For each mismatch, document spec reference, original/updated XML, ZAP/SDK/test impact, owner, decision, and specific required fix—or close as intended.
