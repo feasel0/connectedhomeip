@@ -958,22 +958,31 @@ void BLEManagerImpl::NewConnection(BleLayer * bleLayer, void * appState, const S
 {
     mBLEScanConfig.mDiscriminator = connDiscriminator;
     mBLEScanConfig.mAppState      = appState;
+    const auto requestId          = ++mScanRequestId;
 
     // Scan initiation performed async, to ensure that the BLE subsystem is initialized.
-    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda(
-        [this] { InitiateScan(BleScanState::kScanForDiscriminator); });
+    TEMPORARY_RETURN_IGNORED DeviceLayer::SystemLayer().ScheduleLambda([this, requestId] {
+        if (requestId == mScanRequestId)
+        {
+            InitiateScan(BleScanState::kScanForDiscriminator);
+        }
+    });
 }
 
 CHIP_ERROR BLEManagerImpl::CancelConnection()
 {
     if (mBLEScanConfig.mBleScanState == BleScanState::kConnecting)
+    {
         mEndpoint.CancelConnect();
+    }
     // If in discovery mode, stop scan.
     else if (mBLEScanConfig.mBleScanState != BleScanState::kNotScanning)
     {
         DeviceLayer::SystemLayer().CancelTimer(HandleScanTimer, this);
-        return mDeviceScanner.StopScan();
+        ReturnErrorOnFailure(mDeviceScanner.StopScan());
     }
+    ++mScanRequestId;
+    CleanScanConfig();
     return CHIP_NO_ERROR;
 }
 

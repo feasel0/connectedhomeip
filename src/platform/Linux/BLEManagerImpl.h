@@ -75,6 +75,7 @@ class BLEManagerImpl final : public BLEManager,
     // Allow the BLEManager interface class to delegate method calls to
     // the implementation methods provided by this class.
     friend BLEManager;
+    friend class BLEManagerImplTestAccess;
 
 public:
     CHIP_ERROR ConfigureBle(uint32_t aAdapterId, bool aIsCentral);
@@ -185,6 +186,7 @@ private:
     friend BLEManagerImpl & BLEMgrImpl();
 
     static BLEManagerImpl sInstance;
+    uint64_t mScanRequestId = 0;
 
     // ===== Private members reserved for use by this class only.
 
