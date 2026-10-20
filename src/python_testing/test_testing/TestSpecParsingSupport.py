@@ -27,6 +27,7 @@ from matter.testing.matter_testing import CertificationUnitTestNoDevice
 from matter.testing.problem_notices import ProblemNotice
 from matter.testing.runner import default_matter_test_main
 from matter.testing.spec_parsing import (ClusterParser, DataModelLevel, PrebuiltDataModelDirectory, XmlCluster,
+                                         SpecParsingException,
                                          add_cluster_data_from_xml, build_xml_clusters, check_clusters_for_unknown_commands,
                                          combine_derived_clusters_with_base, get_data_model_directory)
 
@@ -513,6 +514,57 @@ class TestSpecParsingSupport(CertificationUnitTestNoDevice):
         asserts.assert_equal(len(problems), 1, "Unexpected number of problems found")
         asserts.assert_equal(problems[0].location.cluster_id, 0xFFFE, "Unexpected problem location (cluster id)")
         asserts.assert_equal(problems[0].location.command_id, 0, "Unexpected problem location (command id)")
+
+    def test_unsupported_constraint_expressions(self):
+        expressions = [
+            '<maxOf><field name="Lower"/><attribute name="Floor"/></maxOf>',
+            '<minOf><attribute name="Limit"/><maxOf><attribute name="Floor"/><value value="1"/></maxOf></minOf>',
+            '<attribute name="Floor"/><attribute name="Limit"/>',
+            '<attribute name="Floor"><maxOf><value value="1"/></maxOf></attribute>',
+        ]
+        for expression in expressions:
+            for bound in ('min', 'max', 'minCount', 'maxCount'):
+                parser = ClusterParser(ElementTree.fromstring(BASE_CLUSTER_XML_STR), None, 'Test Base')
+                element = ElementTree.fromstring(f'<field><constraint><{bound}>{expression}</{bound}></constraint></field>')
+                constraints = parser.parse_attribute_constraints(element)
+                asserts.assert_true(constraints.has_constraints(), 'Unsupported must not look unconstrained')
+                asserts.assert_true(hasattr(constraints, 'unsupported_expressions'), 'Unsupported state must survive parsing')
+                asserts.assert_true(constraints.unsupported_expressions, expression)
+                with asserts.assert_raises(SpecParsingException):
+                    constraints.require_supported()
+        parser = ClusterParser(ElementTree.fromstring(BASE_CLUSTER_XML_STR), None, 'Test Base')
+        element = ElementTree.fromstring(
+            '<field><constraint><between><from>' + expressions[0] + '</from>'
+            '<to><attribute name="Limit"/></to></between></constraint>'
+            '<constraint><min value="0"/></constraint></field>')
+        constraints = parser.parse_attribute_constraints(element)
+        asserts.assert_equal(constraints.max_value_ref.attribute, 'Limit', 'Keep representable upper bound')
+        asserts.assert_true(constraints.unsupported_expressions, 'Sibling constraints must retain unsupported state')
+        asserts.assert_in('maxOf', str(constraints), 'String diagnostics must expose unsupported expression')
+
+    def test_unsupported_text_constraints(self):
+        for value in ('maxOf(Lower, Floor)', 'Floor - 1', 'Floor + 1', 'Floor.Field'):
+            parser = ClusterParser(ElementTree.fromstring(BASE_CLUSTER_XML_STR), None, 'Test Base')
+            element = ElementTree.fromstring(f'<field><constraint><min value="{value}"/></constraint></field>')
+            constraints = parser.parse_attribute_constraints(element)
+            asserts.assert_is_none(constraints.min_value_ref, 'Must not approximate an expression as one attribute')
+            with asserts.assert_raises(SpecParsingException):
+                constraints.require_supported()
+
+    def test_supported_constraint_controls(self):
+        parser = ClusterParser(ElementTree.fromstring(BASE_CLUSTER_XML_STR), None, 'Test Base')
+        for value, expected in (('0', 0), ('-2', -2), ('1.5', 1.5), ('0x20', 32), ('1e2', 100)):
+            element = ElementTree.fromstring(f'<field><constraint><min value="{value}"/></constraint></field>')
+            constraints = parser.parse_attribute_constraints(element)
+            asserts.assert_equal(constraints.min_value, expected, value)
+        for value in ('Floor', ' Floor '):
+            element = ElementTree.fromstring(f'<field><constraint><min value="{value}"/></constraint></field>')
+            constraints = parser.parse_attribute_constraints(element)
+            asserts.assert_equal(constraints.min_value_ref.attribute, 'Floor', value)
+        element = ElementTree.fromstring(
+            '<field><constraint><min><attribute name="Floor"><field name="Value"/></attribute></min></constraint></field>')
+        constraints = parser.parse_attribute_constraints(element)
+        asserts.assert_equal(constraints.min_value_ref.field, 'Value', 'Simple attribute-field references remain supported')
 
     def test_aliased_clusters(self):
         clusters: dict[int, XmlCluster] = {}

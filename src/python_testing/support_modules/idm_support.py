@@ -663,6 +663,7 @@ class IDMBaseTest(BasicCompositionTests):
         value would be in range and a compliant DUT accepting it would be reported as a
         failure to enforce the constraint.
         """
+        constraints.require_supported()
         datatype = attr_info.datatype.lower()
 
         # String constraints. An octstr must be written as bytes; a str would either
@@ -777,6 +778,7 @@ class IDMBaseTest(BasicCompositionTests):
         whether an accepted violation fails the test is left to the caller, which
         applies enforces_constraints_strictly.
         """
+        constraints.require_supported()
         # Resolve dynamic constraints if present
         if constraints.min_value_ref or constraints.max_value_ref or constraints.min_count_ref or constraints.max_count_ref:
             cluster_class = attr_info.cluster_class
@@ -982,6 +984,7 @@ class IDMBaseTest(BasicCompositionTests):
     async def _resolved_command_field_constraints(self, info: CommandFieldInfo) -> Constraints:
         """Return a copy of the field's constraints with dynamic references resolved against the DUT."""
         constraints = copy.copy(info.field.constraints)
+        constraints.require_supported()
         if constraints.min_value_ref:
             constraints.min_value = await self.resolve_dynamic_constraint(
                 info.cluster_class, info.endpoint_id, constraints.min_value_ref)
@@ -1004,6 +1007,7 @@ class IDMBaseTest(BasicCompositionTests):
         under-min of an unsigned field with min 0, or over-max of a bound equal to
         the type's maximum), since such violations cannot be encoded on the wire.
         """
+        constraints.require_supported()
         violations: list[tuple[str, Any]] = []
         datatype = (field.type_info or '').lower()
 
@@ -1072,6 +1076,7 @@ class IDMBaseTest(BasicCompositionTests):
         constraints = field.constraints
         if constraints is None or not constraints.has_constraints():
             return None
+        constraints.require_supported()
         datatype = (field.type_info or '').lower()
 
         if datatype in ('string', 'octstr'):

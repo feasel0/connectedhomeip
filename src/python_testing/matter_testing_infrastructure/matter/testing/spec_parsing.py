@@ -127,6 +127,12 @@ class Constraints:
     min_count_ref: ConstraintReference | None = None
     max_count_ref: ConstraintReference | None = None
     allowed: list[str] | None = None
+    unsupported_expressions: list[str] = field(default_factory=list)
+
+    def require_supported(self) -> None:
+        """Reject evaluation when any bound cannot be represented faithfully."""
+        if self.unsupported_expressions:
+            raise SpecParsingException(f'Unsupported constraint expressions: {self.unsupported_expressions}')
 
     def has_constraints(self) -> bool:
         """Check if any constraints are defined."""
@@ -142,6 +148,7 @@ class Constraints:
             self.min_count_ref is not None,
             self.max_count_ref is not None,
             self.allowed is not None,
+            bool(self.unsupported_expressions),
         ])
 
     def __str__(self):
@@ -168,6 +175,8 @@ class Constraints:
             parts.append(f"max_count_ref={self.max_count_ref}")
         if self.allowed is not None:
             parts.append(f"allowed={self.allowed}")
+        if self.unsupported_expressions:
+            parts.append(f"unsupported_expressions={self.unsupported_expressions}")
         return "Constraints(" + ", ".join(parts) + ")"
 
 
@@ -963,11 +972,12 @@ class ClusterParser:
             additional = self._parse_single_constraint(constraint_elem)
             if additional.allowed is not None:
                 merged.allowed = (merged.allowed or []) + additional.allowed
+            merged.unsupported_expressions.extend(additional.unsupported_expressions)
             # Bounds are not combined: a later <constraint> only supplies bounds the
             # earlier ones left unset, so a single-constraint element parses exactly
             # as it did before.
             for constraint_field in fields(Constraints):
-                if constraint_field.name == 'allowed':
+                if constraint_field.name in ('allowed', 'unsupported_expressions'):
                     continue
                 if getattr(merged, constraint_field.name) is None:
                     setattr(merged, constraint_field.name, getattr(additional, constraint_field.name))
@@ -976,27 +986,23 @@ class ClusterParser:
     def _parse_single_constraint(self, constraint_elem: ElementTree.Element) -> Constraints:
         """Parse one <constraint> element into a Constraints object."""
 
+        unsupported_expressions: list[str] = []
+
         # Helper to parse constraint reference from attribute value or element
         def parse_reference(elem: ElementTree.Element, value_str: str | None = None) -> ConstraintReference | None:
             """Parse dynamic constraint reference to another attribute."""
-            # First try to find a child attribute element
             attr_ref = elem.find('./attribute')
-            if attr_ref is not None and 'name' in attr_ref.attrib:
+            if (len(elem) == 1 and attr_ref is not None and 'name' in attr_ref.attrib
+                    and len(attr_ref) <= 1
+                    and all(child.tag == 'field' and 'name' in child.attrib and len(child) == 0 for child in attr_ref)):
                 attr_name = attr_ref.attrib['name']
                 field_ref = attr_ref.find('./field')
                 field_name = field_ref.attrib['name'] if field_ref is not None and 'name' in field_ref.attrib else None
                 return ConstraintReference(attribute=attr_name, field=field_name)
 
-            # If no child element but we have a value string, try to extract attribute name
-            # Handle cases like 'MaxMeasuredValue - 1' or 'SomeAttribute'
-            if value_str and not value_str.replace('.', '').replace('-', '').replace('+', '').replace(' ', '').isdigit():
-                # Extract the first identifier (attribute name) from the expression
-                # Match word characters before any operators or whitespace
-                import re
-                match = re.match(r'^([A-Za-z_][A-Za-z0-9_]*)', value_str.strip())
-                if match:
-                    return ConstraintReference(attribute=match.group(1), field=None)
-
+            if not len(elem) and value_str is not None and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', value_str.strip()):
+                return ConstraintReference(attribute=value_str.strip(), field=None)
+            unsupported_expressions.append(ElementTree.tostring(elem, encoding='unicode'))
             return None
 
         # Initialize constraint values
@@ -1121,7 +1127,8 @@ class ClusterParser:
             max_value_ref=max_value_ref,
             min_count_ref=min_count_ref,
             max_count_ref=max_count_ref,
-            allowed=allowed
+            allowed=allowed,
+            unsupported_expressions=unsupported_expressions
         )
 
     def parse_attributes(self) -> dict[uint, XmlAttribute]:
