@@ -1,8 +1,8 @@
 # Matter 1.7 SVE Defect Resolution
 
 **Current integration:** [SDK draft #74862](https://github.com/project-chip/connectedhomeip/pull/74862)
-at `2ff4b57e3a2b1bf0fdc18c6726e4637bbcb5fe43` contains 18 source/build files,
-not generated XML. Its comprehensive description and the [current ledger](SVE_mismatch_ledger.md)
+at `fcdb00967b79978b9ce29bd9fe2e5fa22f7d6b22` contains 281 changed files,
+including 245 generated reference XML updates. Its GitHub description and the [current ledger](SVE_mismatch_ledger.md)
 supersede the historical local-only implementation statuses below.
 Alchemy [#91](https://github.com/project-chip/alchemy/pull/91) and
 [#92](https://github.com/project-chip/alchemy/pull/92), and generator
@@ -14,12 +14,15 @@ match the baseline and all GNI XML members match the filesystem. Canonical
 same-spec comparison finds 241 formatting-only changes and exactly two intended
 changes: Thermostat request access and PairingHint operator preservation.
 Inherited RVC responses no longer gain invoke access. Current model/package
-checks pass 84 parsing tests and 28 IDM units using actual integration sources.
-Native suites total 119 passes. A Darwin CI-discovered GKM fixture reference to
-a temporary descriptor is repaired; a separate fresh Linux ASan build passes
-all 21 GKM tests with stack-use-after-return detection. Darwin CI rerun is pending.
-No model XML is published: PUB-01/BALLOT-01 and the remaining normative/codegen/ACL
-gates in the ledger are still open. No broad warning-suppression fix was adopted.
+checks now pass 92 parsing tests and 67 IDM units using actual integration sources.
+Native coverage totals 222 distinct cases. Additional controls pass GKM 23 cases
+in each Groups revision 4/6 ASan configuration, Linux scan 28 under ASan, and
+ModeBase 33 with #74803's Manage metadata. Three ZAP regressions, file-sync and
+all 157 metadata checks pass after targeted canonical generation. The saved
+280-file reference candidate is published byte-for-byte without regeneration.
+PARSE-01 diagnostic loss is fixed while source-backed historical warnings stay
+visible. Remaining command/storage, unsupported-expression, cross-version and
+revision questions are explicit in the ledger. CI remains tracked independently.
 
 ## Original Defect-Resolution Evidence
 

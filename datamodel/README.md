@@ -44,7 +44,7 @@ and API credentials are not included in this directory or its commits.
 The reusable role and process guidance and the current presentation summary live in `datamodel/docs/`:
 
 - [Matter 1.7 SVE — work summary and findings](docs/2026-10-19_SVE_status_and_findings.md) — shareable status, the generator fix, verified outputs, and the mismatch investigation queue.
-- [Current-state integration PR description](docs/SVE_integration_PR_description_current.md) — ready-to-apply replacement text for upstream draft #74862; maintain in sync with its current technical findings.
+- [Integration draft #74862](https://github.com/project-chip/connectedhomeip/pull/74862) contains the current technical summary; edit its description directly rather than maintaining a repository copy.
 - [Data Model Manager role and release playbook](docs/data_model_manager_role_and_release_playbook.md) — **start here for future agents**; responsibilities, milestone workflow, validation gates, triage, and release handoff. Update after each meaningful tested process change.
 - [Data model process improvements and automation backlog](docs/data_model_process_improvements.md) — lower-authority hypotheses, prototype proposals, and lessons to develop between releases. Promote successful improvements into the role playbook.
 
@@ -55,7 +55,12 @@ The reusable role and process guidance and the current presentation summary live
 - [Public-safe Alchemy access and bitmap patch handoffs](patches/alchemy/README.md)
 - [Defect-resolution execution and closeout report](reoprts/2026-10-20_14-23-47.md)
 
-A clean, two-file tooling fix is in [fork-local draft PR #1](https://github.com/feasel0/connectedhomeip/pull/1). The GitHub connector could not create the upstream PR directly; **no upstream PR is claimed**. Unreviewed generated 1.7 XML remains outside the public branch.
+The generated reference model and related SDK changes are published in
+[upstream draft #74862](https://github.com/project-chip/connectedhomeip/pull/74862).
+Separate dependencies remain [generator #74858](https://github.com/project-chip/connectedhomeip/pull/74858),
+[Alchemy #91](https://github.com/project-chip/alchemy/pull/91),
+[Alchemy #92](https://github.com/project-chip/alchemy/pull/92), and
+[Thermostat metadata #74803](https://github.com/project-chip/connectedhomeip/pull/74803).
 
 ## SVE Data Model Update
 
@@ -66,13 +71,14 @@ The first gate is a complete, error-free run of the existing-directory update
 script against specification `master`. The baseline attempt failed on obsolete
 specification Make targets. With the compatibility fix, the complete pinned run
 exited 0 with no error diagnostics, and all 280 generated XML files passed
-structural and manifest checks. Release acceptance still requires ballot-flag
-verification and resolution of semantic/conformance findings; generated models
-remain in scratch. The completed 20-file review was not repeated. Separate SDK
-inheritance and unsupported-constraint fixes now pass 84/84 candidate-bound
-TestSpec tests plus six consumer tests. Alchemy access and bitmap fixes are
-tested patch handoffs, not a released scraper; six bounded SDK investigations
-retain domain-policy/native coverage gaps. None establishes SVE or SDK readiness.
+structural and manifest checks. The corrected response-aware candidate is now
+published without regeneration: 245 XML updates, including 19 canonical
+substantive/editorial changes and 226 formatting-only changes. The earlier
+semantic review was reused, not repeated. Current checks pass 92 parser tests,
+67 IDM units, 222 native cases and three ZAP alignment regressions, with
+additional sanitizer, compiled-revision and Thermostat dependency controls.
+The PR description records remaining technical questions directly on GitHub;
+the mismatch ledger retains detailed evidence and release-input questions.
 
 Publish all work under `datamodel/` and SDK changes needed for this task on the
 dedicated data-model branch. Do not include changes from `investigation/`, private

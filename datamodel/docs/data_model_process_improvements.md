@@ -142,12 +142,13 @@ Prioritize collecting these observations over building elaborate infrastructure 
 ### Current Integration Improvements
 
 - **P05/P06:** Canonical XML comparison separates 241 formatting changes from the two intended scraper repairs. Exact file/ID-map/GNI checks and revision/provisional comparisons pass. Automate these together with a provenance manifest; never equate byte churn with semantic change or disclose the XML before its release/publication gate.
-- **P10:** One upstream integration draft, #74862, now holds code/tests only, with a self-contained current-result description. Internal reports/ledger stay on the dedicated work branch. Explicitly distinguish model-payload pending from a complete reference-model PR.
-- **P11:** Current integration has nine focused consumer checks and 28 IDM units. PARSE-01 remains open: message-based warning filtering is not justified by classification evidence and was not adopted.
+- **P10:** One upstream integration draft, #74862, contains the corrected 280-file reference candidate and related code/tests. Edit its current-result description directly on GitHub; the verified repository mirror was removed. Internal reports/ledger stay on the dedicated work branch.
+- **P11:** Current integration passes 92 parser and 67 IDM tests. Exact required command compounds are evaluated; unknown forms remain explicit. PARSE-01 caller-list loss is fixed and unrelated warnings survive targeted fixups. Historical per-occurrence diagnostic identity remains a bounded improvement beyond source/category checks.
 - **P12:** Current upstream Alchemy fixes are published separately in #91/#92. Response-direction controls caught an extra inherited-response access artifact; the updated combined source passes 110 leaves and full private generation. Record source SHA, all commits, actual binary hash and custom version together.
-- **P13:** Native promotion is implemented for Closure Dimension, EPA, Push AV, GKM and Linux cached-BSS reporting: 119 tests pass. A real Darwin sanitizer failure exposed a temporary reference in the provider test; retaining its descriptor passes 21 Linux ASan tests. Regression helpers must preserve request-referenced storage through encoding/decoding, not merely compile or pass unsanitized tests.
+- **P13:** Native coverage now totals 222 distinct cases, with additional sanitizer, real IM/TLV, compiled-revision and external-metadata controls. Include regressions in normal build targets rather than private macros. Keep referenced request storage alive through encoding/decoding. Compare source-backed variants without duplicating another PR's implementation.
+- **ZAP provenance:** Canonical generation requires reachable Git tags even with a clean pinned spec. Bounded ancestry/tag retrieval repaired the shallow-clone blocker without changing HEAD; targeted generation, 157 metadata checks and file-sync pass. Preserve established maturity policy and existing project defaults; do not hand-amend generated metadata or exempt the files from CI.
 
-### Tested Defect-Resolution Improvements
+### Earlier Defect-Resolution Checkpoint
 
 - **P11:** DEM now retains unsupported reference expressions and guards six
 	consumer entry points; parser red/green and six permanent consumer tests pass.
