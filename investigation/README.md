@@ -18,6 +18,10 @@ test infrastructure configuration live here. The archival branch is
   with deterministic stubs and a deliberately starving negative control.
 - `tools/historical_ble.py`: exact-ID, value-free original BLE phase accounting;
   neither configured adapter index nor a cleanup error assigns a root cause.
+- `tools/ecred_order_probe.py` and `patches/ecred-request-index.patch`: pinned
+  kernel-function before/after regression and PROPOSED requester CID correction.
+  Host isolation only; not deployed or physically validated. See
+  [correction assessment](reports/2026-10-20_03-02-58.md).
 - `tools/ReportingTrace.h` and `tools/prepare_reporting_trace.py`: bounded Linux
   reporting diagnostic and guarded pinned-source overlay generator. Not deployed
   firmware or a production scheduling change.
@@ -47,6 +51,7 @@ python3 -B investigation/tools/trace_lifecycle.py self-test
 python3 -B investigation/tools/reporting_fairness.py self-test
 python3 -B investigation/tools/discovery_isolation.py --self-test
 python3 -B investigation/tools/historical_ble.py self-test
+python3 -B investigation/tools/ecred_order_probe.py
 python3 -B investigation/tools/prepare_reporting_trace.py self-test
 python3 -B investigation/tools/prepare_reporting_trace.py runtime-test
 python3 -B -m unittest investigation.tools.pi_nordic_campaign.CampaignTest

@@ -6,6 +6,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import resource
 import struct
 import subprocess
 import tempfile
@@ -15,6 +16,8 @@ import urllib.request
 REVISION = '359f37f0faefb712add32a39f98751aea67d5c1f'
 SOURCE_SHA256 = '40b71702ffee7a0e47d3f3c12861d3fc1cb235a67fa3e1bd3407fd56a860aaa8'
 SOURCE_URL = f'https://raw.githubusercontent.com/raspberrypi/linux/{REVISION}/net/bluetooth/l2cap_core.c'
+HEADER_URL = f'https://raw.githubusercontent.com/raspberrypi/linux/{REVISION}/include/net/bluetooth/l2cap.h'
+HEADER_SHA256 = '552aa2caaf8b3e874050ee5d20c4c8016251acc1bf7b8a5b8ea39cdb630031fc'
 
 SHIM = r'''
 #include <assert.h>
@@ -56,7 +59,9 @@ struct l2cap_chan {
     struct l2cap_ops *ops;
     unsigned long flags;
     u16 scid, dcid, psm, imtu, mps, rx_credits, omtu, remote_mps, tx_credits;
-    int ident, mode, state, sec_level;
+    int ident, mode, state, sec_level, deleted, delete_error;
+    u8 ecred_tx_index;
+    struct pid *peer;
 };
 struct l2cap_ecred_conn_req_hdr { u16 psm, mtu, mps, credits; };
 struct l2cap_ecred_conn_rsp { u16 mtu, mps, credits, result, dcid[]; };
@@ -66,10 +71,13 @@ struct l2cap_cmd_hdr { u8 ident; };
 static struct pid peer_pid;
 static u16 sent_scids[5];
 static int sent_count;
+static u8 request_ident = 7;
+static int security_calls;
+static bool reverse_list;
 static struct l2cap_chan *disconnect_target;
 static struct l2cap_disconn_rsp disconnect_response;
 static int disconnect_steps;
-static struct pid *get_peer_pid(struct l2cap_chan *chan) { (void)chan; return &peer_pid; }
+static struct pid *get_peer_pid(struct l2cap_chan *chan) { return chan->peer ? chan->peer : &peer_pid; }
 static void set_shutdown(struct l2cap_chan *chan) { assert(chan == disconnect_target); disconnect_steps++; }
 static void close_channel(struct l2cap_chan *chan) { assert(chan == disconnect_target); disconnect_steps++; }
 static int test_bit(int bit, unsigned long *flags) { return !!(*flags & (1ul << bit)); }
@@ -81,15 +89,15 @@ static int test_and_set_bit(int bit, unsigned long *flags) {
 }
 static void clear_bit(int bit, unsigned long *flags) { *flags &= ~(1ul << bit); }
 static void l2cap_ecred_init(struct l2cap_chan *chan, u16 credits) { (void)chan; (void)credits; }
-static u8 l2cap_get_ident(struct l2cap_conn *conn) { (void)conn; return 7; }
+static u8 l2cap_get_ident(struct l2cap_conn *conn) { (void)conn; return request_ident; }
 static void __l2cap_chan_list(struct l2cap_conn *conn,
     void (*callback)(struct l2cap_chan *, void *), void *data) {
     for (int index = 0; index < conn->chan_l.count; index++) {
-        callback(conn->chan_l.items[index], data);
+        if (!conn->chan_l.items[index]->deleted) { callback(conn->chan_l.items[index], data); }
     }
 }
 static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 length, void *data) {
-    (void)conn; assert(ident == 7);
+    (void)conn; assert(ident != 0);
     if (code == L2CAP_DISCONN_RSP) {
         assert(length == sizeof(disconnect_response));
         memcpy(&disconnect_response, data, length);
@@ -103,24 +111,35 @@ static void l2cap_send_cmd(struct l2cap_conn *conn, u8 ident, u8 code, u16 lengt
 }
 #define list_for_each_entry_safe(entry, next, head, member) \
     for (int channel_index = 0; channel_index < (head)->count && \
-        ((entry) = (head)->items[channel_index], (next) = (entry), (void)(next), 1); channel_index++)
+        ((entry) = (head)->items[channel_index], (next) = (entry), (void)(next), 1); channel_index++) \
+        if ((entry)->deleted) {} else
 static void l2cap_chan_lock(struct l2cap_chan *chan) { (void)chan; }
 static void l2cap_chan_unlock(struct l2cap_chan *chan) { (void)chan; }
 static void l2cap_chan_del(struct l2cap_chan *chan, int error) {
-    assert(chan == disconnect_target); assert(error == ECONNRESET); disconnect_steps++;
+    assert(!chan->deleted);
+    chan->deleted = 1;
+    chan->delete_error = error;
+    chan->state = 0;
+    if (chan == disconnect_target) { assert(error == ECONNRESET); disconnect_steps++; }
 }
 static void l2cap_chan_put(struct l2cap_chan *chan) { assert(chan == disconnect_target); disconnect_steps++; }
 static void l2cap_chan_ready(struct l2cap_chan *chan) { chan->state = BT_CONNECTED; }
-static void smp_conn_security(struct hci_conn *conn, int level) { (void)conn; (void)level; assert(0); }
+static void smp_conn_security(struct hci_conn *conn, int level) {
+    (void)conn; assert(level == 1); security_calls++;
+}
 static struct l2cap_chan *__l2cap_get_chan_by_dcid(struct l2cap_conn *conn, u16 dcid) {
     for (int index = 0; index < conn->chan_l.count; index++) {
-        if (conn->chan_l.items[index]->dcid == dcid) { return conn->chan_l.items[index]; }
+        if (!conn->chan_l.items[index]->deleted && conn->chan_l.items[index]->dcid == dcid) {
+            return conn->chan_l.items[index];
+        }
     }
     return NULL;
 }
 static struct l2cap_chan *l2cap_get_chan_by_scid(struct l2cap_conn *conn, u16 scid) {
     for (int index = 0; index < conn->chan_l.count; index++) {
-        if (conn->chan_l.items[index]->scid == scid) { return conn->chan_l.items[index]; }
+        if (!conn->chan_l.items[index]->deleted && conn->chan_l.items[index]->scid == scid) {
+            return conn->chan_l.items[index];
+        }
     }
     return NULL;
 }
@@ -135,17 +154,20 @@ static void run_case(int count, int trigger, bool expect_mismatch) {
     struct l2cap_conn conn = {.hcon = &hcon};
     struct l2cap_ops ops = {.get_peer_pid = get_peer_pid, .set_shutdown = set_shutdown, .close = close_channel};
     struct l2cap_chan channels[5] = {0};
+    request_ident = 7;
+    disconnect_target = NULL;
     conn.chan_l.count = count;
     for (int index = 0; index < count; index++) {
         channels[index] = (struct l2cap_chan){.conn = &conn, .ops = &ops,
             .flags = index == trigger ? 0 : 1ul << FLAG_DEFER_SETUP,
             .scid = 64 + index, .psm = 39, .imtu = 64, .mps = 64,
             .mode = L2CAP_MODE_EXT_FLOWCTL, .state = BT_CONNECT};
-        conn.chan_l.items[index] = &channels[index];
+        conn.chan_l.items[index] = &channels[reverse_list ? count - index - 1 : index];
     }
     l2cap_ecred_connect(&channels[trigger]);
     assert(sent_count == count);
     assert(sent_scids[0] == 64 + trigger);
+    expect_mismatch = expect_mismatch && !PROPOSED;
     u16 response_storage[9] = {64, 64, 10, 0};
     struct l2cap_ecred_conn_rsp *response = (void *)response_storage;
     struct l2cap_cmd_hdr command = {.ident = 7};
@@ -165,7 +187,7 @@ static void run_case(int count, int trigger, bool expect_mismatch) {
         printf("%s%u:%u", index ? "," : "", channels[index].scid, channels[index].dcid);
     }
     puts("");
-    disconnect_target = &channels[count - 1];
+    disconnect_target = &channels[trigger];
     disconnect_steps = 0;
     u16 advertised_peer = 0;
     for (int index = 0; index < count; index++) {
@@ -181,25 +203,235 @@ static void run_case(int count, int trigger, bool expect_mismatch) {
     printf("disconnect_request=%u:%u disconnect_response=%u:%u association_mismatch=%d\n",
         request.dcid, request.scid, disconnect_response.dcid, disconnect_response.scid, expect_mismatch);
 }
+static void pending_removal_case(void) {
+    struct hci_conn hcon = {0};
+    struct l2cap_conn conn = {.hcon = &hcon};
+    struct l2cap_ops ops = {.get_peer_pid = get_peer_pid};
+    struct l2cap_chan channels[2] = {0};
+    conn.chan_l.count = 2;
+    for (int index = 0; index < 2; index++) {
+        channels[index] = (struct l2cap_chan){.conn = &conn, .ops = &ops,
+            .flags = index ? 1ul << FLAG_DEFER_SETUP : 0, .scid = 64 + index,
+            .psm = 39, .imtu = 64, .mps = 64, .mode = L2CAP_MODE_EXT_FLOWCTL, .state = BT_CONNECT};
+        conn.chan_l.items[index] = &channels[index];
+    }
+    l2cap_ecred_connect(&channels[0]);
+    assert(sent_scids[0] == 64 && sent_scids[1] == 65);
+    conn.chan_l.items[0] = &channels[1];
+    conn.chan_l.count = 1;
+    u16 response[] = {64, 64, 10, 0, 64, 65};
+    struct l2cap_cmd_hdr command = {.ident = 7};
+    assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(response), (u8 *)response) == 0);
+    assert(channels[1].dcid == (PROPOSED ? 65 : 64));
+    printf("pending_removed_wrong_peer=%d\n", !PROPOSED);
+}
+static void response_case(const char *name, u16 result, int slots, const u16 *dcids,
+                          int security_level, bool retry) {
+    struct hci_conn hcon = {.sec_level = security_level};
+    struct l2cap_conn conn = {.hcon = &hcon};
+    struct l2cap_ops ops = {.get_peer_pid = get_peer_pid};
+    struct l2cap_chan channels[3] = {0};
+    disconnect_target = NULL;
+    request_ident = 7;
+    security_calls = 0;
+    conn.chan_l.count = 3;
+    for (int index = 0; index < 3; index++) {
+        channels[index] = (struct l2cap_chan){.conn = &conn, .ops = &ops,
+            .flags = index == 2 ? 0 : 1ul << FLAG_DEFER_SETUP, .scid = 64 + index,
+            .psm = 39, .imtu = 64, .mps = 64, .mode = L2CAP_MODE_EXT_FLOWCTL, .state = BT_CONNECT};
+        conn.chan_l.items[index] = &channels[index];
+    }
+    l2cap_ecred_connect(&channels[2]);
+    assert(sent_count == 3 && sent_scids[0] == 66 && sent_scids[1] == 64 && sent_scids[2] == 65);
+    u16 storage[] = {64, 64, 10, result, 0, 0, 0};
+    struct l2cap_ecred_conn_rsp *response = (void *)storage;
+    for (int index = 0; index < slots; index++) { response->dcid[index] = dcids[index]; }
+    struct l2cap_cmd_hdr command = {.ident = 8};
+    assert(l2cap_ecred_conn_rsp(&conn, &command, 8 + slots * 2, (u8 *)response) == 0);
+    for (int index = 0; index < 3; index++) {
+        assert(channels[index].state == BT_CONNECT && !channels[index].deleted && !channels[index].dcid);
+    }
+    command.ident = 7;
+    assert(l2cap_ecred_conn_rsp(&conn, &command, 7, (u8 *)response) == -EPROTO);
+    assert(l2cap_ecred_conn_rsp(&conn, &command, 8 + slots * 2, (u8 *)response) == 0);
+    for (int index = 0; index < 3; index++) {
+        int position = index;
+        if (PROPOSED) {
+            for (int wire_index = 0; wire_index < 3; wire_index++) {
+                if (sent_scids[wire_index] == channels[index].scid) { position = wire_index; }
+            }
+            assert(channels[index].ecred_tx_index == position);
+        }
+        bool refused = position >= slots || result == L2CAP_CR_LE_BAD_PSM ||
+            ((result == L2CAP_CR_LE_AUTHENTICATION || result == L2CAP_CR_LE_ENCRYPTION) ?
+                security_level > BT_SECURITY_MEDIUM : !dcids[position]);
+        assert(!!channels[index].deleted == refused);
+        if (refused) { assert(channels[index].delete_error == ECONNREFUSED); }
+        else if (retry) {
+            assert(channels[index].state == BT_CONNECT);
+            assert(!test_bit(FLAG_ECRED_CONN_REQ_SENT, &channels[index].flags));
+        } else {
+            assert(channels[index].state == BT_CONNECTED);
+            assert(channels[index].dcid == dcids[position]);
+        }
+    }
+    if (retry) {
+        assert(security_calls == 3);
+        request_ident = 8;
+        for (int index = 0; index < 3; index++) { channels[index].flags |= 1ul << FLAG_DEFER_SETUP; }
+        channels[1].ecred_tx_index = 99;
+        l2cap_ecred_connect(&channels[1]);
+        assert(channels[1].ident == 7);
+        clear_bit(FLAG_DEFER_SETUP, &channels[1].flags);
+        l2cap_ecred_connect(&channels[1]);
+        assert(sent_count == 1 && sent_scids[0] == 65);
+        if (PROPOSED) { assert(channels[1].ecred_tx_index == 0); }
+        response->result = 0;
+        for (int index = 0; index < 3; index++) { response->dcid[index] = 90 + index; }
+        assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(storage), (u8 *)response) == 0);
+        assert(channels[1].state == BT_CONNECT);
+        assert(channels[0].state == (PROPOSED ? BT_CONNECT : BT_CONNECTED));
+        assert(channels[2].state == (PROPOSED ? BT_CONNECT : BT_CONNECTED));
+        command.ident = 8;
+        for (int index = 0; index < 3; index++) { response->dcid[index] = 80 + index; }
+        assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(storage), (u8 *)response) == 0);
+        for (int index = 0; index < sent_count; index++) {
+            struct l2cap_chan *channel = &channels[sent_scids[index] - 64];
+            assert(channel->dcid == 80 + index);
+        }
+        request_ident = 7;
+    }
+    printf("response_case=%s passed\n", name);
+}
+static void grouping_case(int exclusion) {
+    struct hci_conn hcon = {0};
+    struct l2cap_conn conn = {.hcon = &hcon};
+    struct l2cap_ops ops = {.get_peer_pid = get_peer_pid};
+    struct pid different_peer = {0};
+    struct l2cap_chan channels[2] = {0};
+    disconnect_target = NULL;
+    request_ident = 7;
+    conn.chan_l.count = 2;
+    for (int index = 0; index < 2; index++) {
+        channels[index] = (struct l2cap_chan){.conn = &conn, .ops = &ops,
+            .flags = 1ul << FLAG_DEFER_SETUP, .scid = 64 + index, .ecred_tx_index = 99,
+            .psm = 39, .imtu = 64, .mps = 64, .mode = L2CAP_MODE_EXT_FLOWCTL, .state = BT_CONNECT};
+        conn.chan_l.items[index] = &channels[index];
+    }
+    switch (exclusion) {
+    case 0: channels[0].peer = &different_peer; break;
+    case 1: channels[0].psm = 40; break;
+    case 2: channels[0].ident = 9; break;
+    case 3: channels[0].mode = 0; break;
+    case 4: channels[0].state = BT_CONNECTED; break;
+    case 5: channels[0].flags |= 1ul << FLAG_ECRED_CONN_REQ_SENT; break;
+    case 6: channels[0].flags = 0; break;
+    }
+    sent_count = -1;
+    l2cap_ecred_connect(&channels[1]);
+    assert(sent_count == -1);
+    clear_bit(FLAG_DEFER_SETUP, &channels[1].flags);
+    l2cap_ecred_connect(&channels[1]);
+    assert(sent_count == 1 && sent_scids[0] == 65);
+    assert(channels[0].ecred_tx_index == 99);
+    if (PROPOSED) { assert(channels[1].ecred_tx_index == 0); }
+    sent_count = -1;
+    l2cap_ecred_connect(&channels[1]);
+    assert(sent_count == -1);
+    u16 response[] = {64, 64, 10, 0, 80};
+    struct l2cap_cmd_hdr command = {.ident = 7};
+    assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(response), (u8 *)response) == 0);
+    assert(channels[1].dcid == 80 && channels[1].state == BT_CONNECTED);
+    assert(channels[0].ecred_tx_index == 99 && !channels[0].dcid);
+    channels[1] = (struct l2cap_chan){.conn = &conn, .ops = &ops, .scid = 65,
+        .ecred_tx_index = 99, .psm = 39, .imtu = 64, .mps = 64,
+        .mode = L2CAP_MODE_EXT_FLOWCTL, .state = BT_CONNECT};
+    request_ident = 8;
+    l2cap_ecred_connect(&channels[1]);
+    assert(sent_count == 1 && sent_scids[0] == 65);
+    response[4] = 81;
+    assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(response), (u8 *)response) == 0);
+    assert(!channels[1].dcid && channels[1].state == BT_CONNECT);
+    command.ident = 8;
+    assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(response), (u8 *)response) == 0);
+    assert(channels[1].dcid == 81 && channels[1].state == BT_CONNECTED);
+    if (PROPOSED) { assert(channels[1].ecred_tx_index == 0); }
+    printf("grouping_exclusion=%d reuse=passed\n", exclusion);
+}
+static void duplicate_case(void) {
+    struct hci_conn hcon = {0};
+    struct l2cap_conn conn = {.hcon = &hcon};
+    struct l2cap_ops ops = {.get_peer_pid = get_peer_pid};
+    struct l2cap_chan channels[2] = {0};
+    disconnect_target = NULL;
+    request_ident = 7;
+    conn.chan_l.count = 2;
+    for (int index = 0; index < 2; index++) {
+        channels[index] = (struct l2cap_chan){.conn = &conn, .ops = &ops,
+            .flags = index ? 1ul << FLAG_DEFER_SETUP : 0, .scid = 64 + index,
+            .psm = 39, .imtu = 64, .mps = 64, .mode = L2CAP_MODE_EXT_FLOWCTL, .state = BT_CONNECT};
+        conn.chan_l.items[index] = &channels[index];
+    }
+    l2cap_ecred_connect(&channels[0]);
+    u16 response[] = {64, 64, 10, 0, 80, 80};
+    struct l2cap_cmd_hdr command = {.ident = 7};
+    assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(response), (u8 *)response) == 0);
+    assert(channels[0].deleted && channels[0].delete_error == ECONNRESET);
+    assert(channels[1].deleted && channels[1].delete_error == ECONNREFUSED);
+    puts("duplicate-dcid=passed");
+}
 int main(void) {
     run_case(1, 0, false);
     run_case(2, 0, false);
     run_case(2, 1, true);
     run_case(3, 2, true);
+    pending_removal_case();
+    run_case(3, 1, true);
+    run_case(5, 4, true);
+    const u16 accepted[] = {80, 81, 82};
+    const u16 partial[] = {80, 0, 82};
+    const u16 rejected[] = {0, 0, 0};
+    response_case("partial-zero", 4, 3, partial, 0, false);
+    response_case("all-zero", 4, 3, rejected, 0, false);
+    response_case("short-array", 0, 1, accepted, 0, false);
+    response_case("empty-rejection", L2CAP_CR_LE_BAD_PSM, 0, rejected, 0, false);
+    response_case("bad-psm", L2CAP_CR_LE_BAD_PSM, 3, rejected, 0, false);
+    response_case("authentication-retry", L2CAP_CR_LE_AUTHENTICATION, 3, rejected, 0, true);
+    response_case("encryption-retry", L2CAP_CR_LE_ENCRYPTION, 3, rejected, 0, true);
+    response_case("authentication-exhausted", L2CAP_CR_LE_AUTHENTICATION, 3, rejected, 3, false);
+    for (int exclusion = 0; exclusion < 7; exclusion++) { grouping_case(exclusion); }
+    duplicate_case();
+    reverse_list = true;
+    run_case(3, 0, true);
     return 0;
 }
 '''
 
 
-def program(source: bytes) -> str:
+def program(source: bytes, proposed: bool = False, header: bytes | None = None) -> str:
     """Reject changed source before extracting the complete controlling functions."""
     if hashlib.sha256(source).hexdigest() != SOURCE_SHA256:
         raise ValueError('Kernel source does not match the package-named revision')
+    if proposed:
+        if header is None or hashlib.sha256(header).hexdigest() != HEADER_SHA256:
+            raise ValueError('Kernel header does not match the package-named revision')
+        patch = Path(__file__).resolve().parents[1] / 'patches/ecred-request-index.patch'
+        with tempfile.TemporaryDirectory(prefix='ecred-patch-', dir='/dev/shm') as directory:
+            kernel = Path(directory) / 'net/bluetooth/l2cap_core.c'
+            kernel.parent.mkdir(parents=True)
+            kernel.write_bytes(source)
+            channel_header = Path(directory) / 'include/net/bluetooth/l2cap.h'
+            channel_header.parent.mkdir(parents=True)
+            channel_header.write_bytes(header)
+            subprocess.run(['patch', '--batch', '--fuzz=0', '-p1', '-d', directory, '-i', str(patch)],
+                check=True, capture_output=True, text=True)
+            assert '__u8\t\tecred_tx_index;' in channel_header.read_text()
+            source = kernel.read_bytes()
     text = source.decode()
     grouping = text[text.index('struct l2cap_ecred_conn_data {'):text.index('\nstatic void l2cap_le_start(')]
     response = text[text.index('static inline int l2cap_ecred_conn_rsp('):text.index('\nstatic inline int l2cap_ecred_reconf_req(')]
     disconnect = text[text.index('static inline int l2cap_disconnect_req('):text.index('\nstatic inline int l2cap_disconnect_rsp(')]
-    return SHIM + grouping + response + disconnect + CASES
+    return f'#define PROPOSED {int(proposed)}\n' + SHIM + grouping + response + disconnect + CASES
 
 
 def negotiations(path: Path) -> list[dict]:
@@ -349,8 +581,17 @@ def check_teardown_decoder() -> None:
 
 def check(source: bytes, compiler: str) -> str:
     """Compile the pinned functions with ordered-list stubs, not a kernel or BlueZ."""
+    resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     check_teardown_decoder()
     native = program(source)
+    with urllib.request.urlopen(HEADER_URL, timeout=30) as stream:
+        header = stream.read(100000)
+    try:
+        program(source, proposed=True, header=header + b'\n')
+    except ValueError:
+        pass
+    else:
+        raise AssertionError('Changed header was accepted')
     try:
         program(source + b'\n')
     except ValueError:
@@ -362,11 +603,25 @@ def check(source: bytes, compiler: str) -> str:
         subprocess.run([compiler, '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-x', 'c', '-', '-o', binary],
             input=native, text=True, check=True, capture_output=True)
         output = subprocess.check_output([binary], text=True)
+        subprocess.run([compiler, '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-x', 'c', '-', '-o', binary],
+            input=program(source, proposed=True, header=header), text=True, check=True, capture_output=True)
+        corrected = subprocess.check_output([binary], text=True)
+        subprocess.run([compiler, '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-x', 'c', '-', '-o', binary],
+            input=native.replace('#define PROPOSED 0', '#define PROPOSED 1', 1),
+            text=True, check=True, capture_output=True)
+        negative = subprocess.run([binary], text=True, capture_output=True)
+        if negative.returncode == 0 or 'mismatch == expect_mismatch' not in negative.stderr:
+            raise AssertionError('Uncorrected source did not fail the corrective assertion after execution')
     if 'count=2 trigger=65 mismatch=1 request=65,64 assignments=64:64,65:65' not in output:
         raise AssertionError('Native probe did not reproduce the predicted assignment')
     if 'disconnect_request=65:64 disconnect_response=65:65 association_mismatch=1' not in output:
         raise AssertionError('Native probe did not reproduce the historical teardown fields')
-    return output
+    if 'association_mismatch=1' in corrected or 'mismatch=1' in corrected:
+        raise AssertionError('Proposed correction still misassigns positional pairs')
+    if 'disconnect_request=65:64 disconnect_response=65:64 association_mismatch=0' not in corrected:
+        raise AssertionError('Proposed correction did not repair the historical teardown signature')
+    return ('ORIGINAL\n' + output + 'PROPOSED (not deployed)\n' + corrected +
+        'NEGATIVE CONTROL: uncorrected source compiled, executed, rejected by corrective assertion\n')
 
 
 if __name__ == '__main__':
