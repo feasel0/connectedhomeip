@@ -20,7 +20,7 @@ Goals:
 
 | ID | State | Priority | Proposal | Expected benefit |
 |---|---|---|---|---|
-| P01 | **Observed fix implemented; fork draft PR open** | Immediate | Support combined specification book and historical book layouts in XML generator | Restores actual current generation and avoids silent selection errors |
+| P01 | **Upstream tooling draft #74858 open** | Immediate | Support combined specification book and historical book layouts in XML generator | Restores actual current generation and avoids silent selection errors |
 | P02 | **Proposed in second meeting** | High, future | Periodic future-model validation against SDK applications | Move incompatibility discovery weeks/months before release |
 | P03 | **Proposed** | High | Track per-cluster ownership and compatibility debt with actionable evidence | Route fixes to experts instead of sole release integrator |
 | P04 | **Proposed in second meeting** | High, future | Spec-side protected CI / nightly prototype | Test private spec changes without publishing private material |
@@ -40,9 +40,9 @@ Goals:
 
 **Implemented on dedicated data-model work branch:** Detect the complete combined-book include entrypoint set; use its printed recursive include records; fall back to legacy book targets when needed; use exact AsciiDoc include basename membership instead of fragile substring matching. Six focused tests pass. Full current generation exited 0; 280 model XML and manifest checks passed. See [detailed evidence](../reports/2026-10-19_17-02-05.md).
 
-**PR status:** [Fork-local draft PR #1](https://github.com/feasel0/connectedhomeip/pull/1) is open against the fork's master, containing exactly the generator fix and tests. Upstream PR creation was attempted but blocked by GitHub integration permissions; **no upstream PR exists yet**.
+**PR status:** [Upstream draft #74858](https://github.com/project-chip/connectedhomeip/pull/74858) contains exactly the generator fix and tests from the fork-hosted branch. The superseded fork-local PR is closed.
 
-**Remaining:** Transfer/recreate the narrow fix as an upstream-facing draft when authorized by GitHub permissions; run upstream CI/review; verify old-spec behavior against an actual historical checkout when feasible. Expanded include-flag combinations (`None`, `All`) merit real integration validation later. Do not claim the fix means the new reference model is SVE-approved.
+**Remaining:** Complete upstream CI/review; verify old-spec behavior against an actual historical checkout when feasible. Expanded include-flag combinations (`None`, `All`) merit real integration validation later. Successful generation is not SVE approval.
 
 **Promotion:** Once merged upstream, mark this as an established generator compatibility feature in the playbook, with commit/PR reference.
 
@@ -138,6 +138,14 @@ Maintain a single release dashboard or index with:
 Prioritize collecting these observations over building elaborate infrastructure before the baseline process is stable.
 
 ## Decisions and promotion log
+
+### Current Integration Improvements
+
+- **P05/P06:** Canonical XML comparison separates 241 formatting changes from the two intended scraper repairs. Exact file/ID-map/GNI checks and revision/provisional comparisons pass. Automate these together with a provenance manifest; never equate byte churn with semantic change or disclose the XML before its release/publication gate.
+- **P10:** One upstream integration draft, #74862, now holds code/tests only, with a self-contained current-result description. Internal reports/ledger stay on the dedicated work branch. Explicitly distinguish model-payload pending from a complete reference-model PR.
+- **P11:** Current integration has nine focused consumer checks and 28 IDM units. PARSE-01 remains open: message-based warning filtering is not justified by classification evidence and was not adopted.
+- **P12:** Current upstream Alchemy fixes are published separately in #91/#92. Response-direction controls caught an extra inherited-response access artifact; the updated combined source passes 110 leaves and full private generation. Record source SHA, all commits, actual binary hash and custom version together.
+- **P13:** Native promotion is implemented for Closure Dimension, EPA, Push AV, GKM and Linux cached-BSS reporting: 119 tests pass. A real Darwin sanitizer failure exposed a temporary reference in the provider test; retaining its descriptor passes 21 Linux ASan tests. Regression helpers must preserve request-referenced storage through encoding/decoding, not merely compile or pass unsanitized tests.
 
 ### Tested Defect-Resolution Improvements
 

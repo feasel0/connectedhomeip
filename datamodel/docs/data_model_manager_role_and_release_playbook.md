@@ -191,6 +191,13 @@ Recommended ledger columns: `cluster/device`, `source SHA and spec location`, `o
 
 ## 9. Living-update protocol
 
+### Verified Integration Methods (2026-10-20)
+
+- Open one clean upstream draft early with independently reviewable code/tests when generated model disclosure is unverified. Label the missing payload explicitly; publication clearance and milestone selection remain separate gates. Keep reports and historical work-branch commits out of that integration branch.
+- When upgrading the scraper, compare canonical XML against the same-spec old-tool candidate as well as the upstream reference. This separated 241 formatting-only changes from two intended repairs and caught an unintended inherited-response access artifact before publication.
+- Keep each published tool fix and exact combined source in the provenance chain. A new helper worktree can preserve actual parent commits without overwriting an earlier dirty scratch tree. Assert custom version/source/hash before generation, not after writing outputs.
+- Run a sanitizer when tests retain references through request/encoder wrappers. A temporary subject descriptor passed to a reference-retaining setter escaped ordinary GKM tests; a named descriptor covering encoding/decoding passes the fresh ASan fixture. Record platform-specific CI separately from local sanitizer results.
+
 Update **this file** when a repeatable method is demonstrated, a release policy becomes official, a tool path changes, or a lesson alters the normal workflow. Mark what changed and retain applicability/version caveats.
 
 Update [the separate improvement backlog](data_model_process_improvements.md) with hypotheses, costs, prototypes, owners and decisions; only migrate an idea here after it has been verified and accepted as an operating practice.

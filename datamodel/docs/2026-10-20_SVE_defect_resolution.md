@@ -1,6 +1,29 @@
 # Matter 1.7 SVE Defect Resolution
 
-**Checkpoint:** 2026-10-20 UTC, continuing `72052c90835`. The completed
+**Current integration:** [SDK draft #74862](https://github.com/project-chip/connectedhomeip/pull/74862)
+at `2ff4b57e3a2b1bf0fdc18c6726e4637bbcb5fe43` contains 18 source/build files,
+not generated XML. Its comprehensive description and the [current ledger](SVE_mismatch_ledger.md)
+supersede the historical local-only implementation statuses below.
+Alchemy [#91](https://github.com/project-chip/alchemy/pull/91) and
+[#92](https://github.com/project-chip/alchemy/pull/92), and generator
+[#74858](https://github.com/project-chip/connectedhomeip/pull/74858) are open upstream drafts.
+
+The interrupted combined-tool step is complete. Full private generation with
+response-aware Alchemy exits zero in 321.53 s; 280 XML files parse, both ID maps
+match the baseline and all GNI XML members match the filesystem. Canonical
+same-spec comparison finds 241 formatting-only changes and exactly two intended
+changes: Thermostat request access and PairingHint operator preservation.
+Inherited RVC responses no longer gain invoke access. Current model/package
+checks pass 84 parsing tests and 28 IDM units using actual integration sources.
+Native suites total 119 passes. A Darwin CI-discovered GKM fixture reference to
+a temporary descriptor is repaired; a separate fresh Linux ASan build passes
+all 21 GKM tests with stack-use-after-return detection. Darwin CI rerun is pending.
+No model XML is published: PUB-01/BALLOT-01 and the remaining normative/codegen/ACL
+gates in the ledger are still open. No broad warning-suppression fix was adopted.
+
+## Original Defect-Resolution Evidence
+
+**Earlier checkpoint:** 2026-10-20 UTC, continuing `72052c90835`. The completed
 [20-file review](2026-10-20_SVE_semantic_review.md) was not repeated.
 **No SVE readiness or generated-model publication is claimed.**
 
