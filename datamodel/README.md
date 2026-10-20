@@ -50,6 +50,9 @@ The reusable role and process guidance and the current presentation summary live
 - [20-file SVE semantic review](docs/2026-10-20_SVE_semantic_review.md)
 - [SVE mismatch ledger and proposed owners](docs/SVE_mismatch_ledger.md)
 - [Semantic-review execution report](reoprts/2026-10-20_05-05-31.md)
+- [Tested defect resolution and precise remaining owner decisions](docs/2026-10-20_SVE_defect_resolution.md)
+- [Public-safe Alchemy access and bitmap patch handoffs](patches/alchemy/README.md)
+- [Defect-resolution execution and closeout report](reoprts/2026-10-20_14-23-47.md)
 
 A clean, two-file tooling fix is in [fork-local draft PR #1](https://github.com/feasel0/connectedhomeip/pull/1). The GitHub connector could not create the upstream PR directly; **no upstream PR is claimed**. Unreviewed generated 1.7 XML remains outside the public branch.
 
@@ -64,9 +67,11 @@ specification Make targets. With the compatibility fix, the complete pinned run
 exited 0 with no error diagnostics, and all 280 generated XML files passed
 structural and manifest checks. Release acceptance still requires ballot-flag
 verification and resolution of semantic/conformance findings; generated models
-remain in scratch. The 20-file review is now itemized and five candidate-bound
-TestSpec suites passed 79/79 tests. Focused probes still reproduce extraction and
-parser discrepancies, so these passes do not establish SVE or SDK readiness.
+remain in scratch. The completed 20-file review was not repeated. Separate SDK
+inheritance and unsupported-constraint fixes now pass 84/84 candidate-bound
+TestSpec tests plus six consumer tests. Alchemy access and bitmap fixes are
+tested patch handoffs, not a released scraper; six bounded SDK investigations
+retain domain-policy/native coverage gaps. None establishes SVE or SDK readiness.
 
 Publish all work under `datamodel/` and SDK changes needed for this task on the
 dedicated data-model branch. Do not include changes from `investigation/`, private

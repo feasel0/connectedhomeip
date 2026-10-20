@@ -7,6 +7,15 @@
 
 ## Semantic-review checkpoint, 2026-10-20
 
+**Subsequent defect-resolution checkpoint:** [tested fixes and owner decisions](2026-10-20_SVE_defect_resolution.md).
+TMODE inheritance and explicit unsupported-constraint handling are implemented in
+separate SDK commits; final five suites pass **84/84** and six consumer tests pass.
+Public-safe Alchemy access and occurrence-based bitmap patch handoffs have
+independent red/green evidence and **103** combined leaf passes. Six bounded SDK
+probes clarify remaining policy/native coverage gaps. These are tooling advances,
+not a released scraper or accepted model; ballot/tag and integration gates remain
+open. The paragraphs below preserve the original review checkpoint.
+
 All **20/20 XML differences** are now itemized against the exact previous/current specification commits in the [semantic review](2026-10-20_SVE_semantic_review.md), with proposed owners/actions in the [mismatch ledger](SVE_mismatch_ledger.md). Five candidate-bound TestSpec suites passed **79/79** tests: Support 15, Selection 2, DeviceType 29, DataType 26, Namespace 7; zero errors/failures/skips. Pinned Python source and generated-resource provenance were explicitly checked, using existing native controller modules rather than a fresh native build.
 
 **Confirmed issues outside that coverage:** Thermostat Mode derived command inheritance becomes optional, DEM loses its `maxOf` lower constraint in the consumer parser, Thermostat Mode command access metadata is absent despite source Manage, and a PairingHint example operator is lost during extraction. SDK/ZAP bounds, ACL and behavioral drift have separate owner actions. No normative/generated XML or production parser was changed; the candidate remains scratch.

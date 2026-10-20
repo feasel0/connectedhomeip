@@ -1,7 +1,7 @@
 # Matter Data Model Manager — Role Charter and Release Playbook
 
 **Living document for humans and future agents.**  
-**Status:** Version 1, 2026-10-19. Update after every material release-cycle lesson.  
+**Status:** Updated 2026-10-20 with tested defect-resolution methods. Update after every material release-cycle lesson.
 **Operational scope:** Matter SDK specification-derived reference data model, its release integration, and the validation/coordination needed to deliver it.  
 **Companion documents:** [Current SVE execution findings](2026-10-19_SVE_status_and_findings.md) · [Improvement backlog](data_model_process_improvements.md) · [Official SDK data-model procedure](../../data_model/README.md).
 
@@ -116,6 +116,24 @@ Produce a concise, itemized diff from `spec_revision_diff_summary.py`, supplemen
 
 **Verified 2026-10-20 lesson:** use the actual prior/current directory pair when updating the same revision; a different-version summary is not a substitute. Count definitions separately from nested references: apparent GKM feature loss, DEM attribute additions and Push AV enum/field additions were references, not those API changes. Passing broad parser suites did not catch reproduced inheritance/constraint information loss; retain focused positive-control probes for newly changed constructs.
 
+**Verified defect-resolution methods:** preserve absence separately from parser
+fallbacks when merging overlays; test explicit Optional/Disallowed/feature/access
+overrides in both command directions. Unsupported constraints must survive as
+detectable object state through consumer boundaries; reject incomplete evaluation
+instead of approximating a compound expression or calling it unconstrained.
+Conditional extraction must distinguish AST occurrences from equal scalar values;
+test cross-include suppression and enabled/disabled controls, including subslices.
+Do not fix occurrence identity by silently breaking an exported AST struct.
+See the [tested checkpoint](2026-10-20_SVE_defect_resolution.md).
+
+Validate the exact public patch configuration, not a different private prototype.
+Initialize an isolated Git root before applying patches inside a parent worktree;
+exit zero can mean a patch was skipped. Assert patched source hashes and executed
+test counts. Separate an extracted-body characterization, native fixture test and
+real integration test; adapter-level passes cannot prove TLV, storage, composition
+or domain policy. Keep owner decisions precise when invalid configuration crosses
+delegate or persistence boundaries.
+
 The onboarding specifically recommends reviewing Arya's [Matter 1.7 integration PR #73842](https://github.com/project-chip/connectedhomeip/pull/73842), especially its **Required manual modifications**, to learn the real failure modes, rather than reading hundreds of XMLs without a diff summary.
 
 ### Phase E — Validate integration into SDK testing
@@ -146,7 +164,7 @@ Get the necessary multi-person review. Coordinate the final spec tag, test event
 | G5 Release acceptance | Reviewers approve the correct tagged snapshot and handoff / PR, including permitted exceptions |
 | G6 Post-release lessons | Record what broke, owners, cycle time, validated tooling improvements, and playbook changes |
 
-**Current state (2026-10-20):** G1 complete and substantial G2 evidence; G3 has a complete 20-file itemization with open semantic findings; G4 has 79 parsing/selection passes but no full SDK sign-off. G0 still lacks ballot/tag authority; G5 is not complete. See the [review](2026-10-20_SVE_semantic_review.md) and [ledger](SVE_mismatch_ledger.md). Do not promote G1 to G5 by inference.
+**Current state (2026-10-20):** G1 complete and substantial G2 evidence; G3 has a complete 20-file itemization with open dispositions. G4 now has 84 parsing/selection passes, six permanent consumer passes and targeted Alchemy/SDK-probe evidence, not full SDK sign-off. G0 still lacks ballot/tag authority; G5 is not complete. See the [defect resolution](2026-10-20_SVE_defect_resolution.md) and [ledger](SVE_mismatch_ledger.md). New scraper patches have not been released or used for an accepted regenerated model. Do not promote G1 to G5 by inference.
 
 ## 7. Per-release working artifacts
 

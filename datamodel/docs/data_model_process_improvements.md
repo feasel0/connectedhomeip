@@ -1,6 +1,6 @@
 # Matter Data Model Release Process — Improvement and Automation Backlog
 
-**Living idea register, not the operating mandate.** Updated 2026-10-19.  
+**Living idea register, not the operating mandate.** Updated 2026-10-20.
 **Companion:** [Operational data-model manager playbook](data_model_manager_role_and_release_playbook.md) · [Initial SVE findings](2026-10-19_SVE_status_and_findings.md)
 
 ## Purpose and ground rules
@@ -30,6 +30,9 @@ Goals:
 | P08 | **Exploratory** | Medium | Evaluate a forward-looking model CI mode without changing SDK default specification revision | Find next-release drift without destabilizing current release |
 | P09 | **Proposed in separate meeting** | Low / external owner | Clarify release/SVE branching policy and roles | Reduce stale branches and cherry-pick confusion |
 | P10 | **Proposed** | Medium | Durable reporting and release-cycle metrics | Make handoff and continuous improvement measurable |
+| P11 | **Bounded implementation; broader inventory proposed** | High | Unsupported-expression and diagnostic propagation checks at consumers | Prevent silent constraint loss and lost loader notices |
+| P12 | **Pinned public regression/fix verified** | High | Cross-include scalar-occurrence preservation checks | Detect conditional overlay value-key collisions |
+| P13 | **Characterizations executed; native promotion proposed** | Medium | Promote extracted boundary probes into owning native fixtures | Turn precise findings into mergeable coverage without copied production logic |
 
 ## P01 — Generator compatibility and file-selection correctness
 
@@ -135,6 +138,32 @@ Maintain a single release dashboard or index with:
 Prioritize collecting these observations over building elaborate infrastructure before the baseline process is stable.
 
 ## Decisions and promotion log
+
+### Tested Defect-Resolution Improvements
+
+- **P11:** DEM now retains unsupported reference expressions and guards six
+	consumer entry points; parser red/green and six permanent consumer tests pass.
+	Proposed follow-up: inventory unsupported expressions by model/version, audit
+	every external consumer and cover the remaining constraint vocabulary.
+	Separately regress loader diagnostic propagation, classify historical notices
+	before changing severity, and avoid silent expectation suppression. The loader
+	rebind defect remains open; a broad prototype failed existing expectations.
+- **P12:** Public Alchemy cross-include operator tests reproduce 16 original
+	failures; occurrence-based removal fixes all 36 cases. Slice/copy controls,
+	existing packages and original-root replay pass without exported AST changes.
+	Owner review/current-version porting and released-tool integration remain.
+	Exact-source/configuration validation and occurrence-vs-value identity are
+	promoted as tested methods in the playbook, not as accepted release policy.
+- **P13:** Bounds/compatibility probes characterize six domains, including
+	negative controls for GKM/Push AV. Proposed follow-up: port cases to existing
+	native fixtures using real functions/providers/TLV/storage; retain independent
+	literal oracles. Owners must first settle invalid-config, command-zero,
+	persistence, milestone-reporting and composition contracts. Extracted-body
+	adapters must not become a copied-logic substitute for native regressions.
+
+Details, validation metrics and precise domain decisions are in the
+[defect-resolution checkpoint](2026-10-20_SVE_defect_resolution.md). These proposals
+do not authorize normative XML, default-version or include-policy changes.
 
 | Date | Decision | Basis | Effect |
 |---|---|---|---|
