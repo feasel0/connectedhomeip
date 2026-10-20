@@ -55,7 +55,7 @@ No specifications, tokens, private logs, or generated unapproved XML need to be 
 | P2 | **Electrical Protection Alarm** and **Humidistat:** additional constraints | Check constraints against spec and parser semantics; look for genuine changed test expectations. |
 | P2 | **Push AV Stream Transport:** enum/field addition | Confirm definition and whether generated APIs or implementations need coordinated changes. |
 | P2 | Five device-type XML files and one global bitmap file differ | Produce itemized semantic comparisons and assess release/provisional effects. |
-| P2 | Warning: inconsistent PICS codes for cluster ID **1875** across spec versions | Identify the involved versions and codes; distinguish intentional evolution from inconsistency needing upstream clarification. |
+| P2 | Warning: inconsistent PICS codes for cluster ID **1875**, **Joint Fabric Administrator** (identified by the SDK's existing 1.7 cluster ID map), across spec versions | Identify the involved versions and codes; distinguish intentional evolution from inconsistency needing upstream clarification. |
 | Normal | Warning: no tag on specification `master` | Expected for an untagged input; obtain the official chosen release/tag later rather than inventing one. |
 | Required gate | `Current` include defines not matched against ballot email | Retrieve authorized ballot include list, compare exact flags, and regenerate if necessary. |
 | Required gate | Broader model `TestSpec*` tests, semantic/provisional review, SDK/test-harness integration | Execute and capture evidence after agreeing on selected spec snapshot and include flags. |
