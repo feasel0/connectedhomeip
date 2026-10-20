@@ -1,0 +1,463 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Investigation: Audit Move Inputs",
+            "type": "process",
+            "command": "python3",
+            "args": [
+                "-c",
+                "import subprocess,json,os; from pathlib import Path; root=Path.cwd(); git=lambda *a:subprocess.check_output(['git',*a]); names=lambda data:[os.fsdecode(x) for x in data.split(b'\\0') if x]; visible=names(git('ls-files','--cached','--others','--exclude-standard','-z','--','37075','pr539-failure-evidence')); ignored=names(git('ls-files','--others','--ignored','--exclude-standard','-z','--','37075','pr539-failure-evidence')); print(json.dumps({'branch':git('branch','--show-current').decode().strip(),'head':git('rev-parse','HEAD').decode().strip(),'staged':names(git('diff','--cached','--name-only','-z')),'visible_count':len(visible),'visible_files':[{'path':p,'bytes':(root/p).stat().st_size} for p in visible],'ignored_count':len(ignored),'ignored_bytes':sum((root/p).lstat().st_size for p in ignored if (root/p).exists()),'investigation_exists':(root/'investigation').exists(),'branch_exists':subprocess.run(['git','show-ref','--verify','--quiet','refs/heads/investigation/2026-10-17']).returncode==0,'upstream_default':subprocess.run(['git','symbolic-ref','--quiet','refs/remotes/upstream/HEAD'],capture_output=True,text=True).stdout.strip()},indent=2))"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Git Boundary",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/git_boundary.py",
+                "self-test"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Inspect Lock And Fork",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/git_boundary.py",
+                "audit"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Configure Fork Only Branch",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/git_boundary.py",
+                "initialize"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Relocate Evidence In Place",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/git_boundary.py",
+                "move"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Verify Relocation Boundary",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/git_boundary.py",
+                "verify"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Relocated Dossier",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/pr539-failure-evidence/update_dossier.py",
+                "--self-test"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Relocated Retention",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/pr539-failure-evidence/prune_successful_runs.py",
+                "--self-test"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Staged Publication",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/git_boundary.py",
+                "staged"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Verify Fork Remote Ref",
+            "type": "shell",
+            "command": "git",
+            "args": [
+                "ls-remote",
+                "--exit-code",
+                "origin",
+                "refs/heads/investigation/2026-10-17"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Lifecycle Extractor",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "self-test"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Trace Sealed PASE Transition",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "pase"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Read Pinned PASE Source",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "sources"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Reconcile Current QA Heads",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "metadata"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Match Cross Fixture PASE",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "remote_probe"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Current QA Regressions",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "qa_units"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Resolve Decode Failure Attributes",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "attribute_metadata"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Trace Serial MRP And CASE",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "serial_timing"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Summarize Serial Progress Gap",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "serial_summary"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Audit Reachable Raw History",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "history_audit"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Attribute Corrected Decode Statuses",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "decode_statuses"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Shared Discriminators",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "remote_window_status"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Prove Discovery Filter Width",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "discovery_filter"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Discovery Isolation",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/discovery_isolation.py",
+                "--self-test"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Verify Protected Campaign Rejection",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/discovery_isolation.py",
+                "--protected-run",
+                "/home/feasel/qa-mar6/rt21-endurance-20261016"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Verify Serial Attribution Tables",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "serial_findings"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Validate Continuation Publication",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "publication_check"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Verify Final RT21 Accounting",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "-c",
+                "import hashlib,json,subprocess; from pathlib import Path; root=Path(\"/home/feasel/qa-mar6/rt21-endurance-20261016\"); files=[root/name for name in (\"finished.json\",\"endurance.json\",\"external-closeout.json\")]; documents=[json.loads(path.read_text()) for path in files]; final=documents[0][\"result\"]; ledgers=[final[\"records\"],documents[1][\"records\"],documents[2][\"accepted_native_records\"]]; expected=[(number,\"FAIL\" if number==75 else \"PASS\") for number in range(1,101)]; assert all([(row[\"iteration\"],row[\"outcome\"]) for row in ledger]==expected for ledger in ledgers); assert (final[\"requested\"],final[\"executed\"],final[\"passed\"],final[\"failed\"],final[\"unexecuted\"],final[\"process_exit\"],final[\"interruption\"],final[\"status\"])==(100,100,99,1,0,0,None,\"CLOSED\"); assert all(documents[1][key]==final[key] for key in (\"requested\",\"executed\",\"passed\",\"failed\",\"unexecuted\",\"process_exit\",\"interruption\",\"status\")); owner=json.loads((root/\"runs/combined-nordic-ubuntu-TC_RT_2_1-100/owner.json\").read_text()); stat=Path(\"/proc\")/str(owner[\"pid\"])/\"stat\"; ticks=stat.read_text().rsplit(\")\",1)[1].split()[19] if stat.exists() else None; assert ticks!=str(owner[\"start_ticks\"]); units=[subprocess.run([\"systemctl\",\"show\",unit,\"--property=LoadState,ActiveState,SubState,Result,ExecMainStatus\",\"--no-pager\"],capture_output=True,text=True) for unit in (\"rt21-endurance-20261016.service\",\"rt21-closeout-20261016.service\")]; assert all(\"ActiveState=active\" not in item.stdout and \"ActiveState=activating\" not in item.stdout for item in units); print(json.dumps({\"ledgers_agree\":True,\"iterations\":100,\"passed\":99,\"failed\":1,\"failed_iteration\":75,\"ended_utc\":documents[0][\"ended_utc\"],\"original_process_alive\":False,\"sources\":[{\"name\":path.name,\"sha256\":hashlib.sha256(path.read_bytes()).hexdigest()} for path in files],\"services\":[item.stdout for item in units]},indent=2))"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Inspect Existing Dossier Delta",
+            "type": "shell",
+            "command": "git",
+            "args": [
+                "--no-pager",
+                "diff",
+                "--",
+                "investigation/37075/RT12_TARGETED_ATTRIBUTION_20261017.md",
+                "investigation/pr539-failure-evidence/update_dossier.py"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Validate Completion Report Publication",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "-c",
+                "import re,subprocess; from pathlib import Path; report=Path(\"investigation/reports/2026-10-18_13-47-28.md\"); status=Path(\"investigation/37075/RT21_ENDURANCE_RT12_INVESTIGATION_20261016.md\"); links=[(path,target) for path in (report,status) for target in re.findall(r\"\\]\\(([^)]+)\\)\",path.read_text()) if \"://\" not in target]; assert all((path.parent/target.split(\"#\",1)[0]).exists() for path,target in links); subprocess.run([\"git\",\"diff\",\"--check\",\"--\",\"investigation\"],check=True); branch=subprocess.check_output([\"git\",\"branch\",\"--show-current\"],text=True).strip(); urls=subprocess.check_output([\"git\",\"remote\",\"get-url\",\"--push\",\"--all\",\"origin\"],text=True).splitlines(); assert branch==\"investigation/2026-10-17\" and urls==[\"https://github.com/feasel0/connectedhomeip.git\"]; assert subprocess.check_output([\"git\",\"config\",\"branch.\"+branch+\".pushRemote\"],text=True).strip()==\"origin\"; print(\"PASS: completion report links, scoped diff, branch and fork-only push configuration\")"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Closed Nordic Fixture",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/discovery_isolation.py",
+                "--protected-run",
+                "/home/feasel/qa-mar6/rt21-endurance-20261016"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Check Pi Nordic Campaign",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/pi_nordic_campaign.py",
+                "self-test"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Preflight Pi Nordic Endurance",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/pi_nordic_campaign.py",
+                "preflight"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Stage Pi Nordic Endurance",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/pi_nordic_campaign.py",
+                "prepare"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Launch Captured Pi Nordic Smoke",
+            "type": "shell",
+            "command": "systemd-run",
+            "args": [
+                "--user",
+                "--unit=pi-nordic-smoke-20261018",
+                "--property=RuntimeMaxSec=2400",
+                "--property=TimeoutStopSec=240",
+                "--property=KillMode=mixed",
+                "--property=StandardOutput=append:/home/feasel/qa-mar6/pi-nordic-endurance-20261018/coordinator.log",
+                "--property=StandardError=append:/home/feasel/qa-mar6/pi-nordic-endurance-20261018/coordinator.log",
+                "/home/feasel/matter-oct14/connectedhomeip-pr527-fixture/out/python_env_host_313/bin/python",
+                "-B",
+                "/home/feasel/matter-oct14/connectedhomeip/investigation/tools/pi_nordic_campaign.py",
+                "smoke"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Inspect Pinned RT12 Flow",
+            "type": "shell",
+            "command": "git",
+            "args": [
+                "--no-pager",
+                "-C",
+                "/home/feasel/matter-oct14/connectedhomeip-pr527-fixture",
+                "show",
+                "24a1bc052a7dfd3db809e43bb0da7c93b20bfad6:src/app/ReadHandler.cpp"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        },
+        {
+            "label": "Investigation: Attribute Reporting Engine Gap",
+            "type": "shell",
+            "command": "python3",
+            "args": [
+                "-B",
+                "investigation/tools/trace_lifecycle.py",
+                "reporting_gap"
+            ],
+            "isBackground": false,
+            "problemMatcher": []
+        }
+    ]
+}
