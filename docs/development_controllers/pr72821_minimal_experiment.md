@@ -12,7 +12,8 @@ an executed teardown test reports a commissioner use-after-free under ASan.
 
 The final candidate retains no global request registry, delegate-destruction
 tracking, full Linux event generations, or asynchronous Connect. It is integrated
-as `fa4963d16ad` on the existing PR branch, without rewriting its history or
+as `fa4963d16ad`, followed by the localized queued-restart correction
+`9291e84c148`, on the existing PR branch without rewriting its history or
 creating another PR. Normal singleton-backed factory shutdown/restart is tested;
 arbitrary destruction of a layer/delegate during backend work is not supported.
 Physical commissioning and general delayed-event equivalence to C remain
@@ -31,6 +32,7 @@ size counts describe D before the follow-up, not the final PR implementation.
 | D | `fd3d1ae14240b6d1a75a1f568759c08d292d38a9` | Initially qualified reduced implementation |
 | Follow-up | `7b5757e8fce` | Reduced candidate plus measured Disconnect, cancellation and restart corrections |
 | PR integration | `fa4963d16ad` | Same source tree on the original PR branch, parent C |
+| Queued restart correction | `9291e84c148` | Reject an old queued BLE terminal event while a new request is connecting |
 
 D consists of `607dc3dd7f926b0c355dd99af0ac3c565991a714` followed by
 `fd3d1ae14240b6d1a75a1f568759c08d292d38a9`, on
@@ -390,6 +392,43 @@ The original PR is retained, non-draft, targeting master; no merge or history
 rewrite is performed. Its description must report only the final gates and
 explicit limits, linking this experimental report for comparison details rather
 than inheriting C's larger test counts or its prior CI result.
+
+## Queued Completion After Normal Restart
+
+Review of `fa4963d16ad` found a gap in the earlier factory-restart qualification:
+the test started and canceled a replacement request but did not run the event
+loop while that replacement was connecting. POSIX platform shutdown requires
+the loop to be stopped, but neither shutdown nor initialization clears the
+singleton's `mChipEventQueue`. Stopping and joining GLib does not discard events
+already posted to that queue. There is no queue-discard lifecycle guarantee.
+The tested replacement state is reachable: GLib's `OnDeviceScanned` sets
+`kConnecting` before acquiring the Matter stack lock, whereas the Matter loop
+drains device events after handling system-layer work. A new scan can therefore
+reach connecting state before the preserved event is dispatched.
+
+The existing `LinuxFactoryShutdownWithQueuedCancelledCompletion` test now drains
+the real platform queue after restart with the replacement marked connecting.
+Without the correction, the old failure event calls the replacement once and
+retires its pending ownership: 16 cases pass and this case fails. The retained
+local failure summary is `/tmp/pr72821-restart-queue-red.log`.
+
+Correction `9291e84c148` stamps only the two BLE connection-terminal event types
+with the existing request counter, advances that counter at shutdown, and checks
+it before using a queued completion. The existing counter is atomic for its
+GLib-producer/Matter-consumer accesses. Stale success-event connection pointers
+are not dereferenced after shutdown. This does not clear unrelated platform
+events or restore a global registry, delegate lifetime tracking, full scan-event
+generation system, or asynchronous Connect.
+
+The corrected test verifies the old event leaves both callers untouched, the
+replacement remains pending, its own terminal event reaches it once, and another
+request can start. The same original-branch suites pass again: 126 native,
+66 ASan/leak, and 12 true BLE-disabled cases, with the same three pre-existing
+disabled AutoCommissioner cases excluded. Formatting, diagnostics and diff
+checks pass. General delayed callbacks produced after a new request starts,
+other event types, arbitrary layer/delegate destruction and physical BLE remain
+outside this localized qualification. The previous section's source hash/counts
+and CI statement describe `fa4963d16ad`, not this correction.
 
 ## Physical Qualification and Remaining Limits
 
