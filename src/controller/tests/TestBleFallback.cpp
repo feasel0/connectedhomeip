@@ -16,10 +16,12 @@
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <thread>
 
 #if CONFIG_NETWORK_LAYER_BLE && CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 #include <ble/Ble.h>
 #include <platform/Linux/BLEManagerImpl.h>
+#include <platform/Linux/bluez/BluezConnection.h>
 
 namespace chip::DeviceLayer::Internal {
 class BLEManagerImplTestAccess
@@ -54,6 +56,14 @@ public:
         manager.mBLEScanConfig.mBleScanState = BleScanState::kScanForDiscriminator;
     }
     static bool ScannerActive(BLEManagerImpl & manager) { return manager.mDeviceScanner.IsScanning(); }
+    static BluezEndpoint & Connecting(BLEManagerImpl & manager)
+    {
+        ++manager.mScanRequestId;
+        manager.mIsCentral                   = true;
+        manager.mBLEScanConfig.mBleScanState = BleScanState::kConnecting;
+        return manager.mEndpoint;
+    }
+    static void RestorePeripheral(BLEManagerImpl & manager) { manager.mIsCentral = false; }
 };
 } // namespace chip::DeviceLayer::Internal
 
@@ -146,6 +156,7 @@ public:
     unsigned cancellations  = 0;
     unsigned invalidUses    = 0;
     CHIP_ERROR cancelResult = CHIP_NO_ERROR;
+    std::unique_ptr<DeviceLayer::Internal::BluezConnection> closingConnection;
     SetupDiscriminator discriminator;
     bool active = false;
 
@@ -217,6 +228,12 @@ private:
         auto & connection = Use(object);
         ++connection.closes;
         connection.retired = true;
+        if (closingConnection)
+        {
+            CHIP_ERROR error = closingConnection->CloseConnection();
+            closingConnection.reset();
+            return error;
+        }
         return CHIP_NO_ERROR;
     }
     uint16_t GetMTU(BLE_CONNECTION_OBJECT) const override { return 200; }
@@ -267,6 +284,15 @@ public:
         state->groups.SetSessionKeystore(&state->keys);
         ASSERT_EQ(state->groups.Init(), CHIP_NO_ERROR);
         Credentials::SetGroupDataProvider(&state->groups);
+        InitializeFactory();
+        auto * layer = DeviceControllerFactory::GetInstance().GetSystemState()->BleLayer();
+        layer->Shutdown();
+        ASSERT_EQ(state->ble.Install(*layer), CHIP_NO_ERROR);
+        Initialize(state->commissioner);
+    }
+
+    void InitializeFactory()
+    {
         FactoryInitParams factory;
         factory.fabricIndependentStorage = &state->storage;
         factory.opCertStore              = &state->certificates;
@@ -275,18 +301,17 @@ public:
         factory.dataModelProvider        = app::CodegenDataModelProviderInstance(&state->storage);
         ASSERT_EQ(DeviceControllerFactory::GetInstance().Init(factory), CHIP_NO_ERROR);
         DeviceControllerFactory::GetInstance().RetainSystemState();
-        auto * layer = DeviceControllerFactory::GetInstance().GetSystemState()->BleLayer();
-        layer->Shutdown();
-        ASSERT_EQ(state->ble.Install(*layer), CHIP_NO_ERROR);
-        Initialize(state->commissioner);
     }
 
     void TearDown() override
     {
         state->commissioner.Shutdown();
         EXPECT_EQ(state->ble.invalidUses, 0u);
-        DeviceControllerFactory::GetInstance().ReleaseSystemState();
-        DeviceControllerFactory::GetInstance().Shutdown();
+        if (!factoryStopped)
+        {
+            DeviceControllerFactory::GetInstance().ReleaseSystemState();
+            DeviceControllerFactory::GetInstance().Shutdown();
+        }
         Credentials::SetGroupDataProvider(nullptr);
         state->groups.Finish();
         state.reset();
@@ -310,7 +335,7 @@ public:
         return params.SetPeerAddress(Transport::PeerAddress::BLE()).SetSetupPINCode(20202021).SetSetupDiscriminator(discriminator);
     }
 
-    void Defer(DeviceCommissioner & commissioner)
+    void BeginUdp(DeviceCommissioner & commissioner)
     {
         auto & pairer = Testing::DeviceCommissionerTestAccess(&commissioner).GetSetUpCodePairer();
         Testing::SetUpCodePairerTestAccess access(&pairer);
@@ -329,6 +354,13 @@ public:
         parameters.SetPeerAddress(Transport::PeerAddress::UDP(loopback, 9)).SetSetupPINCode(20202021);
         commissioner.RegisterPairingDelegate(&pairer);
         ASSERT_EQ(commissioner.EstablishPASEConnection(1, parameters), CHIP_NO_ERROR);
+    }
+
+    void Defer(DeviceCommissioner & commissioner)
+    {
+        BeginUdp(commissioner);
+        auto & pairer = Testing::DeviceCommissionerTestAccess(&commissioner).GetSetUpCodePairer();
+        Testing::SetUpCodePairerTestAccess access(&pairer);
         access.CallOnDiscoveredDeviceOverBle(state->discarded.Object(), kDiscriminator);
         EXPECT_EQ(state->discarded.closes, 1u);
         EXPECT_EQ(state->discarded.writes, 0u);
@@ -362,6 +394,7 @@ public:
 
 protected:
     std::unique_ptr<State> state;
+    bool factoryStopped = false;
 };
 
 TEST_F(TestBleFallback, CompleteUdpToFreshBleFallback)
@@ -370,6 +403,81 @@ TEST_F(TestBleFallback, CompleteUdpToFreshBleFallback)
     state->ble.Complete(state->fresh);
     ExpectPASE(state->commissioner, state->fresh);
     EXPECT_EQ(state->fresh.closes, 0u);
+}
+
+TEST_F(TestBleFallback, DeferredDisconnectDoesNotBlockControllerProgress)
+{
+    using namespace DeviceLayer;
+    using namespace DeviceLayer::Internal;
+    PrivateBluezPeer peer;
+    ASSERT_EQ(peer.Start(), CHIP_NO_ERROR);
+    struct HeldDisconnect
+    {
+        std::mutex mutex;
+        std::condition_variable changed;
+        std::unique_ptr<GDBusMessage, decltype(&g_object_unref)> request{ nullptr, g_object_unref };
+        unsigned calls             = 0;
+        bool progressed            = false;
+        bool progressedBeforeReply = false;
+    } held;
+    const guint filter = g_dbus_connection_add_filter(
+        peer.server.get(),
+        +[](GDBusConnection *, GDBusMessage * message, gboolean incoming, void * context) -> GDBusMessage * {
+            if (incoming && g_dbus_message_get_message_type(message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+                g_strcmp0(g_dbus_message_get_interface(message), "org.bluez.Device1") == 0 &&
+                g_strcmp0(g_dbus_message_get_member(message), "Disconnect") == 0)
+            {
+                auto & pending = *static_cast<HeldDisconnect *>(context);
+                std::lock_guard<std::mutex> lock(pending.mutex);
+                ++pending.calls;
+                pending.request.reset(message);
+                pending.changed.notify_one();
+                return nullptr;
+            }
+            return message;
+        },
+        &held, nullptr);
+    GAutoPtr<GError> error;
+    GAutoPtr<BluezDevice1> device(bluez_device1_proxy_new_sync(peer.client.get(), G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                               nullptr, "/org/bluez/device", nullptr, &error.GetReceiver()));
+    ASSERT_NE(device.get(), nullptr);
+    g_dbus_proxy_set_default_timeout(G_DBUS_PROXY(device.get()), 5000);
+    state->ble.closingConnection = std::make_unique<BluezConnection>(*device);
+    BeginUdp(state->commissioner);
+    ASSERT_EQ(SystemLayer().ScheduleLambda([this] {
+        auto & pairer = Testing::DeviceCommissionerTestAccess(&state->commissioner).GetSetUpCodePairer();
+        Testing::SetUpCodePairerTestAccess(&pairer).CallOnDiscoveredDeviceOverBle(state->discarded.Object(), kDiscriminator);
+        EXPECT_EQ(state->discarded.closes, 1u);
+        EXPECT_EQ(state->discarded.writes, 0u);
+    }),
+              CHIP_NO_ERROR);
+    ASSERT_EQ(SystemLayer().ScheduleLambda([&held] {
+        {
+            std::lock_guard<std::mutex> lock(held.mutex);
+            held.progressed = true;
+            held.changed.notify_one();
+        }
+        EXPECT_EQ(PlatformMgr().StopEventLoopTask(), CHIP_NO_ERROR);
+    }),
+              CHIP_NO_ERROR);
+    std::thread reply([&] {
+        std::unique_lock<std::mutex> lock(held.mutex);
+        if (held.changed.wait_for(lock, std::chrono::seconds(5), [&] { return held.request != nullptr; }))
+        {
+            held.progressedBeforeReply =
+                held.changed.wait_for(lock, std::chrono::milliseconds(500), [&] { return held.progressed; });
+            std::unique_ptr<GDBusMessage, decltype(&g_object_unref)> response(
+                g_dbus_message_new_method_error_literal(held.request.get(), "org.freedesktop.DBus.Error.UnknownObject",
+                                                        "Injected device disappearance"),
+                g_object_unref);
+            g_dbus_connection_send_message(peer.server.get(), response.get(), G_DBUS_SEND_MESSAGE_FLAGS_NONE, nullptr, nullptr);
+        }
+    });
+    PlatformMgr().RunEventLoop();
+    reply.join();
+    EXPECT_EQ(held.calls, 1u);
+    EXPECT_TRUE(held.progressedBeforeReply);
+    g_dbus_connection_remove_filter(peer.server.get(), filter);
 }
 
 TEST_F(TestBleFallback, ImmediateBleConnectionReachesPASE)
@@ -509,6 +617,138 @@ TEST_F(TestBleFallback, LinuxCancelledQueuedScanCannotCompleteReplacement)
     EXPECT_EQ(BLEManagerImplTestAccess::Cancel(BLEMgrImpl()), CHIP_NO_ERROR);
 }
 
+TEST_F(TestBleFallback, LinuxCancelledConnectFailureCannotCompleteReplacement)
+{
+    using namespace DeviceLayer;
+    using namespace DeviceLayer::Internal;
+    PrivateBluezPeer peer;
+    ASSERT_EQ(peer.Start(), CHIP_NO_ERROR);
+    struct HeldConnect
+    {
+        std::mutex mutex;
+        std::condition_variable changed;
+        bool called = false;
+    } held;
+    const guint filter = g_dbus_connection_add_filter(
+        peer.server.get(),
+        +[](GDBusConnection *, GDBusMessage * message, gboolean incoming, void * context) -> GDBusMessage * {
+            if (incoming && g_dbus_message_get_message_type(message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+                g_strcmp0(g_dbus_message_get_interface(message), "org.bluez.Device1") == 0 &&
+                g_strcmp0(g_dbus_message_get_member(message), "Connect") == 0)
+            {
+                auto & pending = *static_cast<HeldConnect *>(context);
+                std::lock_guard<std::mutex> lock(pending.mutex);
+                pending.called = true;
+                pending.changed.notify_one();
+                g_object_unref(message);
+                return nullptr;
+            }
+            return message;
+        },
+        &held, nullptr);
+    GAutoPtr<GError> error;
+    GAutoPtr<BluezDevice1> device(bluez_device1_proxy_new_sync(peer.client.get(), G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                               nullptr, "/org/bluez/device", nullptr, &error.GetReceiver()));
+    ASSERT_NE(device.get(), nullptr);
+    g_dbus_proxy_set_default_timeout(G_DBUS_PROXY(device.get()), 5000);
+    unsigned oldCallbacks = 0;
+    unsigned newCallbacks = 0;
+    ASSERT_EQ(BLEManagerImplTestAccess::InstallBackend(BLEMgrImpl()), CHIP_NO_ERROR);
+    auto & layer = BLEManagerImplTestAccess::Layer(BLEMgrImpl());
+    auto onError = [](void * context, CHIP_ERROR) { ++*static_cast<unsigned *>(context); };
+    ASSERT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &oldCallbacks, nullptr, onError), CHIP_NO_ERROR);
+    auto & endpoint          = BLEManagerImplTestAccess::Connecting(BLEMgrImpl());
+    CHIP_ERROR connectResult = CHIP_NO_ERROR;
+    std::thread connecting([&] { connectResult = endpoint.ConnectDevice(*device); });
+    {
+        std::unique_lock<std::mutex> lock(held.mutex);
+        EXPECT_TRUE(held.changed.wait_for(lock, std::chrono::seconds(5), [&] { return held.called; }));
+    }
+    EXPECT_EQ(layer.CancelBleIncompleteConnection(&oldCallbacks), CHIP_ERROR_BUSY);
+    EXPECT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &newCallbacks, nullptr, onError), CHIP_ERROR_BUSY);
+    connecting.join();
+    EXPECT_EQ(connectResult, CHIP_ERROR_INTERNAL);
+    EXPECT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &newCallbacks, nullptr, onError), CHIP_ERROR_BUSY);
+    ASSERT_EQ(PlatformMgr().ScheduleWork([](intptr_t) { EXPECT_EQ(PlatformMgr().StopEventLoopTask(), CHIP_NO_ERROR); }),
+              CHIP_NO_ERROR);
+    PlatformMgr().RunEventLoop();
+    EXPECT_EQ(oldCallbacks, 0u);
+    EXPECT_EQ(newCallbacks, 0u);
+    EXPECT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &newCallbacks, nullptr, onError), CHIP_NO_ERROR);
+    EXPECT_EQ(layer.CancelBleIncompleteConnection(&newCallbacks), CHIP_NO_ERROR);
+    BLEManagerImplTestAccess::RestorePeripheral(BLEMgrImpl());
+    g_dbus_connection_remove_filter(peer.server.get(), filter);
+}
+
+TEST_F(TestBleFallback, LinuxQueuedSuccessAfterCancellationClosesDiscardedLink)
+{
+    using namespace DeviceLayer;
+    using namespace DeviceLayer::Internal;
+    PrivateBluezPeer peer;
+    ASSERT_EQ(peer.Start(), CHIP_NO_ERROR);
+    struct CloseResult
+    {
+        std::mutex mutex;
+        std::condition_variable changed;
+        unsigned calls = 0;
+    } closes;
+    const guint filter = g_dbus_connection_add_filter(
+        peer.server.get(),
+        +[](GDBusConnection * connection, GDBusMessage * message, gboolean incoming, void * context) -> GDBusMessage * {
+            if (incoming && g_dbus_message_get_message_type(message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+                g_strcmp0(g_dbus_message_get_member(message), "Disconnect") == 0)
+            {
+                auto & closed = *static_cast<CloseResult *>(context);
+                std::lock_guard<std::mutex> lock(closed.mutex);
+                ++closed.calls;
+                GDBusMessage * response = g_dbus_message_new_method_reply(message);
+                g_dbus_connection_send_message(connection, response, G_DBUS_SEND_MESSAGE_FLAGS_NONE, nullptr, nullptr);
+                g_object_unref(response);
+                g_object_unref(message);
+                closed.changed.notify_one();
+                return nullptr;
+            }
+            return message;
+        },
+        &closes, nullptr);
+    GAutoPtr<GError> error;
+    GAutoPtr<BluezDevice1> device(bluez_device1_proxy_new_sync(peer.client.get(), G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                               nullptr, "/org/bluez/device", nullptr, &error.GetReceiver()));
+    ASSERT_NE(device.get(), nullptr);
+    BluezConnection connection(*device);
+    ASSERT_EQ(BLEManagerImplTestAccess::InstallBackend(BLEMgrImpl()), CHIP_NO_ERROR);
+    auto & layer       = BLEManagerImplTestAccess::Layer(BLEMgrImpl());
+    unsigned callbacks = 0;
+    auto onError       = [](void * context, CHIP_ERROR) { ++*static_cast<unsigned *>(context); };
+    auto onSuccess     = [](void * context, BLE_CONNECTION_OBJECT) { ++*static_cast<unsigned *>(context); };
+    ASSERT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &callbacks, onSuccess, onError), CHIP_NO_ERROR);
+    BLEManagerImplTestAccess::Connecting(BLEMgrImpl());
+    ASSERT_EQ(PlatformMgrImpl().GLibMatterContextInvokeSync(
+                  +[](BluezConnection * pending) {
+                      BLEManagerImpl::HandleNewConnection(pending);
+                      return CHIP_NO_ERROR;
+                  },
+                  &connection),
+              CHIP_NO_ERROR);
+    EXPECT_EQ(layer.CancelBleIncompleteConnection(&callbacks), CHIP_ERROR_BUSY);
+    EXPECT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &callbacks, onSuccess, onError), CHIP_ERROR_BUSY);
+    ASSERT_EQ(PlatformMgr().ScheduleWork([](intptr_t) { EXPECT_EQ(PlatformMgr().StopEventLoopTask(), CHIP_NO_ERROR); }),
+              CHIP_NO_ERROR);
+    PlatformMgr().RunEventLoop();
+    EXPECT_EQ(callbacks, 0u);
+    EXPECT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &callbacks, onSuccess, onError), CHIP_NO_ERROR);
+    EXPECT_EQ(layer.CancelBleIncompleteConnection(&callbacks), CHIP_NO_ERROR);
+    {
+        std::unique_lock<std::mutex> lock(closes.mutex);
+        EXPECT_TRUE(closes.changed.wait_for(lock, std::chrono::seconds(5), [&] { return closes.calls == 1; }));
+    }
+    g_dbus_connection_flush_sync(peer.client.get(), nullptr, nullptr);
+    g_dbus_connection_close_sync(peer.client.get(), nullptr, nullptr);
+    g_dbus_connection_remove_filter(peer.server.get(), filter);
+    EXPECT_EQ(closes.calls, 1u);
+    BLEManagerImplTestAccess::RestorePeripheral(BLEMgrImpl());
+}
+
 TEST_F(TestBleFallback, LinuxStopDiscoveryFailureDoesNotStrandNextPairing)
 {
     using namespace DeviceLayer;
@@ -555,6 +795,32 @@ TEST_F(TestBleFallback, LinuxStopDiscoveryFailureDoesNotStrandNextPairing)
     PlatformMgr().RunEventLoop();
     EXPECT_EQ(callbacks, 0u);
     g_dbus_connection_remove_filter(peer.server.get(), filter);
+}
+
+TEST_F(TestBleFallback, LinuxFactoryShutdownWithQueuedCancelledCompletion)
+{
+    using namespace DeviceLayer;
+    using namespace DeviceLayer::Internal;
+    ASSERT_EQ(BLEManagerImplTestAccess::InstallBackend(BLEMgrImpl()), CHIP_NO_ERROR);
+    auto * layer       = &BLEManagerImplTestAccess::Layer(BLEMgrImpl());
+    unsigned callbacks = 0;
+    auto onError       = [](void * context, CHIP_ERROR) { ++*static_cast<unsigned *>(context); };
+    ASSERT_EQ(layer->NewBleConnectionByDiscriminator(SetupDiscriminator(), &callbacks, nullptr, onError), CHIP_NO_ERROR);
+    BLEManagerImplTestAccess::Connecting(BLEMgrImpl());
+    BLEManagerImpl::HandleConnectFailed(CHIP_ERROR_INTERNAL);
+    EXPECT_EQ(layer->CancelBleIncompleteConnection(&callbacks), CHIP_ERROR_BUSY);
+    state->commissioner.Shutdown();
+    DeviceControllerFactory::GetInstance().ReleaseSystemState();
+    DeviceControllerFactory::GetInstance().Shutdown();
+    factoryStopped = true;
+    EXPECT_EQ(layer, &BLEManagerImplTestAccess::Layer(BLEMgrImpl()));
+    EXPECT_EQ(callbacks, 0u);
+    BLEManagerImplTestAccess::RestorePeripheral(BLEMgrImpl());
+    InitializeFactory();
+    factoryStopped = false;
+    Initialize(state->commissioner);
+    EXPECT_EQ(layer->NewBleConnectionByDiscriminator(SetupDiscriminator(), &callbacks, nullptr, onError), CHIP_NO_ERROR);
+    EXPECT_EQ(layer->CancelBleIncompleteConnection(&callbacks), CHIP_NO_ERROR);
 }
 
 } // namespace

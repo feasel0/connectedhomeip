@@ -291,6 +291,7 @@ void BLEManagerImpl::_Shutdown()
     DeviceLayer::SystemLayer().CancelTimer(HandleScanTimer, this);
     DeviceLayer::SystemLayer().CancelTimer(HandleAdvertisingTimer, this);
     DeviceLayer::SystemLayer().CancelTimer(HandleConnectTimer, this);
+    CleanScanConfig();
 
 #if CHIP_DEVICE_CONFIG_ENABLE_COMMISSIONING_PROXY
     // Drop proxy-scan ownership while the adapter is still usable, so a later
@@ -974,6 +975,7 @@ CHIP_ERROR BLEManagerImpl::CancelConnection()
     if (mBLEScanConfig.mBleScanState == BleScanState::kConnecting)
     {
         mEndpoint.CancelConnect();
+        return CHIP_ERROR_BUSY;
     }
     // If in discovery mode, stop scan.
     else if (mBLEScanConfig.mBleScanState != BleScanState::kNotScanning)

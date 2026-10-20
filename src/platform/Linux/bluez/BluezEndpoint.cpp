@@ -634,8 +634,11 @@ CHIP_ERROR BluezEndpoint::ConnectDevice(BluezDevice1 & aDevice)
 
 void BluezEndpoint::CancelConnect()
 {
-    g_cancellable_cancel(mConnectCancellable.get());
-    mConnectCancellable.reset();
+    if (mConnectCancellable)
+    {
+        g_cancellable_cancel(mConnectCancellable.get());
+        mConnectCancellable.reset();
+    }
 }
 
 } // namespace Internal

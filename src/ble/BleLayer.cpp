@@ -268,6 +268,11 @@ CHIP_ERROR BleLayer::Init(BlePlatformDelegate * platformDelegate, BleConnectionD
     mApplicationDelegate = appDelegate;
     mSystemLayer         = systemLayer;
 
+    mConnectionPending  = false;
+    mConnectionAppState = nullptr;
+    mConnectionComplete = nullptr;
+    mConnectionError    = nullptr;
+
     memset(&sBLEEndPointPool, 0, sizeof(sBLEEndPointPool));
 
     mState = kState_Initialized;
