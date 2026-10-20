@@ -464,6 +464,44 @@ def reporting_progress(rows, after_line, before_line):
         'generic_states_not_assigned_to_exchanges': True}
 
 
+def registration_marker(line):
+    labels = {
+        'operational_registration_attempt': 'Advertise operational node',
+        'publication_marker': 'mDNS service published:',
+        'advertiser_started': 'mDNS started advertising',
+        'minimal_backend_started': 'CHIP minimal mDNS started advertising',
+        'operational_records_configured': "CHIP minimal mDNS configured as 'Operational device'",
+        'record_send_failure': 'Failed to advertise records:',
+        'operational_registration_failure': 'Failed to advertise operational node',
+        'wifi_connected': 'WiFi station is now connected',
+        'ipv6_established': 'IPv6 connectivity established',
+        'failsafe_expired': 'Fail-safe timer expired',
+    }
+    return [name for name, marker in labels.items() if marker.lower() in line.lower()]
+
+
+def dnssd_registration():
+    root = Path('/home/feasel/qa-mar6/pr539-ble-readiness-fix-20261011/ble-wifi-runs')
+    records = []
+    for attempt in ('a04', 'a09', 'a10'):
+        path = root / ('wifi-primary-smokes-01-' + attempt) / 'dut/dut.log'
+        digest = hashlib.sha256()
+        rows = []
+        with path.open('rb') as stream:
+            for number, encoded in enumerate(stream, 1):
+                digest.update(encoded)
+                line = encoded.decode(errors='replace')
+                labels = registration_marker(line)
+                if labels:
+                    stamp = re.search(r'\[(\d{10}\.\d+)\]', line)
+                    rows.append({'line': number, 'epoch': float(stamp[1]) if stamp else None, 'labels': labels,
+                        'service_types': re.findall(r'_matter[cd]?\._(?:tcp|udp)', line)})
+        records.append({'attempt': attempt, 'path': str(path), 'sha256': digest.hexdigest(), 'events': rows})
+    save('dnssd-registration-boundary.json', {'logs': records, 'attempt_is_not_completion': True,
+        'publication_marker_is_not_wire_delivery': True})
+    print(json.dumps(records, indent=2))
+
+
 def subscription_lifecycle(line):
     established = re.search(r'Subscription established in (\d+)ms with SubscriptionID = 0x([0-9a-fA-F]+) '
         r'MinInterval = (\d+)s MaxInterval = (\d+)s Peer = ([0-9a-fA-F]+):([0-9a-fA-F]+)', line)
@@ -844,6 +882,15 @@ class ExtractionTest(unittest.TestCase):
             {'kind': 'client_timeout', 'subscription': 0x1234abcd})
         self.assertIsNone(subscription_lifecycle('SubscriptionId = 0x1234abcd, Attribute = DO_NOT_EXPORT'))
 
+    def test_registration_attempt_is_not_publication_success(self):
+        self.assertEqual(registration_marker('Advertise operational node SECRET'), ['operational_registration_attempt'])
+        self.assertEqual(registration_marker('mDNS service published: SECRET'), ['publication_marker'])
+        self.assertEqual(registration_marker('Session key = SECRET'), [])
+        self.assertNotIn('SECRET', json.dumps(registration_marker('Advertise operational node SECRET')))
+        self.assertEqual(registration_marker('CHIP minimal mDNS started advertising.'),
+            ['advertiser_started', 'minimal_backend_started'])
+        self.assertEqual(registration_marker('Failed to advertise records: SECRET'), ['record_send_failure'])
+
     def test_attribute_status_scope_and_no_values(self):
         sample = ['AttributeStatusIB =\n', '{\n', 'Path =\n', '{\n', 'Endpoint = 0x1,\n',
             'Cluster = 0xFFF1FC05,\n', 'Attribute = 0x31,\n', '}\n', 'ErrorStatus =\n', '{\n',
@@ -881,7 +928,7 @@ class ExtractionTest(unittest.TestCase):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('action', choices=('self-test', 'pase', 'sources', 'metadata', 'remote_probe', 'qa_units', 'attribute_metadata', 'discovery_filter', 'serial_timing', 'serial_summary', 'serial_findings', 'history_audit', 'remote_window_status', 'decode_statuses', 'publication_check', 'reporting_gap', 'reporting_census', 'coordination_sources', 'dut_reporting_binary', 'controller_retry_binary'))
+    parser.add_argument('action', choices=('self-test', 'pase', 'sources', 'metadata', 'remote_probe', 'qa_units', 'attribute_metadata', 'discovery_filter', 'serial_timing', 'serial_summary', 'serial_findings', 'history_audit', 'remote_window_status', 'decode_statuses', 'publication_check', 'reporting_gap', 'reporting_census', 'coordination_sources', 'dut_reporting_binary', 'controller_retry_binary', 'dnssd_registration'))
     action = parser.parse_args().action
     if action == 'self-test':
         unittest.main(argv=[__file__])

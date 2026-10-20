@@ -622,6 +622,23 @@ Both packaged stacks/adapters, audio and linger are restored; temporary daemons,
 credentials and the emergency reboot timer are closed. Runtime correction,
 native GATT/StartNotify and DNS-SD validation remain unperformed; all six OPEN.
 
+The [19:02 matched native comparison](../reports/2026-10-20_19-02-23.md)
+supersedes that activation blocker: one packaged reboot cleared the retained
+core state, then zero-reference gated replacement loaded each verified complete
+family. Exactly one original native attempt FAIL and one corrected PASS share
+the actual SCIDs65,64/DCIDs64,65 trigger. Original connected samples show the
+wrong same-number pairs and mismatched teardown; corrected lossless four-event
+ready/delete tracing and connected samples show the advertised cross-pairs.
+The corrected native path completes GATT/subscription, BLE commissioning,
+primary CASE read and secondary IP pairing/CASE read. ATT query order differs;
+this is one matched negotiation, not byte-identical replay or reliability proof.
+The original synchronous trace was not collected. A corrected coordinator
+rollback-verifier exception remains separate from its native PASS and successful
+fallback restoration. Both packaged peers are independently verified restored;
+owned activation/watchdog configuration and staged copies are removed. Pending
+identifier ambiguity remains NOT_SATISFIED. All six historical outcomes remain
+FAIL/OPEN; no production kernel PR or DNS-SD qualification follows from one pair.
+
 #### Separate Operational Discovery Failures
 
 The original a04 `ca3d300af4dc9e9e`, a09 `dbb5d8f70aca047e` and a10
@@ -674,6 +691,20 @@ source address, message timing and capture-drop counts; compare each boundary
 before assigning a cause. Existing capture permissions/profiles and resource
 gates must pass first. No timing-only DNS-SD/CASE fix or new capture framework.
 
+The [19:02 activation/comparison report](../reports/2026-10-20_19-02-23.md)
+adds a bounded original-DUT boundary: all three hash-verified logs show two
+minimal-mDNS operational responder configuration/publication marker pairs before
+fail-safe expiry, not only an `Advertise operational node` attempt. The retained
+application hash matches its preparation receipt and contains the exact minimal
+backend implementation/markers, not Avahi registration. The pinned minimal
+Advertise method logs publication after a void broadcast helper that can log
+errors or enumerate no eligible endpoints without propagating a send failure.
+This is local configuration evidence, not emission/delivery acknowledgment.
+a10's global IPv6 snapshot follows both early configuration markers. These
+facts narrow registration uncertainty but do not distinguish interface binding,
+emission, multicast delivery, controller ingress or resolver handling. All three
+original outcomes remain OPEN; no DNS-SD/CASE correction or new network run.
+
 ### Smallest Remaining Checks
 
 | Exact Evidence ID | Symptom / Evidence | Hypothesis and Confidence | Deciding Check / Status |
@@ -682,7 +713,7 @@ gates must pass first. No timing-only DNS-SD/CASE fix or new capture framework.
 | January 2025 iteration 78 | CASE E43681 Sigma3 at 14:15:35.228 followed by secure-channel status at 14:15:35.929; native final CommandSender.cpp:343 timeout. Earlier catalog identifies subsequent encrypted CommissioningComplete. | Distinct post-CASE command-progress failure, high confidence in phase, not root cause. | Authenticate command/response capture and responder delivery; missing relevant DUT/OTBR evidence. OPEN, investigation owner. |
 | PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | ReportData pretty-print Cluster->Attribute gap83.226 seconds; checksum-verified host global OOM kills20-GB cpptools at recovery boundary. Controller status93.319 seconds after logged receipt; exact blocking mechanism unproved. | Bind controller PID/TID and exact build; monotonic pretty-print/status points, on-stall stack and memory-pressure observations. No timeout/retry change. OPEN, investigation owner. |
 | Wi-Fi IP PASE IncorrectState | Native exception alone does not identify protocol phase. | Discovery, initialization and transport/session hypotheses remain distinct. | Exact original call, peer-discovery evidence, PASE headers and native error origin; not an inferred BLE defect. |
-| Six BLE-Wi-Fi EATT failures, including a02 subscription | Wrong-bearer ATT replies followed by teardown contradicting advertised CID pairs. | Original bytes plus pinned disconnect handler expose DUT local65 -> controller65; requester ordering reproduces this state. Case B supported; full list scheduling unobserved. | Complete original/corrected module families now link; live core replacement is blocked by two persistent references. No native comparison ran. Safe replacement/boot path then matched multi-bearer GATT/StartNotify test still required; all six OPEN. |
+| Six BLE-Wi-Fi EATT failures, including a02 subscription | Wrong-bearer ATT replies followed by teardown contradicting advertised CID pairs. | Original connected samples expose wrong same-number pairs; corrected deployed tracing preserves advertised cross-pairs under the same actual reversed negotiation. | One original native FAIL/corrected PASS pair completes GATT/subscription, primary BLE/CASE and secondary IP/CASE on corrected; packaged fixtures restored. Original lossless lifecycle, identifier ambiguity and broader qualification remain unresolved; all six historical FAIL/OPEN. |
 | Three BLE-Wi-Fi operational timeouts | Post-provisioning phase, separate from BLE pairing. | IPv6 reachability, publication, DNS-SD and CASE remain distinct. | Actual interface/global address and route at failure, corresponding discovery result and CASE exchange. |
 | Native SIGSEGV / prolonged PASE | Crashes and long pending protocol work are distinct observations. | No new independent mechanism established. | Matching core/backtrace/build/faulting callback per crash; last actual protocol/callback progress per hang. |
 | Thread/SRP/publication | Timeout does not establish a failed network layer. | Dataset, attachment, address, SRP and delivery remain separate. | Exact peer's dataset fingerprint, SRP record, operational address and routed packet timestamps. |
