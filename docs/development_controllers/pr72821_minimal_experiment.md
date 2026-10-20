@@ -456,3 +456,102 @@ and the exercised cancellation paths. It does not support an unconditional claim
 that C's extra behavior is unnecessary everywhere, or that D has completed
 physical BLE qualification. Retain these as explicit review/release limitations
 rather than silently expanding this PR again.
+
+## CodeRabbit Follow-up and Independent Candidate Assessment
+
+Correction `22ee84d9c9081fdca57eed4d8d57ab44205b6f9d` follows
+`d0e1d6fa90120441a29ea3df498731efa758dda8` on the original PR branch.
+It changes five files, with two production behavior changes and focused tests.
+No general BLE request registry, delegate lifetime tracking, asynchronous
+Connect, or independent candidate fix is included.
+
+### Active Connect Cancellable
+
+`ConnectDeviceImpl` reads the endpoint's cancellable on the GLib thread for
+each synchronous Connect attempt. Cancellation can run on the Matter thread.
+Resetting the shared `GAutoPtr` there races its reader; GIO's ownership of a
+particular in-flight call does not make concurrent access to that C++ owner
+safe. The correction retains `g_cancellable_cancel` but removes the reset.
+The next serialized Connect installs a new cancellable.
+
+The existing real private-D-Bus held-Connect test now retains the observed
+token, cancels twice, drains the detached terminal event, and performs another
+real held Connect with a distinct, initially uncancelled token. Before the fix,
+the token-ownership assertion fails: the endpoint's pointer is null. After the
+fix all 17 fallback cases pass, including both Connect attempts. This is an
+executed regression for the ownership contract, not an observed ASan UAF or a
+proof of arbitrary concurrent Connect callers being supported.
+
+### Completion During Closing Versus Shutdown
+
+An added layer regression starts a request, indicates closing, detaches its
+callbacks through cancellation, and delivers success while the delegate is
+still alive. Before the fix it closes zero links rather than one. The fix
+permits `CloseUnclaimedConnection` in initialized or disconnecting state.
+The existing Linux queued-success case now exercises this ordering through
+the actual manager event producer, preserved event queue, real connection and
+generated asynchronous Disconnect proxy. It observes exactly one Disconnect,
+no detached-caller callback, and successful reinitialization/retry.
+
+The guard against cleanup in uninitialized state remains intentional. A new
+test verifies no delegate call after `BleLayer::Shutdown`. Delegates are not
+owned by the layer; that alone does not guarantee their lifetime after shutdown.
+`BLEManager::Shutdown` first shuts down its layer, then its platform backend.
+Normal factory shutdown requires a stopped Matter loop and stops the GLib
+backend. Already posted Linux terminal events can survive the queue, but the
+existing restart request tags reject stale success before dereferencing its
+connection and reject stale failure before notifying a replacement. This does
+not authorize direct callbacks into a destroyed layer or stopped backend.
+The supported closing interval is fixed without removing the shutdown guard.
+
+### Executed Qualification
+
+| Configuration | Passing cases | Total |
+| --- | --- | ---: |
+| Native | fallback 17; pairer 12; AutoCommissioner 34; layer 39; endpoint 3; BTP 23 | 128 |
+| ASan, detect_leaks=1 | fallback 17; pairer 12; layer 39 | 68 |
+| Both BLE flags disabled | fallback configuration 1; pairer 11 | 12 |
+| Platform BLE off, network BLE on | fallback configuration 1; pairer 12 | 13 |
+
+Three pre-existing AutoCommissioner cases remain disabled and excluded.
+clang-format 16, editor diagnostics and diff checks pass. Physical BLE,
+Thread Meshcop and other platform backends remain unqualified. New-head CI
+is not inferred from local tests or earlier-head CI.
+
+### Independent Upstream Candidates
+
+Assessment uses freshly fetched upstream master
+`869cc2999fd67b3449e5a77dd3e8ef1e7e51f830`, verified against the upstream
+remote ref, in a separate detached worktree. No #72821 commit is its base.
+Repository PR searches for `BluezEndpoint`, `ServicesResolved`, and
+`chip_config_network_layer_ble` found no obvious existing fix for these two
+specific candidates; this is not an exhaustive proof that none exists.
+
+**Already-connected, service-resolved proxy.** Upstream's successful
+`ConnectDeviceImpl` returns without creating or reporting a connection. Device
+addition/property notifications drive `HandleNewDevice`; an already tracked
+device is explicitly rejected there. Thus success alone does not promise a
+new terminal notification if no notification follows. However, normal
+`ChipDeviceScanner::StartScanImpl` first attempts to remove known Matter
+devices. A production reproduction must establish how a connected proxy
+survives that removal and whether its existing connection is owned elsewhere.
+Unconditionally replaying `HandleNewDevice` neither handles an already tracked
+connection nor establishes safe reuse. A complete regression needs the cached
+BlueZ object/GATT model, scan/removal ordering, and an ownership policy, not
+only a successful Connect stub. No normal-path runtime defect or sufficiently
+small, ownership-safe correction was established in this assessment. No draft
+PR is created for this candidate; it remains a documented investigation item.
+
+**Platform BLE enabled, network BLE disabled.** The unmodified upstream
+configuration accepts GN generation but compiling Linux `BLEManagerImpl.cpp`
+fails with 11 missing BLE event-member errors. The same errors occur outside
+#72821. `src/platform/device.gni` defaults `chip_enable_ble` to
+`chip_config_network_layer_ble`, while `ChipDeviceEvent` deliberately excludes
+its BLE payloads when the network layer is disabled. The converse override is
+therefore inconsistent with the current implementation; GN accepting an
+override does not establish it as a supported product configuration. No
+documented contract or existing test requiring that combination was found.
+Supporting it needs a defined transport/event contract; merely widening event
+guards would not establish useful semantics. No draft support PR is created.
+An explicit configuration diagnostic can be considered independently once
+the intended contract is confirmed.
