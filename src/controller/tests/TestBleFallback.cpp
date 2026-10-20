@@ -11,7 +11,11 @@
 #include <lib/support/TestPersistentStorageDelegate.h>
 #include <platform/CHIPDeviceLayer.h>
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 #if CONFIG_NETWORK_LAYER_BLE && CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 #include <ble/Ble.h>
@@ -21,6 +25,13 @@ namespace chip::DeviceLayer::Internal {
 class BLEManagerImplTestAccess
 {
 public:
+    static Ble::BleLayer & Layer(BLEManagerImpl & manager) { return manager; }
+    static CHIP_ERROR InstallBackend(BLEManagerImpl & manager)
+    {
+        manager.Ble::BleLayer::Shutdown();
+        return manager.Ble::BleLayer::Init(&manager, &manager, &manager, &SystemLayer());
+    }
+
     static void Request(BLEManagerImpl & manager, unsigned & callbacks)
     {
         manager.mServiceMode                                     = ConnectivityManager::kCHIPoBLEServiceMode_Disabled;
@@ -33,6 +44,16 @@ public:
         manager.NewConnection(nullptr, &callbacks, SetupDiscriminator());
     }
     static CHIP_ERROR Cancel(BLEManagerImpl & manager) { return manager.CancelConnection(); }
+    static void InstallScanningAdapter(BLEManagerImpl & manager, BluezAdapter1 * adapter)
+    {
+        auto & scanner = manager.mDeviceScanner;
+        ASSERT_EQ(scanner.Init(adapter, &manager), CHIP_NO_ERROR);
+        ASSERT_EQ(manager.mBluezObjectManager.SubscribeDeviceNotifications(adapter, &scanner), CHIP_NO_ERROR);
+        scanner.mCancellable.reset(g_cancellable_new());
+        scanner.mScannerState                = ChipDeviceScanner::ChipDeviceScannerState::SCANNING;
+        manager.mBLEScanConfig.mBleScanState = BleScanState::kScanForDiscriminator;
+    }
+    static bool ScannerActive(BLEManagerImpl & manager) { return manager.mDeviceScanner.IsScanning(); }
 };
 } // namespace chip::DeviceLayer::Internal
 
@@ -42,6 +63,70 @@ using namespace chip::Controller;
 namespace {
 
 constexpr uint16_t kDiscriminator = 0xABC;
+
+struct PrivateBluezPeer
+{
+    std::unique_ptr<GDBusServer, decltype(&g_object_unref)> listener{ nullptr, g_object_unref };
+    std::unique_ptr<GDBusConnection, decltype(&g_object_unref)> server{ nullptr, g_object_unref };
+    std::unique_ptr<GDBusConnection, decltype(&g_object_unref)> client{ nullptr, g_object_unref };
+    std::mutex mutex;
+    std::condition_variable connected;
+
+    ~PrivateBluezPeer()
+    {
+        if (listener)
+        {
+            EXPECT_EQ(DeviceLayer::PlatformMgrImpl().GLibMatterContextInvokeSync(
+                          +[](PrivateBluezPeer * peer) {
+                              g_dbus_server_stop(peer->listener.get());
+                              return CHIP_NO_ERROR;
+                          },
+                          this),
+                      CHIP_NO_ERROR);
+        }
+        if (client)
+        {
+            g_dbus_connection_close_sync(client.get(), nullptr, nullptr);
+        }
+        if (server)
+        {
+            g_dbus_connection_close_sync(server.get(), nullptr, nullptr);
+        }
+    }
+
+    CHIP_ERROR Start()
+    {
+        ReturnErrorOnFailure(DeviceLayer::PlatformMgrImpl().GLibMatterContextInvokeSync(
+            +[](PrivateBluezPeer * peer) {
+                GAutoPtr<gchar> guid(g_dbus_generate_guid());
+                GAutoPtr<GError> error;
+                peer->listener.reset(g_dbus_server_new_sync("unix:tmpdir=/tmp", G_DBUS_SERVER_FLAGS_NONE, guid.get(), nullptr,
+                                                            nullptr, &error.GetReceiver()));
+                VerifyOrReturnError(peer->listener != nullptr, CHIP_ERROR_INTERNAL);
+                g_signal_connect(
+                    peer->listener.get(), "new-connection",
+                    G_CALLBACK(+[](GDBusServer *, GDBusConnection * connection, PrivateBluezPeer * accepted) -> gboolean {
+                        std::lock_guard<std::mutex> lock(accepted->mutex);
+                        accepted->server.reset(G_DBUS_CONNECTION(g_object_ref(connection)));
+                        accepted->connected.notify_one();
+                        return TRUE;
+                    }),
+                    peer);
+                g_dbus_server_start(peer->listener.get());
+                return CHIP_NO_ERROR;
+            },
+            this));
+        GAutoPtr<GError> error;
+        client.reset(g_dbus_connection_new_for_address_sync(g_dbus_server_get_client_address(listener.get()),
+                                                            G_DBUS_CONNECTION_FLAGS_AUTHENTICATION_CLIENT, nullptr, nullptr,
+                                                            &error.GetReceiver()));
+        VerifyOrReturnError(client != nullptr, CHIP_ERROR_INTERNAL);
+        std::unique_lock<std::mutex> lock(mutex);
+        VerifyOrReturnError(connected.wait_for(lock, std::chrono::seconds(5), [this] { return server != nullptr; }),
+                            CHIP_ERROR_TIMEOUT);
+        return CHIP_NO_ERROR;
+    }
+};
 
 struct Connection
 {
@@ -422,6 +507,54 @@ TEST_F(TestBleFallback, LinuxCancelledQueuedScanCannotCompleteReplacement)
     EXPECT_EQ(oldCallbacks, 0u);
     EXPECT_EQ(newCallbacks, 1u);
     EXPECT_EQ(BLEManagerImplTestAccess::Cancel(BLEMgrImpl()), CHIP_NO_ERROR);
+}
+
+TEST_F(TestBleFallback, LinuxStopDiscoveryFailureDoesNotStrandNextPairing)
+{
+    using namespace DeviceLayer;
+    using namespace DeviceLayer::Internal;
+    PrivateBluezPeer peer;
+    ASSERT_EQ(peer.Start(), CHIP_NO_ERROR);
+    std::atomic<unsigned> stopCalls{ 0 };
+    const guint filter = g_dbus_connection_add_filter(
+        peer.server.get(),
+        +[](GDBusConnection * connection, GDBusMessage * message, gboolean incoming, void * context) -> GDBusMessage * {
+            if (incoming && g_dbus_message_get_message_type(message) == G_DBUS_MESSAGE_TYPE_METHOD_CALL &&
+                g_strcmp0(g_dbus_message_get_interface(message), "org.bluez.Adapter1") == 0 &&
+                g_strcmp0(g_dbus_message_get_member(message), "StopDiscovery") == 0)
+            {
+                ++*static_cast<std::atomic<unsigned> *>(context);
+                GDBusMessage * reply =
+                    g_dbus_message_new_method_error_literal(message, "org.bluez.Error.Failed", "Injected StopDiscovery failure");
+                g_dbus_connection_send_message(connection, reply, G_DBUS_SEND_MESSAGE_FLAGS_NONE, nullptr, nullptr);
+                g_object_unref(reply);
+                g_object_unref(message);
+                return nullptr;
+            }
+            return message;
+        },
+        &stopCalls, nullptr);
+    GAutoPtr<GError> error;
+    GAutoPtr<BluezAdapter1> adapter(bluez_adapter1_proxy_new_sync(peer.client.get(), G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+                                                                  nullptr, "/org/bluez/adapter", nullptr, &error.GetReceiver()));
+    ASSERT_NE(adapter.get(), nullptr);
+    g_dbus_proxy_set_default_timeout(G_DBUS_PROXY(adapter.get()), 1000);
+    ASSERT_EQ(BLEManagerImplTestAccess::InstallBackend(BLEMgrImpl()), CHIP_NO_ERROR);
+    auto & layer       = BLEManagerImplTestAccess::Layer(BLEMgrImpl());
+    unsigned callbacks = 0;
+    auto onError       = [](void * context, CHIP_ERROR) { ++*static_cast<unsigned *>(context); };
+    ASSERT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &callbacks, nullptr, onError), CHIP_NO_ERROR);
+    BLEManagerImplTestAccess::InstallScanningAdapter(BLEMgrImpl(), adapter.get());
+    EXPECT_EQ(layer.CancelBleIncompleteConnection(), CHIP_NO_ERROR);
+    EXPECT_EQ(stopCalls.load(), 1u);
+    EXPECT_FALSE(BLEManagerImplTestAccess::ScannerActive(BLEMgrImpl()));
+    EXPECT_EQ(layer.NewBleConnectionByDiscriminator(SetupDiscriminator(), &callbacks, nullptr, onError), CHIP_NO_ERROR);
+    EXPECT_EQ(layer.CancelBleIncompleteConnection(), CHIP_NO_ERROR);
+    ASSERT_EQ(PlatformMgr().ScheduleWork([](intptr_t) { EXPECT_EQ(PlatformMgr().StopEventLoopTask(), CHIP_NO_ERROR); }),
+              CHIP_NO_ERROR);
+    PlatformMgr().RunEventLoop();
+    EXPECT_EQ(callbacks, 0u);
+    g_dbus_connection_remove_filter(peer.server.get(), filter);
 }
 
 } // namespace

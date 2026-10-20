@@ -979,7 +979,8 @@ CHIP_ERROR BLEManagerImpl::CancelConnection()
     else if (mBLEScanConfig.mBleScanState != BleScanState::kNotScanning)
     {
         DeviceLayer::SystemLayer().CancelTimer(HandleScanTimer, this);
-        ReturnErrorOnFailure(mDeviceScanner.StopScan());
+        CHIP_ERROR error = mDeviceScanner.StopScan();
+        VerifyOrReturnError(error == CHIP_NO_ERROR || !mDeviceScanner.IsScanning(), error);
     }
     ++mScanRequestId;
     CleanScanConfig();
