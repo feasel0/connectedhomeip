@@ -233,4 +233,3 @@ Enforce the following in every description rewrite:
 - Keep the regenerated `data_model/1.7/` XML and directly related SDK code/tests together in the existing integration PR rather than opening duplicates. Public publication of material originating in the private specification follows applicable disclosure controls; handle that operationally, not as boilerplate in the public PR body.
 
 **Publication hygiene:** The upstream integration PR may be updated via a suitably authorized local `gh pr edit` when this connected GitHub integration lacks PR edit permissions. Read and verify its current contents before and after an edit; never claim remote success from only a local description file.
-
