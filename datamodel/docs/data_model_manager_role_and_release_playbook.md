@@ -210,3 +210,21 @@ After each release, review G0–G6, reconcile open mismatch records, retire supe
 - **Supplemental, lower-authority discussion:** user-provided engineering meeting transcript on 1.7 T2 integration, early validation, errata and branch policy, retained outside the public repository; its ideas are clearly marked proposals.
 - **Verified SDK implementation:** linked code and `data_model/README.md`.
 - **Verified first-run evidence:** [2026-10-19 blocked and successful execution reports](../reports/2026-10-19_17-02-05.md).
+
+## Canonical integration PR description — current-state reporting policy
+
+The Matter 1.7 integration draft is [connectedhomeip #74862](https://github.com/project-chip/connectedhomeip/pull/74862). The current-state description text is mirrored in [SVE_integration_PR_description_current.md](SVE_integration_PR_description_current.md) for authorized agents to apply through their GitHub CLI session when connector write access is unavailable.
+
+**At any point, the PR description answers only: what changed, which changes look correct and intentional, which fixes are included, which fixes are in related PRs, what remains technically unresolved, and what validation supports that assessment.** It is a concise answer for the team, not an investigation report.
+
+Enforce the following in every description rewrite:
+- State meaningful model deltas (including all changed model areas), SDK changes and test evidence; distinguish verified correctness, plausible/intended changes, and unresolved technical mismatches.
+- Link other PRs that supply implementation dependencies, without duplicating the implementations or narrating how they were discovered.
+- Do **not** include provenance tables, commit SHAs, toolchain versions, private source locations, generated commands, investigative chronology, rejected approaches, future task sequences, or requests for acceptance/confirmation.
+- Do **not** insert disclaimer-style qualifications or discussion of material not yet present in the PR, such as promises to add the XML later. Technical uncertainties and meaningful test-coverage gaps belong in a succinct **Open technical issues** section when they affect confidence.
+- Update the body **in place** whenever the integrated model, SDK fixes, test results, or technical classifications change. Rewrite superseded entries; don't append chronological addenda. Ensure the description accurately reflects the current PR diff and the model comparison used for the update.
+- Keep full provenance, generation evidence, documentation, open questions, process milestones and confidential disclosure considerations in internal work reports and this playbook rather than the PR description.
+- The integration PR must eventually contain the regenerated `data_model/1.7/` XML and directly related SDK code/tests. Use the existing PR rather than opening duplicates. Public publication of material originating in the private specification still follows applicable disclosure controls; handle that operationally, not as boilerplate in the public PR body.
+
+**Publication hygiene:** The upstream integration PR may be updated via a suitably authorized local `gh pr edit` when this connected GitHub integration lacks PR edit permissions. Read and verify its current contents before and after an edit; never claim remote success from only a local description file.
+
