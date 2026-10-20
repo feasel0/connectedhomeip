@@ -529,6 +529,45 @@ not to pretend these retained original association fields are absent.
 No SDK workaround, kernel change, or corrective hardware result is established
 here. All six original outcomes remain OPEN.
 
+#### Request-Index Qualification: October 20
+
+The proposed patch is unchanged and NOT production-qualified. The existing
+probe reproduces normal and explicit ASan/UBSan execution of all 24 prior
+cases plus one identifier-collision qualification case per variant. Original
+and proposed executions exit zero; the original with corrective expectations
+compiles and fails at the intended assertion after execution, SIGABRT.
+No sanitizer findings occur in the final runs. All six original negotiation
+and raw teardown checks pass; historical FAIL outcomes are not changed.
+
+The pinned allocator wraps identifiers 1-128 without checking pending
+requests. Two independent outgoing requests deliberately given the same
+identifier are not isolated by either handler. The original refuses the second
+channel; the proposed positional lookup also resets the first channel through
+the existing duplicate-DCID path. This is conditional collision behavior, not
+an observed cause of the six originals. The sent-flag guard excludes cleared
+or non-outgoing channels but does NOT satisfy pending-request uniqueness.
+No generic allocator redesign or unrelated kernel fix is included.
+
+A bounded native ARM64 Kbuild check compiles the actual original/proposed
+core, socket and layout objects against matching prepared 6.12.47 headers,
+with verified private-header dependencies. Both variants exit zero with empty
+stderr. The real channel size stays 784 bytes; conf_req moves 51->52 and
+conf_len 115->116, while ident stays 50 and flags stays 176. This is not a full
+subsystem link, installed module or concurrency test. Affected consumers still
+require a consistent rebuild. RAM-only temporary artifacts are removed. The
+existing tool's --kernel-build option retains the recipe; no second framework.
+
+See [the qualification report](../reports/2026-10-20_03-45-39.md) for exact
+flags, commands, pins, exits and unmet isolation/runtime gates. Local free disk
+remains below the protected 8-GiB reserve; no physical comparison, capture
+acquisition or production SDK workaround was attempted.
+
+The [04:23 independent reproduction](../reports/2026-10-20_04-23-05.md)
+reruns normal/sanitized positives and the behavioral negative plus matching
+native objects. Structured output now explicitly marks pending-identifier
+isolation NOT_SATISFIED and production_qualified false;25 diagnostic scenarios
+do not imply qualification. The patch and all historical outcomes are unchanged.
+
 #### Separate Operational Discovery Failures
 
 The original a04 `ca3d300af4dc9e9e`, a09 `dbb5d8f70aca047e` and a10
@@ -571,13 +610,23 @@ multicast-delivery hypothesis; it does not distinguish DUT emission, Pi
 reception, caching or interface handling. No CASE or setup correction follows
 from this evidence alone.
 
+The October 20 recheck confirms each retained Pi capture directory contains
+HCI only, not IP ingress/egress evidence. Earlier registration and fail-safe
+republishing do not distinguish no emission, wrong binding, multicast delivery
+or receiver processing. The deciding experiment is one original-resolution
+window with matched DUT mDNS egress, controller ingress, registration/interface
+metadata and resolver entry/result events. Retain the exact instance, interface,
+source address, message timing and capture-drop counts; compare each boundary
+before assigning a cause. Existing capture permissions/profiles and resource
+gates must pass first. No timing-only DNS-SD/CASE fix or new capture framework.
+
 ### Smallest Remaining Checks
 
 | Exact Evidence ID | Symptom / Evidence | Hypothesis and Confidence | Deciding Check / Status |
 | --- | --- | --- | --- |
 | January 2025 iteration 99 | CASE E44918: Sigma3 counter 140688176 at 15:00:19.433; repeated Sigma2 counter 73580410 at 15:00:21.320; final CASESession.cpp:633 timeout. | Failure before CASE completion, high confidence; why Sigma3 was not accepted remains unknown. | Correlate controller capture with responder receive/validation evidence; relevant DUT/OTBR evidence missing. OPEN, investigation owner. |
 | January 2025 iteration 78 | CASE E43681 Sigma3 at 14:15:35.228 followed by secure-channel status at 14:15:35.929; native final CommandSender.cpp:343 timeout. Earlier catalog identifies subsequent encrypted CommissioningComplete. | Distinct post-CASE command-progress failure, high confidence in phase, not root cause. | Authenticate command/response capture and responder delivery; missing relevant DUT/OTBR evidence. OPEN, investigation owner. |
-| PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | Late-state/status handling or delivery loss remain candidates; neither proved. | Correlate exact report/status exchange with handler close/reuse; historical packet capture absent. OPEN, investigation owner. |
+| PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | Controller records report164633923 RX, then acknowledging status111957036 TX 93.319 seconds later; DUT timeout precedes that status. Why controller progress stalled remains unknown. | Matched monotonic controller receive/parse/enqueue/egress and scheduler/logging evidence; historical packet capture absent. OPEN, investigation owner. |
 | Wi-Fi IP PASE IncorrectState | Native exception alone does not identify protocol phase. | Discovery, initialization and transport/session hypotheses remain distinct. | Exact original call, peer-discovery evidence, PASE headers and native error origin; not an inferred BLE defect. |
 | Six BLE-Wi-Fi EATT failures, including a02 subscription | Wrong-bearer ATT replies followed by teardown contradicting advertised CID pairs. | Original bytes plus pinned disconnect handler expose DUT local65 -> controller65; requester ordering reproduces this state. Case B supported; full list scheduling unobserved. | Bounded multi-bearer dual-peer socket observation and correction at the original GATT/notification phase. Hardware remains disk-blocked; all six OPEN. |
 | Three BLE-Wi-Fi operational timeouts | Post-provisioning phase, separate from BLE pairing. | IPv6 reachability, publication, DNS-SD and CASE remain distinct. | Actual interface/global address and route at failure, corresponding discovery result and CASE exchange. |
@@ -589,6 +638,20 @@ The January check now binds its controller logs to SHA256
 (99) and `8e4fdfccd2c088781896fe26d10a025ad38e897b806e7ed3b240253192a37ea0`
 (78). Times above are historical log-local, not newly calibrated UTC.
 Repeated Sigma2 does not locate a network drop or prove responder malfunction.
+
+The sealed PR528 iteration-36 archive is unchanged and SHA256-verified:
+`e9c504ebc930461d86eb00a5e3061fa92aa56f5dc3f6790f8657845f89cbcbe8`.
+On exchange4349 the controller records ReportData164633923 RX at14:46:26.814
+and acknowledging StatusResponse111957036 TX at14:48:00.133. DUT order is
+report TX, timeout, that status RX, then StatusResponse164633924 TX. The
+controller receives the latter at14:48:00.613 and records INVALID_ACTION.
+This is not an initial rejection before reporting. Failed iteration36 has34
+matched report/status pairs; passing35/37 have88 each, with maximum recorded
+intervals0.060/0.054 seconds versus93.319. An adjacent timestamp gap of83.226
+seconds lies between controller lines53270/53271. These are historical log
+timestamps, not calibrated packet/monotonic traces. Scheduling, processing,
+logging and timestamp behavior remain distinct possibilities; no packet-loss
+location, fix or original PASS is established.
 
 The standalone Wi-Fi PASE IncorrectState, BLE-Wi-Fi operational failures,
 unattributed SIGSEGV/prolonged PASE and original Thread/SRP/routing families

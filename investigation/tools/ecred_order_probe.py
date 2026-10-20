@@ -1,12 +1,14 @@
-"""Execute pinned kernel ECRED functions with host stubs, never a live fixture."""
+"""Probe pinned ECRED functions or compile native objects; never load a kernel."""
 
 import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import resource
+import shutil
 import struct
 import subprocess
 import tempfile
@@ -380,6 +382,37 @@ static void duplicate_case(void) {
     assert(channels[1].deleted && channels[1].delete_error == ECONNREFUSED);
     puts("duplicate-dcid=passed");
 }
+static void identifier_reuse_case(void) {
+    struct hci_conn hcon = {0};
+    struct l2cap_conn conn = {.hcon = &hcon};
+    struct l2cap_ops ops = {.get_peer_pid = get_peer_pid};
+    struct l2cap_chan channels[2] = {0};
+    disconnect_target = NULL;
+    request_ident = 7;
+    conn.chan_l.count = 2;
+    for (int index = 0; index < 2; index++) {
+        channels[index] = (struct l2cap_chan){.conn = &conn, .ops = &ops, .scid = 64 + index,
+            .psm = 39, .imtu = 64, .mps = 64, .mode = L2CAP_MODE_EXT_FLOWCTL, .state = BT_CONNECT};
+        conn.chan_l.items[index] = &channels[index];
+    }
+    for (int index = 0; index < 2; index++) {
+        l2cap_ecred_connect(&channels[index]);
+        assert(sent_count == 1 && sent_scids[0] == 64 + index && channels[index].ident == 7);
+    }
+    u16 response[] = {64, 64, 10, 0, 80};
+    struct l2cap_cmd_hdr command = {.ident = 7};
+    assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(response), (u8 *)response) == 0);
+    assert(channels[0].dcid == 80);
+    assert(channels[1].deleted);
+    if (PROPOSED) {
+        assert(channels[0].deleted && channels[0].delete_error == ECONNRESET);
+        assert(channels[1].delete_error == ECONNREFUSED);
+    } else {
+        assert(channels[0].state == BT_CONNECTED && !channels[0].deleted);
+        assert(channels[1].delete_error == ECONNREFUSED);
+    }
+    printf("identifier-reuse-isolation=NOT_SATISFIED proposed=%d unrelated-channel-deleted=1\n", PROPOSED);
+}
 int main(void) {
     run_case(1, 0, false);
     run_case(2, 0, false);
@@ -403,6 +436,7 @@ int main(void) {
     duplicate_case();
     reverse_list = true;
     run_case(3, 0, true);
+    identifier_reuse_case();
     return 0;
 }
 '''
@@ -579,7 +613,90 @@ def check_teardown_decoder() -> None:
         raise AssertionError('Malformed monitor record was accepted')
 
 
-def check(source: bytes, compiler: str) -> str:
+def kernel_check(source: bytes, build: Path) -> str:
+    """Compile actual pinned objects against the matching native Pi prepared headers."""
+    release = '6.12.47+rpt-rpi-2712'
+    if os.uname().machine != 'aarch64' or os.uname().release != release:
+        raise ValueError('Native matching Raspberry Pi kernel required')
+    if hashlib.sha256(source).hexdigest() != SOURCE_SHA256:
+        raise ValueError('Kernel source hash mismatch')
+    if shutil.disk_usage('/dev/shm').free < 1024**3:
+        raise ValueError('RAM-only compile requires at least 1 GiB free tmpfs')
+    available = re.search(r'^MemAvailable:\s+(\d+) kB$', Path('/proc/meminfo').read_text(), re.M)
+    if not available or int(available.group(1)) * 1024 < 2 * 1024**3:
+        raise ValueError('RAM-only compile requires at least 2 GiB available memory')
+    boot_config = Path('/boot/config-' + release).read_bytes()
+    if hashlib.sha256(boot_config).hexdigest() != 'b87716441ed8c1c5906418037569c76be8ed2fe01bcf220b55abd6faeae08f0f':
+        raise ValueError('Boot config hash mismatch')
+    prepared_config = (build / '.config').read_bytes()
+    if hashlib.sha256(prepared_config).hexdigest() != '9bb549d81cc44c5420e50027882088ba83e862013e976f10f976901255c7c4fc':
+        raise ValueError('Prepared config hash mismatch')
+    files = {'net/bluetooth/l2cap_core.c': source}
+    pending = ['include/net/bluetooth/l2cap.h', 'net/bluetooth/l2cap_sock.c']
+    pending += ['net/bluetooth/' + name.decode() for name in re.findall(rb'^#include "([^"]+)"', source, re.M)]
+    while pending:
+        name = pending.pop()
+        if name in files:
+            continue
+        if '..' in name or not name.startswith(('net/bluetooth/', 'include/net/bluetooth/')):
+            raise ValueError('Unexpected local kernel include')
+        with urllib.request.urlopen(f'https://raw.githubusercontent.com/raspberrypi/linux/{REVISION}/{name}', timeout=30) as stream:
+            files[name] = stream.read(1000000)
+        pending += [str(Path(name).parent / relative.decode()) for relative in re.findall(rb'^#include "([^"]+)"', files[name], re.M)]
+    if hashlib.sha256(files['include/net/bluetooth/l2cap.h']).hexdigest() != HEADER_SHA256:
+        raise ValueError('Kernel header hash mismatch')
+
+    def limits() -> None:
+        os.nice(19)
+        resource.setrlimit(resource.RLIMIT_AS, (1024**3, 1024**3))
+        resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
+
+    records = []
+    with tempfile.TemporaryDirectory(prefix='ecred-kbuild-', dir='/dev/shm') as directory:
+        for variant in ('original', 'proposed'):
+            work = Path(directory) / variant
+            work.mkdir()
+            for name, data in files.items():
+                destination = work / name
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(data)
+            if variant == 'proposed':
+                subprocess.run(['patch', '--batch', '--fuzz=0', '-p1'], cwd=work,
+                    input=Path(__file__).resolve().parents[1].joinpath('patches/ecred-request-index.patch').read_bytes(),
+                    check=True, capture_output=True)
+            for name in files:
+                if name.startswith('net/bluetooth/'):
+                    shutil.copyfile(work / name, work / Path(name).name)
+            (work / 'Makefile').write_text('obj-m := ecred_qualification.o\n'
+                'ecred_qualification-y := l2cap_core.o l2cap_sock.o layout.o\n'
+                'LINUXINCLUDE := -I$(src)/include $(LINUXINCLUDE)\n')
+            fields = ['ident', 'conf_req', 'conf_len', 'flags']
+            (work / 'layout.c').write_text('#include <linux/module.h>\n#include <net/bluetooth/bluetooth.h>\n'
+                '#include <net/bluetooth/hci_core.h>\n#include <net/bluetooth/l2cap.h>\n'
+                'unsigned long ecred_layout[] = {sizeof(struct l2cap_chan), ' +
+                ', '.join(f'offsetof(struct l2cap_chan, {field})' for field in fields) + '};\n')
+            command = ['make', '-C', str(build), 'M=' + str(work), '-j1', 'V=1', 'l2cap_core.o', 'l2cap_sock.o', 'layout.o']
+            result = subprocess.run(command, text=True, capture_output=True, timeout=180, preexec_fn=limits)
+            result.check_returncode()
+            compile_commands = {}
+            for name in ('l2cap_core', 'l2cap_sock', 'layout'):
+                dependency = (work / ('.' + name + '.o.cmd')).read_text()
+                if str(work / 'include/net/bluetooth/l2cap.h') not in dependency:
+                    raise AssertionError('Object did not use the private exact header')
+                compile_commands[name] = next(line for line in dependency.splitlines() if line.startswith('savedcmd_')).replace(str(work), '$WORK')
+            subprocess.run(['objcopy', '-O', 'binary', '--only-section=.data', str(work / 'layout.o'), str(work / 'layout.bin')],
+                check=True, capture_output=True)
+            layout = struct.unpack('<5Q', (work / 'layout.bin').read_bytes())
+            records.append({'variant': variant, 'compile_exit': result.returncode, 'stderr': result.stderr,
+                'layout': dict(zip(['sizeof_l2cap_chan'] + ['offset_' + field for field in fields], layout)),
+                'real_header_verified': True, 'compile_commands': compile_commands})
+        generated_bytes = sum(path.stat().st_size for path in Path(directory).rglob('*') if path.is_file())
+    return json.dumps({'kernel': release, 'compiled_not_linked_or_loaded': True, 'records': records,
+        'generated_bytes_removed': generated_bytes,
+        'source_hashes': {name: hashlib.sha256(data).hexdigest() for name, data in files.items()}}, sort_keys=True) + '\n'
+
+
+def check(source: bytes, compiler: str, sanitize: bool = False) -> str:
     """Compile the pinned functions with ordered-list stubs, not a kernel or BlueZ."""
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     check_teardown_decoder()
@@ -598,18 +715,41 @@ def check(source: bytes, compiler: str) -> str:
         pass
     else:
         raise AssertionError('Changed source was accepted')
+    flags = ['-std=gnu11', '-Wall', '-Wextra', '-Werror']
+    if sanitize:
+        flags += ['-fsanitize=address,undefined', '-fno-sanitize-recover=all', '-fno-omit-frame-pointer', '-g']
+    runtime = os.environ.copy()
+    sanitizer_options = {'ASAN_OPTIONS': 'detect_leaks=1:halt_on_error=1', 'UBSAN_OPTIONS': 'halt_on_error=1:print_stacktrace=1'} if sanitize else {}
+    runtime.update(sanitizer_options)
+    executions = []
     with tempfile.TemporaryDirectory(prefix='ecred-order-', dir='/dev/shm') as directory:
-        binary = str(Path(directory) / 'probe')
-        subprocess.run([compiler, '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-x', 'c', '-', '-o', binary],
-            input=native, text=True, check=True, capture_output=True)
-        output = subprocess.check_output([binary], text=True)
-        subprocess.run([compiler, '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-x', 'c', '-', '-o', binary],
-            input=program(source, proposed=True, header=header), text=True, check=True, capture_output=True)
-        corrected = subprocess.check_output([binary], text=True)
-        subprocess.run([compiler, '-std=gnu11', '-Wall', '-Wextra', '-Werror', '-x', 'c', '-', '-o', binary],
-            input=native.replace('#define PROPOSED 0', '#define PROPOSED 1', 1),
-            text=True, check=True, capture_output=True)
-        negative = subprocess.run([binary], text=True, capture_output=True)
+        def execute(name: str, content: str) -> subprocess.CompletedProcess:
+            binary = str(Path(directory) / name)
+            compiled = subprocess.run([compiler, *flags, '-x', 'c', '-', '-o', binary],
+                input=content, text=True, check=True, capture_output=True)
+            result = subprocess.run([binary], text=True, capture_output=True, env=runtime)
+            findings = bool(re.search(r'AddressSanitizer|UndefinedBehaviorSanitizer|runtime error:', result.stderr))
+            scenarios = len(re.findall(r'^(?:count=|pending_removed_wrong_peer=|response_case=|'
+                r'grouping_exclusion=|duplicate-dcid=|identifier-reuse-isolation=)', result.stdout, re.M))
+            executions.append({'variant': name, 'translation_unit_sha256': hashlib.sha256(content.encode()).hexdigest(),
+                'compile_exit': compiled.returncode, 'executed': True, 'run_exit': result.returncode,
+                'sanitizer_findings': findings, 'reported_scenarios': scenarios})
+            if findings:
+                raise AssertionError(f'{name}: sanitizer findings: {result.stderr}')
+            return result
+
+        original_run = execute('original', native)
+        original_run.check_returncode()
+        output = original_run.stdout
+        proposed_run = execute('proposed', program(source, proposed=True, header=header))
+        proposed_run.check_returncode()
+        corrected = proposed_run.stdout
+        if any(record['reported_scenarios'] != 25 for record in executions):
+            raise AssertionError('Expected all 25 diagnostic scenarios in each positive variant')
+        if any('identifier-reuse-isolation=NOT_SATISFIED' not in result.stdout
+                for result in (original_run, proposed_run)):
+            raise AssertionError('Missing pending-identifier collision qualification result')
+        negative = execute('original-with-corrective-assertions', native.replace('#define PROPOSED 0', '#define PROPOSED 1', 1))
         if negative.returncode == 0 or 'mismatch == expect_mismatch' not in negative.stderr:
             raise AssertionError('Uncorrected source did not fail the corrective assertion after execution')
     if 'count=2 trigger=65 mismatch=1 request=65,64 assignments=64:64,65:65' not in output:
@@ -621,27 +761,38 @@ def check(source: bytes, compiler: str) -> str:
     if 'disconnect_request=65:64 disconnect_response=65:64 association_mismatch=0' not in corrected:
         raise AssertionError('Proposed correction did not repair the historical teardown signature')
     return ('ORIGINAL\n' + output + 'PROPOSED (not deployed)\n' + corrected +
-        'NEGATIVE CONTROL: uncorrected source compiled, executed, rejected by corrective assertion\n')
+        'NEGATIVE CONTROL: uncorrected source compiled, executed, rejected by corrective assertion\n' +
+        json.dumps({'compiler': compiler, 'compiler_flags': flags, 'sanitized': sanitize,
+            'compiler_version': subprocess.check_output([compiler, '--version'], text=True).splitlines()[0],
+            'sanitizer_options': sanitizer_options,
+            'identifier_reuse_isolation': 'NOT_SATISFIED', 'production_qualified': False,
+            'kernel_source_sha256': SOURCE_SHA256, 'kernel_header_sha256': HEADER_SHA256,
+            'executions': executions}, sort_keys=True) + '\n')
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, help='Use a local hash-matching kernel source instead of HTTPS')
     parser.add_argument('--compiler', default='cc')
+    parser.add_argument('--sanitize', action='store_true', help='Run all three native variants with ASan and UBSan')
+    parser.add_argument('--kernel-build', type=Path, help='Native Pi prepared headers: bounded RAM-only Kbuild instead of host stubs')
     parser.add_argument('--metadata', type=Path, help='Optional private value-free btmon reconstruction')
     parser.add_argument('--captures', type=Path, help='Optional original captures root; emit only teardown headers')
     args = parser.parse_args()
+    if args.kernel_build and args.sanitize:
+        parser.error('--sanitize is for host execution, not the native kernel object compile')
     if args.source:
         content = args.source.read_bytes()
     else:
         with urllib.request.urlopen(SOURCE_URL, timeout=30) as stream:
             content = stream.read(300000)
     try:
-        print(check(content, args.compiler), end='')
+        print(kernel_check(content, args.kernel_build) if args.kernel_build else check(content, args.compiler, args.sanitize), end='')
     except subprocess.CalledProcessError as error:
         raise SystemExit(error.stderr or str(error)) from error
     if args.metadata:
         print(json.dumps({'historical_negotiations': negotiations(args.metadata)}, sort_keys=True))
     if args.captures:
         print(json.dumps({'historical_teardowns': historical_teardowns(args.captures)}, sort_keys=True))
-    print('PASS: pinned-function host probe; not live kernel, socket, BlueZ, or corrective hardware validation')
+    print('PASS: bounded kernel object compile' if args.kernel_build else
+        'PASS: pinned-function host probe; not live kernel, socket, BlueZ, or corrective hardware validation')
