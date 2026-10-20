@@ -16,6 +16,7 @@
 #
 
 import xml.etree.ElementTree as ElementTree
+from copy import deepcopy
 
 import jinja2
 from mobly import asserts
@@ -447,6 +448,58 @@ class TestSpecParsingSupport(CertificationUnitTestNoDevice):
         asserts.assert_equal(str(clusters[0xFFFF].generated_commands[1].conformance),
                              "X", "Unexpected conformance on generated commands")
         asserts.assert_equal(len(clusters[0xFFFF].unknown_commands), 0, "Unexpected number of unknown commands after merge")
+
+    def test_derived_command_conformance_inheritance(self):
+        cases = [('', 'M'), ('<optionalConform/>', 'O'), ('<disallowConform/>', 'X'),
+                 ('<mandatoryConform><feature name="DEPONOFF"/></mandatoryConform>', 'DEPONOFF')]
+        for explicit_direction in (False, True):
+            for conformance_xml, expected_conformance in cases:
+                for privilege in (None, 'manage'):
+                    clusters: dict[int, XmlCluster] = {}
+                    pure_base_clusters: dict[str, XmlCluster] = {}
+                    ids_by_name: dict[str, int] = {}
+                    problems: list[ProblemNotice] = []
+                    base = ElementTree.fromstring(BASE_CLUSTER_XML_STR)
+                    derived = ElementTree.fromstring(DERIVED_CLUSTER_XML_STR)
+                    derived.append(deepcopy(base.find('features')))
+                    for command in derived.findall('./commands/command'):
+                        for child in list(command):
+                            command.remove(child)
+                        if conformance_xml:
+                            command.append(ElementTree.fromstring(conformance_xml))
+                        if privilege is not None:
+                            ElementTree.SubElement(command, 'access', invokePrivilege=privilege)
+                        if explicit_direction:
+                            command.set('direction', 'commandToServer' if command.get('id') == '0x00'
+                                        else 'responseFromServer')
+                    add_cluster_data_from_xml(base, clusters, pure_base_clusters, ids_by_name, problems)
+                    add_cluster_data_from_xml(derived, clusters, pure_base_clusters, ids_by_name, problems)
+                    combine_derived_clusters_with_base(clusters, pure_base_clusters, ids_by_name, problems)
+                    context = f'direction={explicit_direction}, conformance={conformance_xml}, privilege={privilege}'
+                    for command in (clusters[0xFFFF].accepted_commands[0], clusters[0xFFFF].generated_commands[1]):
+                        asserts.assert_equal(str(command.conformance), expected_conformance, context)
+                        asserts.assert_equal(command.privilege, get_access_enum_from_string(privilege or 'operate'), context)
+
+    def test_derived_command_inherits_feature_conformance(self):
+        clusters: dict[int, XmlCluster] = {}
+        pure_base_clusters: dict[str, XmlCluster] = {}
+        ids_by_name: dict[str, int] = {}
+        problems: list[ProblemNotice] = []
+        base = ElementTree.fromstring(BASE_CLUSTER_XML_STR)
+        derived = ElementTree.fromstring(DERIVED_CLUSTER_XML_STR)
+        for command in base.findall('./commands/command'):
+            command.remove(command.find('mandatoryConform'))
+            otherwise = ElementTree.SubElement(command, 'otherwiseConform')
+            ElementTree.SubElement(otherwise, 'provisionalConform')
+            optional = ElementTree.SubElement(otherwise, 'optionalConform')
+            ElementTree.SubElement(optional, 'feature', name='DEPONOFF')
+        for command in derived.findall('./commands/command'):
+            command.remove(command.find('disallowConform'))
+        add_cluster_data_from_xml(base, clusters, pure_base_clusters, ids_by_name, problems)
+        add_cluster_data_from_xml(derived, clusters, pure_base_clusters, ids_by_name, problems)
+        combine_derived_clusters_with_base(clusters, pure_base_clusters, ids_by_name, problems)
+        for command in (clusters[0xFFFF].accepted_commands[0], clusters[0xFFFF].generated_commands[1]):
+            asserts.assert_equal(str(command.conformance), 'P, [DEPONOFF]', 'Missing overlay must inherit feature condition')
 
     def test_missing_command_direction(self):
         clusters: dict[int, XmlCluster] = {}
