@@ -20,6 +20,7 @@ authored for this task to the dedicated data-model branch. Exclude investigation
 changes, unrelated work, private sources, raw logs, and generated scratch outputs.
 
 - [Standing per-turn reporting and publication order](reoprts/2026-10-20_03-30-32.md)
+- [Documentation, fork draft PR, and current follow-up closeout](reoprts/2026-10-20_03-42-09.md)
 
 ## Transcription
 
