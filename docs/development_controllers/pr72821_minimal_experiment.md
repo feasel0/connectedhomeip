@@ -555,3 +555,78 @@ Supporting it needs a defined transport/event contract; merely widening event
 guards would not establish useful semantics. No draft support PR is created.
 An explicit configuration diagnostic can be considered independently once
 the intended contract is confirmed.
+
+## Darwin Normal Browsing Follow-up
+
+The follow-up starts at `22ee84d9c9081fdca57eed4d8d57ab44205b6f9d` and
+publishes the behavioral correction as `ddcc209d02f54353668d65cc36af17d9c9fd10f4`.
+Final head `b1521ac41dcfd8fe3e214feea6c7dfde149d3a2c` adds only the missing
+final newline in the new test reported by Restyled job 118937623178; the
+terminal-byte check and formatting check pass after that correction.
+It does not repeat the previous BLE infrastructure comparison or alter the
+common pending-request architecture.
+
+### Reachability and Upstream Comparison
+
+`BleScanMode::kDefault` explicitly replaces an existing BLE operation;
+`kPreWarm` explicitly does not. `MTRCommissionableBrowser::Start` invokes
+normal `StartBleScan` without a commissioning-in-progress restriction, and
+its `Stop` invokes `StopBleScan`. Darwin's `StartScan` stops and replaces a
+connecting `MTRBleConnection`. The stopped connection loses its timer and
+central-manager delegate without dispatching its connection callback. A
+single-device request still searching for its discriminator therefore gives
+a supported, radio-independent ordering: request, normal browse, stop browse,
+new request. No discovered peripheral or physical connection is required to
+reach the lost terminal result.
+
+The Darwin implementation before this follow-up is identical to the pinned
+upstream `869cc2999fd67b3449e5a77dd3e8ef1e7e51f830`. Dropping the original
+callback is pre-existing. The persistent `CHIP_ERROR_BUSY` on the next request
+is introduced by this PR's single-request ownership tracking: stopping a
+browser cannot retire the abandoned layer request.
+
+An ignored C++ probe includes each worktree's actual `TestBleLayer` fixture
+and links its actual `BleLayer`. It models the source-observed backend stop
+without a terminal callback; it does not execute CoreBluetooth or Objective-C.
+The same callback-dropping probe passes upstream and fails only the PR's
+second-request assertion. Two controls deliver the terminal error using the
+actual context captured by the platform delegate: ordinary retry and retry
+from inside the error callback. Both controls pass on both implementations.
+An initial reentrant control incorrectly supplied the layer rather than
+upstream's caller context; that invalid control was corrected and rerun, and
+is not counted as a product failure. Final probe totals are upstream 39 pass;
+PR 41 pass and the one intentionally failing dropped-callback check.
+
+### Narrow Correction and Coverage
+
+`StartScan` retains the replaced operation, stops it, installs the requested
+browser, and then dispatches `BLE_ERROR_APP_CLOSED_CONNECTION` to the old
+operation. Existing callback clearing makes this terminal notification
+single-shot. Installing the browser first permits a callback-driven retry
+to reuse it without subsequently being overwritten by `StartScan`.
+Normal replacement remains supported; prewarm behavior is unchanged. No
+registry, common-layer relaxation, or unrelated Darwin enhancement is added.
+
+Three Darwin-only tests in `TestDarwinBleConnection.mm` use the real delegate
+and layer with a substituted central-manager allocation, without starting a
+physical Bluetooth manager. They cover normal browsing/stop/retry and old
+callback suppression, reentrant retry, and prewarm preservation. They are
+registered only for Darwin with both BLE layers enabled. These tests have
+not been compiled or executed on an Apple host in this session; source,
+formatting and GN checks are not a substitute for that qualification.
+
+Fresh local checks after the follow-up pass 68 native tests (layer 39,
+fallback 17, pairer 12), and the same 68 under ASan with `detect_leaks=1`.
+No sanitizer/leak or GLib-critical diagnostics were observed. clang-format 16,
+GN formatting/generation, editor diagnostics and scoped diff checks pass.
+The earlier 128-native/25-disabled totals above apply to the parent head;
+they are not additional fresh executions for this Darwin follow-up.
+
+The parent's Linux `python_lib` job 118910032177 completed successfully,
+including build/native, Python, payload and credential tests. New-head CI
+has started and is pending; final-head Restyled job 118939026466 passes
+after the newline repair. No completed native Apple qualification is
+claimed. Gemini has not produced a new review following request 6302735819.
+There are no new Gemini findings to assess and no separate speculative PR.
+The PR remains unmerged. Physical BLE, CoreBluetooth delivery, Thread Meshcop
+and other platform backends remain unqualified.
