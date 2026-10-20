@@ -37,7 +37,9 @@ Goals:
 
 **Implemented on dedicated data-model work branch:** Detect the complete combined-book include entrypoint set; use its printed recursive include records; fall back to legacy book targets when needed; use exact AsciiDoc include basename membership instead of fragile substring matching. Six focused tests pass. Full current generation exited 0; 280 model XML and manifest checks passed. See [detailed evidence](../reports/2026-10-19_17-02-05.md).
 
-**PR status:** [Fork-local draft PR #1](https://github.com/feasel0/connectedhomeip/pull/1) is open against the fork's master, containing exactly the generator fix and tests. Upstream PR creation was attempted but blocked by GitHub integration permissions; **no upstream PR exists yet**.\n\n**Remaining:** Transfer/recreate the narrow fix as an upstream-facing draft when authorized by GitHub permissions; run upstream CI/review; verify old-spec behavior against an actual historical checkout when feasible. Expanded include-flag combinations (`None`, `All`) merit real integration validation later. Do not claim the fix means the new reference model is SVE-approved.
+**PR status:** [Fork-local draft PR #1](https://github.com/feasel0/connectedhomeip/pull/1) is open against the fork's master, containing exactly the generator fix and tests. Upstream PR creation was attempted but blocked by GitHub integration permissions; **no upstream PR exists yet**.
+
+**Remaining:** Transfer/recreate the narrow fix as an upstream-facing draft when authorized by GitHub permissions; run upstream CI/review; verify old-spec behavior against an actual historical checkout when feasible. Expanded include-flag combinations (`None`, `All`) merit real integration validation later. Do not claim the fix means the new reference model is SVE-approved.
 
 **Promotion:** Once merged upstream, mark this as an established generator compatibility feature in the playbook, with commit/PR reference.
 
