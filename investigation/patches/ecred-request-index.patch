@@ -27,15 +27,16 @@
  
  	chan->ident = l2cap_get_ident(conn);
  
-@@ -5150,7 +5153,6 @@
+@@ -5150,7 +5153,7 @@
  	u16 mtu, mps, credits, result;
  	struct l2cap_chan *chan, *tmp;
  	int err = 0, sec_level;
 -	int i = 0;
++	unsigned long dcid_used = 0;
  
  	if (cmd_len < sizeof(*rsp))
  		return -EPROTO;
-@@ -5170,22 +5172,22 @@
+@@ -5170,22 +5173,23 @@
  
  		if (chan->ident != cmd->ident ||
  		    chan->mode != L2CAP_MODE_EXT_FLOWCTL ||
@@ -48,7 +49,8 @@
  
  		/* Check that there is a dcid for each pending channel */
 -		if (cmd_len < sizeof(dcid)) {
-+		if (cmd_len < (chan->ecred_tx_index + 1) * sizeof(dcid)) {
++		if (cmd_len < (chan->ecred_tx_index + 1) * sizeof(dcid) ||
++		    test_and_set_bit(chan->ecred_tx_index, &dcid_used)) {
  			l2cap_chan_del(chan, ECONNREFUSED);
  			l2cap_chan_unlock(chan);
  			continue;

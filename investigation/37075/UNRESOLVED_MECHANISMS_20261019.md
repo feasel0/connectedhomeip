@@ -531,7 +531,7 @@ here. All six original outcomes remain OPEN.
 
 #### Request-Index Qualification: October 20
 
-The proposed patch is unchanged and NOT production-qualified. The existing
+At03:45 the proposed patch was unchanged and NOT production-qualified. The existing
 probe reproduces normal and explicit ASan/UBSan execution of all 24 prior
 cases plus one identifier-collision qualification case per variant. Original
 and proposed executions exit zero; the original with corrective expectations
@@ -566,7 +566,29 @@ The [04:23 independent reproduction](../reports/2026-10-20_04-23-05.md)
 reruns normal/sanitized positives and the behavioral negative plus matching
 native objects. Structured output now explicitly marks pending-identifier
 isolation NOT_SATISFIED and production_qualified false;25 diagnostic scenarios
-do not imply qualification. The patch and all historical outcomes are unchanged.
+do not imply qualification. At that increment the patch and historical outcomes were unchanged.
+
+#### Reachable Collision and Narrow Guard: October 20, 12:56 UTC
+
+The [reachability and original-host report](../reports/2026-10-20_12-56-04.md)
+finds no enforced pending-identifier uniqueness: allocation wraps128->1,
+sent groups are excluded from the deferred five-channel count, and40-second
+channel timers do not prohibit intervening signaling. LE credit grants use the
+same allocator without waiting for connection response. Two unrelated EATT
+groups can therefore overlap across wrap; no collision is observed in the six
+originals. The strengthened existing case executes the pinned allocator's wrap,
+not a forced constant identifier, while transport/timers remain host stubs.
+
+The isolated patch now consumes each response slot once with a local bitmap.
+It prevents the demonstrated additional duplicate-DCID deletion, without
+redesigning allocation or claiming full isolation of the inherited ambiguous
+transaction. Twenty-five positives per variant, normal/ASan/UBSan, both
+compiling behavioral negatives and matching real ARM64 objects pass. The old
+unguarded index variant fails the new first-channel-survival assertion.
+This resolves the demonstrated collateral-regression gate, not runtime or
+production qualification. The proposal remains unapplied/undeployed; disk,
+fixture ownership, consistent linked build and native GATT/StartNotify gates
+remain. All historical outcomes and ledger counts are unchanged.
 
 #### Separate Operational Discovery Failures
 
@@ -626,7 +648,7 @@ gates must pass first. No timing-only DNS-SD/CASE fix or new capture framework.
 | --- | --- | --- | --- |
 | January 2025 iteration 99 | CASE E44918: Sigma3 counter 140688176 at 15:00:19.433; repeated Sigma2 counter 73580410 at 15:00:21.320; final CASESession.cpp:633 timeout. | Failure before CASE completion, high confidence; why Sigma3 was not accepted remains unknown. | Correlate controller capture with responder receive/validation evidence; relevant DUT/OTBR evidence missing. OPEN, investigation owner. |
 | January 2025 iteration 78 | CASE E43681 Sigma3 at 14:15:35.228 followed by secure-channel status at 14:15:35.929; native final CommandSender.cpp:343 timeout. Earlier catalog identifies subsequent encrypted CommissioningComplete. | Distinct post-CASE command-progress failure, high confidence in phase, not root cause. | Authenticate command/response capture and responder delivery; missing relevant DUT/OTBR evidence. OPEN, investigation owner. |
-| PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | Controller records report164633923 RX, then acknowledging status111957036 TX 93.319 seconds later; DUT timeout precedes that status. Why controller progress stalled remains unknown. | Matched monotonic controller receive/parse/enqueue/egress and scheduler/logging evidence; historical packet capture absent. OPEN, investigation owner. |
+| PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | ReportData pretty-print Cluster->Attribute gap83.226 seconds; checksum-verified host global OOM kills20-GB cpptools at recovery boundary. Controller status93.319 seconds after logged receipt; exact blocking mechanism unproved. | Bind controller PID/TID and exact build; monotonic pretty-print/status points, on-stall stack and memory-pressure observations. No timeout/retry change. OPEN, investigation owner. |
 | Wi-Fi IP PASE IncorrectState | Native exception alone does not identify protocol phase. | Discovery, initialization and transport/session hypotheses remain distinct. | Exact original call, peer-discovery evidence, PASE headers and native error origin; not an inferred BLE defect. |
 | Six BLE-Wi-Fi EATT failures, including a02 subscription | Wrong-bearer ATT replies followed by teardown contradicting advertised CID pairs. | Original bytes plus pinned disconnect handler expose DUT local65 -> controller65; requester ordering reproduces this state. Case B supported; full list scheduling unobserved. | Bounded multi-bearer dual-peer socket observation and correction at the original GATT/notification phase. Hardware remains disk-blocked; all six OPEN. |
 | Three BLE-Wi-Fi operational timeouts | Post-provisioning phase, separate from BLE pairing. | IPv6 reachability, publication, DNS-SD and CASE remain distinct. | Actual interface/global address and route at failure, corresponding discovery result and CASE exchange. |
@@ -652,6 +674,20 @@ seconds lies between controller lines53270/53271. These are historical log
 timestamps, not calibrated packet/monotonic traces. Scheduling, processing,
 logging and timestamp behavior remain distinct possibilities; no packet-loss
 location, fix or original PASS is established.
+
+The12:56 increment verifies the retained companion kernel.log against its
+original SHA256SUMS.local entry, SHA256
+`170beba30fecaccc86a8817cab237db18baa02221835c33bccba45c226074b95`.
+At14:47:59 upowerd invokes OOM; at14:48:00 global OOM kills cpptools with
+20,045,124 KiB anonymous RSS, no swap, normal-zone free below low watermark.
+This coincides with pretty-print completion/status14:48:00.133. The kernel
+stack belongs to upowerd, not the controller. No controller PID binding,
+per-thread scheduler/PSI history or monotonic packet timing proves the exact
+stall. Host memory pressure is now the leading observed explanation to test,
+not an established Matter defect. Source/log categories place the gap in
+native ReportData pretty-printing before normal callbacks/status enqueue;
+the historical controller binary-to-SDK pin remains unproven. No artificial
+OOM reproduction or synthetic logger infrastructure was added.
 
 The standalone Wi-Fi PASE IncorrectState, BLE-Wi-Fi operational failures,
 unattributed SIGSEGV/prolonged PASE and original Thread/SRP/routing families

@@ -47,10 +47,16 @@ typedef uint16_t __le16;
 #define L2CAP_CR_LE_BAD_PSM 2
 #define BT_SECURITY_MEDIUM 2
 struct pid { int unused; };
+struct mutex { int unused; };
 struct hci_conn { int sec_level; };
 struct l2cap_chan;
 struct channel_list { struct l2cap_chan *items[5]; int count; };
-struct l2cap_conn { struct channel_list chan_l; struct hci_conn *hcon; };
+struct l2cap_conn {
+    struct channel_list chan_l;
+    struct hci_conn *hcon;
+    u8 tx_ident;
+    struct mutex ident_lock;
+};
 struct l2cap_ops {
     struct pid *(*get_peer_pid)(struct l2cap_chan *);
     void (*set_shutdown)(struct l2cap_chan *);
@@ -74,6 +80,7 @@ static struct pid peer_pid;
 static u16 sent_scids[5];
 static int sent_count;
 static u8 request_ident = 7;
+static bool allocate_identifiers;
 static int security_calls;
 static bool reverse_list;
 static struct l2cap_chan *disconnect_target;
@@ -91,7 +98,12 @@ static int test_and_set_bit(int bit, unsigned long *flags) {
 }
 static void clear_bit(int bit, unsigned long *flags) { *flags &= ~(1ul << bit); }
 static void l2cap_ecred_init(struct l2cap_chan *chan, u16 credits) { (void)chan; (void)credits; }
-static u8 l2cap_get_ident(struct l2cap_conn *conn) { (void)conn; return request_ident; }
+static void mutex_lock(struct mutex *lock) { (void)lock; }
+static void mutex_unlock(struct mutex *lock) { (void)lock; }
+static u8 pinned_l2cap_get_ident(struct l2cap_conn *conn);
+static u8 l2cap_get_ident(struct l2cap_conn *conn) {
+    return allocate_identifiers ? pinned_l2cap_get_ident(conn) : request_ident;
+}
 static void __l2cap_chan_list(struct l2cap_conn *conn,
     void (*callback)(struct l2cap_chan *, void *), void *data) {
     for (int index = 0; index < conn->chan_l.count; index++) {
@@ -384,11 +396,12 @@ static void duplicate_case(void) {
 }
 static void identifier_reuse_case(void) {
     struct hci_conn hcon = {0};
-    struct l2cap_conn conn = {.hcon = &hcon};
+    struct l2cap_conn conn = {.hcon = &hcon, .tx_ident = 6};
     struct l2cap_ops ops = {.get_peer_pid = get_peer_pid};
     struct l2cap_chan channels[2] = {0};
     disconnect_target = NULL;
     request_ident = 7;
+    allocate_identifiers = true;
     conn.chan_l.count = 2;
     for (int index = 0; index < 2; index++) {
         channels[index] = (struct l2cap_chan){.conn = &conn, .ops = &ops, .scid = 64 + index,
@@ -398,20 +411,22 @@ static void identifier_reuse_case(void) {
     for (int index = 0; index < 2; index++) {
         l2cap_ecred_connect(&channels[index]);
         assert(sent_count == 1 && sent_scids[0] == 64 + index && channels[index].ident == 7);
+        if (!index) {
+            for (int allocation = 0; allocation < 127; allocation++) {
+                assert(l2cap_get_ident(&conn) != 7);
+            }
+            assert(channels[0].state == BT_CONNECT && channels[0].ident == 7 && conn.tx_ident == 6);
+        }
     }
     u16 response[] = {64, 64, 10, 0, 80};
     struct l2cap_cmd_hdr command = {.ident = 7};
     assert(l2cap_ecred_conn_rsp(&conn, &command, sizeof(response), (u8 *)response) == 0);
     assert(channels[0].dcid == 80);
     assert(channels[1].deleted);
-    if (PROPOSED) {
-        assert(channels[0].deleted && channels[0].delete_error == ECONNRESET);
-        assert(channels[1].delete_error == ECONNREFUSED);
-    } else {
-        assert(channels[0].state == BT_CONNECTED && !channels[0].deleted);
-        assert(channels[1].delete_error == ECONNREFUSED);
-    }
-    printf("identifier-reuse-isolation=NOT_SATISFIED proposed=%d unrelated-channel-deleted=1\n", PROPOSED);
+    assert(channels[0].state == BT_CONNECTED && !channels[0].deleted);
+    assert(channels[1].delete_error == ECONNREFUSED);
+    allocate_identifiers = false;
+    printf("identifier-reuse-isolation=NOT_SATISFIED proposed=%d collateral-regression=0 allocator-wrap=128\n", PROPOSED);
 }
 int main(void) {
     run_case(1, 0, false);
@@ -462,10 +477,13 @@ def program(source: bytes, proposed: bool = False, header: bytes | None = None) 
             assert '__u8\t\tecred_tx_index;' in channel_header.read_text()
             source = kernel.read_bytes()
     text = source.decode()
+    allocator_start = text.index('static u8 l2cap_get_ident(')
+    allocator = text[allocator_start:text.index('\n}', allocator_start) + 2]
+    allocator = allocator.replace('l2cap_get_ident(', 'pinned_l2cap_get_ident(', 1)
     grouping = text[text.index('struct l2cap_ecred_conn_data {'):text.index('\nstatic void l2cap_le_start(')]
     response = text[text.index('static inline int l2cap_ecred_conn_rsp('):text.index('\nstatic inline int l2cap_ecred_reconf_req(')]
     disconnect = text[text.index('static inline int l2cap_disconnect_req('):text.index('\nstatic inline int l2cap_disconnect_rsp(')]
-    return f'#define PROPOSED {int(proposed)}\n' + SHIM + grouping + response + disconnect + CASES
+    return f'#define PROPOSED {int(proposed)}\n' + SHIM + allocator + grouping + response + disconnect + CASES
 
 
 def negotiations(path: Path) -> list[dict]:
@@ -741,7 +759,8 @@ def check(source: bytes, compiler: str, sanitize: bool = False) -> str:
         original_run = execute('original', native)
         original_run.check_returncode()
         output = original_run.stdout
-        proposed_run = execute('proposed', program(source, proposed=True, header=header))
+        proposed = program(source, proposed=True, header=header)
+        proposed_run = execute('proposed', proposed)
         proposed_run.check_returncode()
         corrected = proposed_run.stdout
         if any(record['reported_scenarios'] != 25 for record in executions):
@@ -752,6 +771,13 @@ def check(source: bytes, compiler: str, sanitize: bool = False) -> str:
         negative = execute('original-with-corrective-assertions', native.replace('#define PROPOSED 0', '#define PROPOSED 1', 1))
         if negative.returncode == 0 or 'mismatch == expect_mismatch' not in negative.stderr:
             raise AssertionError('Uncorrected source did not fail the corrective assertion after execution')
+        unguarded = proposed.replace('\tunsigned long dcid_used = 0;\n', '', 1)
+        unguarded = unguarded.replace(' ||\n\t\t    test_and_set_bit(chan->ecred_tx_index, &dcid_used)', '', 1)
+        if unguarded == proposed or 'dcid_used' in unguarded:
+            raise AssertionError('Collision negative control did not remove exactly the response-slot guard')
+        collision_negative = execute('unguarded-index-with-collision-assertions', unguarded)
+        if collision_negative.returncode == 0 or 'channels[0].state == BT_CONNECTED && !channels[0].deleted' not in collision_negative.stderr:
+            raise AssertionError('Unguarded proposal did not fail the collateral regression after execution')
     if 'count=2 trigger=65 mismatch=1 request=65,64 assignments=64:64,65:65' not in output:
         raise AssertionError('Native probe did not reproduce the predicted assignment')
     if 'disconnect_request=65:64 disconnect_response=65:65 association_mismatch=1' not in output:
@@ -765,7 +791,8 @@ def check(source: bytes, compiler: str, sanitize: bool = False) -> str:
         json.dumps({'compiler': compiler, 'compiler_flags': flags, 'sanitized': sanitize,
             'compiler_version': subprocess.check_output([compiler, '--version'], text=True).splitlines()[0],
             'sanitizer_options': sanitizer_options,
-            'identifier_reuse_isolation': 'NOT_SATISFIED', 'production_qualified': False,
+            'identifier_reuse_isolation': 'NOT_SATISFIED', 'collision_collateral_regression': False,
+            'production_qualified': False,
             'kernel_source_sha256': SOURCE_SHA256, 'kernel_header_sha256': HEADER_SHA256,
             'executions': executions}, sort_keys=True) + '\n')
 
@@ -774,7 +801,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, help='Use a local hash-matching kernel source instead of HTTPS')
     parser.add_argument('--compiler', default='cc')
-    parser.add_argument('--sanitize', action='store_true', help='Run all three native variants with ASan and UBSan')
+    parser.add_argument('--sanitize', action='store_true', help='Run host variants with ASan and UBSan')
     parser.add_argument('--kernel-build', type=Path, help='Native Pi prepared headers: bounded RAM-only Kbuild instead of host stubs')
     parser.add_argument('--metadata', type=Path, help='Optional private value-free btmon reconstruction')
     parser.add_argument('--captures', type=Path, help='Optional original captures root; emit only teardown headers')
