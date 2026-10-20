@@ -602,6 +602,13 @@ pressure duration and the controller's exact wait remain unmeasured. Early a09/a
 DUT-source PTR/AAAA packets reach Ubuntu before failure; their OS hostname
 records do not establish the missing Matter operational SRV or Pi reception.
 
+The [15:29 immediate cleanup report](../reports/2026-10-20_15-29-01.md)
+supersedes the earlier capacity blocker:3,249 closed successful detail files
+removed,47,174,795,264 allocated bytes freed,48,996,540,416 bytes free at final
+check. Four old fully successful Darwin runs retain all1,600 PASS records;
+all summaries, failed/interrupted evidence and other agents' work remain.
+The8-GiB reserve is restored; linked/native qualification has not yet run.
+
 #### Separate Operational Discovery Failures
 
 The original a04 `ca3d300af4dc9e9e`, a09 `dbb5d8f70aca047e` and a10
