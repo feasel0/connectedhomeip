@@ -1,0 +1,97 @@
+UNSENT DRAFT - HUMAN REVIEW REQUIRED
+
+Temporary routing/checklist section (remove only after human review):
+Patch To: Marcel Holtmann <marcel@holtmann.org>,
+          Luiz Augusto von Dentz <luiz.dentz@gmail.com>
+Patch Cc: linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
+Report/reproducer: maintainers only; do not mail the host probe to public
+lists automatically. Confirm disclosure classification and scope first;
+if a trust-boundary concern remains, seek private security triage.
+Confirm the email client preserves inline plain text and patch whitespace
+using Documentation/process/email-clients.rst; test delivery to yourself.
+No email has been sent. This is not a request to open a GitHub PR.
+
+Subject: Bluetooth: L2CAP: Match ECRED DCIDs by request position
+
+Affected target: bluez/bluetooth-next master snapshot
+27731ba091954eccddb2657053b590d2113e8d98 (2026-10-20),
+net/bluetooth/l2cap_core.c and include/net/bluetooth/l2cap.h.
+Source SHA256:
+3a879ac792f6f97245ed5ef93b1f8dd6ff0fd234b00f08ffcfdfe57f1460be77
+Header SHA256:
+703a53f5573c9f1d99140f13d0d53009ee00561b059f1ded314fe0ff1777405f
+
+An outgoing grouped ECRED request lists its initiating channel first, then
+deferred channels. Response handling currently assigns DCIDs in connection
+list order instead of request order. With a non-first initiating channel,
+this associates the wrong remote bearer and can stop ATT discovery or
+subscription setup. A correctly ordered peer response is sufficient.
+The grouped channels must satisfy the existing same-PID/PSM and pending
+ECRED-mode filters; no hostile peer input is needed for the observed fault.
+
+Fix the requester by retaining each SCID's request-array position in its
+channel and using that position for response lookup. Validate that slot's
+length, reject repeated positions and require an outgoing request pending.
+Do not shift later assignments when a pending channel disappears.
+The change adds one byte field to the internal channel structure; no
+userspace structure or wire format is changed. Structure-layout consumers
+must be rebuilt together. No unmeasured size or performance claim is made.
+
+Fixes: da49b602f7f7 ("Bluetooth: L2CAP: Use DEFER_SETUP to group ECRED connections")
+The actual introducing patch changed the former single-SCID request to
+trigger-first grouping. The 2025 b25120e1d5f2 responder-ordering fix addresses
+the opposite direction and does not fix this requester interpretation.
+Current IDA allocation/release, lock assertions, channel hold/put and
+duplicate-DCID timer behavior are preserved, not replaced by the older Pi
+implementation. No unrelated identifier redesign is proposed.
+
+Reproducer status: a standalone pinned-function host regression is available.
+Twenty-six cases pass for original diagnostic expectations and corrected
+expectations, both normally and under ASan/UBSan. Compiling negative controls
+require the correction from original code and abort at the expected assertion.
+The original diagnostic pass deliberately reproduces the mismatch. The host
+fixture models IDA primitives and post-traversal timer delivery, not kernel
+locking, callback concurrency or scheduler behavior. Actual current allocator
+and release functions are extracted and tested for pending reservation,
+exhaustion and reuse after release. Do not report the older probe's simple
+cyclic-allocator limitation as a failure of this current IDA test.
+
+The existing older-kernel hardware comparison is deciding supporting evidence
+for this mechanism, not runtime validation of the current-target port. It was
+not repeated. Raw native logs and captures remain private.
+
+Real x86-64 Bluetooth/protocol/UART-framework objects build before and after
+with GCC 11.4.0, W=1 and two jobs, without compiler warnings. RFCOMM, BNEP,
+HIDP and Bluetooth 6LoWPAN are enabled. This is not a module-link, full-kernel,
+multi-architecture, KUnit, qualification or boot/runtime validation claim.
+The kernel and all device configurations remain unloaded and unchanged.
+Zero-fuzz application passes. Strict code-only checkpatch is clean. Final
+metadata check reports one UNKNOWN_COMMIT_ID warning in the history-free
+archive; the exact SHA/subject were verified through the upstream commit API.
+Excluding only that type is clean; --no-signoff is intentional. Run the
+unexcluded check in a full-history kernel checkout before submission.
+
+Bounded GitHub searches found no equivalent requester-position patch among
+examined ECRED order/DCID/SCID results. Lore/kernel.org browsing was blocked
+by Anubis. Absence of a pending equivalent is not established; refresh the
+target and search again before sending. Pinned MAINTAINERS/get_maintainer.pl
+route changes to the above people/lists, using inline plain-text email.
+
+Threat-model assessment for the human reporter: the observed result is an
+interoperability failure among channels to the same peer. No privilege,
+cross-user or confidentiality boundary violation was demonstrated. This is
+not a proof that other impact is impossible or a security severity rating.
+Human disclosure review remains required; contact security@kernel.org
+privately with maintainers if that review identifies a boundary concern.
+
+AI transparency: GitHub Copilot assisted with source/history research,
+request-position implementation, regression adaptation, validation and this
+draft. The task was to forward-port only the evidence-supported requester
+correction, preserve current upstream lifetime/identifier semantics, and
+validate without repeating the physical comparison. The patch's Assisted-by:
+LLM trailer follows the pinned coding-assistants guidance. No human
+Signed-off-by, Reviewed-by or Tested-by tag is fabricated. A human must review
+the code and legal provenance, accept DCO responsibility and add their own
+genuine sign-off before any submission. No stable backport range is claimed.
+
+base-commit: 27731ba091954eccddb2657053b590d2113e8d98
