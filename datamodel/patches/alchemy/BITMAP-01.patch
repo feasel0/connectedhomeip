@@ -1,0 +1,315 @@
+diff --git a/asciidoc/overlay/character_occurrence_test.go b/asciidoc/overlay/character_occurrence_test.go
+new file mode 100644
+index 0000000..5d81190
+--- /dev/null
++++ b/asciidoc/overlay/character_occurrence_test.go
+@@ -0,0 +1,34 @@
++package overlay
++
++import (
++	"testing"
++
++	"github.com/project-chip/alchemy/asciidoc"
++)
++
++func TestSpecialCharacterRemovalOccurrence(t *testing.T) {
++	elements := asciidoc.Elements{
++		asciidoc.NewSpecialCharacter("&"),
++		asciidoc.NewSpecialCharacter("&"),
++		asciidoc.NewSpecialCharacter("<"),
++	}
++	reader := &Reader{removedCharacters: map[elementOccurrence]bool{
++		{parent: nil, child: &elements[0]}: true,
++	}}
++	for _, test := range []struct {
++		name     string
++		elements asciidoc.Elements
++		want     int
++	}{
++		{"whole", elements, 2},
++		{"tail", elements[1:], 2},
++		{"removed-only", elements[:1], 0},
++		{"copied-occurrences", append(asciidoc.Elements{}, elements...), 3},
++	} {
++		t.Run(test.name, func(t *testing.T) {
++			if got := reader.Iterate(nil, test.elements).Count(); got != test.want {
++				t.Fatalf("yielded %d elements, want %d", got, test.want)
++			}
++		})
++	}
++}
+diff --git a/asciidoc/overlay/element.go b/asciidoc/overlay/element.go
+index 2942d29..f008040 100644
+--- a/asciidoc/overlay/element.go
++++ b/asciidoc/overlay/element.go
+@@ -12,6 +12,11 @@ type elementOverlay struct {
+ 
+ type elementOverlays map[asciidoc.Element]*elementOverlay
+ 
++type elementOccurrence struct {
++	parent asciidoc.Parent
++	child  *asciidoc.Element
++}
++
+ func (eo elementOverlays) remove(el asciidoc.Element) {
+ 	if existing, ok := eo[el]; ok {
+ 		existing.action |= overlayActionRemove
+diff --git a/asciidoc/overlay/overlay.go b/asciidoc/overlay/overlay.go
+index 63b85fa..d149d30 100644
+--- a/asciidoc/overlay/overlay.go
++++ b/asciidoc/overlay/overlay.go
+@@ -32,9 +32,10 @@ type OverlayContext interface {
+ 
+ func Build(cxt OverlayContext, rootDoc *asciidoc.Document, rootPath string, attributes []asciidoc.AttributeName) (reader *Reader, err error) {
+ 	pps := &overlayState{
+-		attributes: make(map[string]any),
+-		counters:   map[string]*asciidoc.CounterState{},
+-		overlays:   map[asciidoc.Element]*elementOverlay{},
++		attributes:        make(map[string]any),
++		counters:          map[string]*asciidoc.CounterState{},
++		overlays:          map[asciidoc.Element]*elementOverlay{},
++		removedCharacters: map[elementOccurrence]bool{},
+ 	}
+ 
+ 	for _, a := range attributes {
+@@ -51,7 +52,7 @@ func Build(cxt OverlayContext, rootDoc *asciidoc.Document, rootPath string, attr
+ 	if err != nil {
+ 		return
+ 	}
+-	reader = &Reader{overlays: pps.overlays}
++	reader = &Reader{overlays: pps.overlays, removedCharacters: pps.removedCharacters}
+ 	buildDocTree(cxt, ppfs, rootDoc)
+ 	return
+ }
+@@ -63,6 +64,7 @@ func preparseFile(cxt OverlayContext, pps *overlayFileState, d *asciidoc.Documen
+ 	var addToCell bool
+ 	cxt.AddDocument(d)
+ 
++	initialParent := parent
+ 	parse.Traverse(d, asciidoc.RawReader, parent, els, func(doc *asciidoc.Document, el asciidoc.Element, parent asciidoc.ParentElement, index int) (should parse.SearchShould) {
+ 		var remove, replace bool
+ 		var replaceElements asciidoc.Elements
+@@ -72,7 +74,7 @@ func preparseFile(cxt OverlayContext, pps *overlayFileState, d *asciidoc.Documen
+ 				remove = true
+ 			} else {
+ 				var sectionName string
+-				sectionName, err = cxt.MakeSectionName(&Reader{overlays: pps.state.overlays}, el, pps)
++				sectionName, err = cxt.MakeSectionName(&Reader{overlays: pps.state.overlays, removedCharacters: pps.state.removedCharacters}, el, pps)
+ 				if err != nil {
+ 					should = parse.SearchShouldStop
+ 					return
+@@ -291,7 +293,15 @@ func preparseFile(cxt OverlayContext, pps *overlayFileState, d *asciidoc.Documen
+ 
+ 		}
+ 		if remove {
+-			pps.state.overlays.remove(el)
++			if _, character := el.(asciidoc.SpecialCharacter); character {
++				children := parent.Children()
++				if parent == initialParent {
++					children = els
++				}
++				pps.state.removedCharacters[elementOccurrence{parent: parent, child: &children[index]}] = true
++			} else {
++				pps.state.overlays.remove(el)
++			}
+ 		} else if replace {
+ 			pps.state.overlays.replace(el, replaceElements)
+ 		}
+@@ -301,7 +311,7 @@ func preparseFile(cxt OverlayContext, pps *overlayFileState, d *asciidoc.Documen
+ }
+ 
+ func buildDocTree(cxt OverlayContext, pps *overlayFileState, d *asciidoc.Document) {
+-	iterator := &Reader{overlays: pps.state.overlays}
++	iterator := &Reader{overlays: pps.state.overlays, removedCharacters: pps.state.removedCharacters}
+ 	for el := range parse.Skim[asciidoc.Element](iterator, d, iterator.Children(d)) {
+ 		switch el := el.(type) {
+ 		case *asciidoc.Section:
+diff --git a/asciidoc/overlay/reader.go b/asciidoc/overlay/reader.go
+index 5ce2169..60210a1 100644
+--- a/asciidoc/overlay/reader.go
++++ b/asciidoc/overlay/reader.go
+@@ -10,12 +10,13 @@ import (
+ )
+ 
+ type Reader struct {
+-	overlays elementOverlays
++	overlays          elementOverlays
++	removedCharacters map[elementOccurrence]bool
+ }
+ 
+ func (r *Reader) Iterate(parent asciidoc.Parent, elements asciidoc.Elements) asciidoc.ElementIterator {
+ 	return func(yield func(asciidoc.Element) bool) {
+-		if !r.iterate(elements, yield) {
++		if !r.iterate(parent, elements, yield) {
+ 			return
+ 		}
+ 		var parentOverlay *elementOverlay
+@@ -33,8 +34,11 @@ func (r *Reader) Iterate(parent asciidoc.Parent, elements asciidoc.Elements) asc
+ 	}
+ }
+ 
+-func (r *Reader) iterate(elements asciidoc.Elements, yield func(asciidoc.Element) bool) bool {
+-	for _, el := range elements {
++func (r *Reader) iterate(parent asciidoc.Parent, elements asciidoc.Elements, yield func(asciidoc.Element) bool) bool {
++	for index, el := range elements {
++		if _, character := el.(asciidoc.SpecialCharacter); character && r.removedCharacters[elementOccurrence{parent: parent, child: &elements[index]}] {
++			continue
++		}
+ 		elementOverlay, ok := r.overlays[el]
+ 		if !ok {
+ 			if !yield(el) {
+@@ -45,7 +49,7 @@ func (r *Reader) iterate(elements asciidoc.Elements, yield func(asciidoc.Element
+ 				continue
+ 			}
+ 			if elementOverlay.action.Replace() {
+-				if !r.iterate(elementOverlay.replace, yield) {
++				if !r.iterate(nil, elementOverlay.replace, yield) {
+ 					return false
+ 				}
+ 				continue
+diff --git a/asciidoc/overlay/state.go b/asciidoc/overlay/state.go
+index e3a6bde..a529bd0 100644
+--- a/asciidoc/overlay/state.go
++++ b/asciidoc/overlay/state.go
+@@ -16,7 +16,8 @@ type overlayState struct {
+ 	attributes map[string]any
+ 	counters   map[string]*asciidoc.CounterState
+ 
+-	overlays elementOverlays
++	overlays          elementOverlays
++	removedCharacters map[elementOccurrence]bool
+ 
+ 	lastSection      *asciidoc.Section
+ 	lastSectionLevel int
+diff --git a/matter/spec/bitmap_include_operators_test.go b/matter/spec/bitmap_include_operators_test.go
+new file mode 100644
+index 0000000..e252a17
+--- /dev/null
++++ b/matter/spec/bitmap_include_operators_test.go
+@@ -0,0 +1,126 @@
++package spec
++
++import (
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++
++	"github.com/project-chip/alchemy/asciidoc"
++	"github.com/project-chip/alchemy/asciidoc/parse"
++	"github.com/project-chip/alchemy/config"
++	"github.com/project-chip/alchemy/matter"
++)
++
++func TestBitmapIncludeOperatorPreservation(t *testing.T) {
++	for _, operator := range []struct {
++		name  string
++		value string
++	}{
++		{"and", "&"},
++		{"or", "|"},
++		{"less", "<"},
++		{"greater", ">"},
++		{"logical-and", "&&"},
++		{"less-equal", "<="},
++		{"greater-equal", ">="},
++		{"left-shift", "<<"},
++		{"right-shift", ">>"},
++	} {
++		t.Run(operator.name, func(t *testing.T) {
++			for _, test := range []struct {
++				name       string
++				includes   string
++				attributes []asciidoc.AttributeName
++			}{
++				{"standalone", "include::visible.adoc[]\n", nil},
++				{"disabled-after", "include::visible.adoc[]\ninclude::sibling.adoc[]\n", nil},
++				{"disabled-before", "include::sibling.adoc[]\ninclude::visible.adoc[]\n", nil},
++				{"enabled", "include::visible.adoc[]\ninclude::sibling.adoc[]\n", []asciidoc.AttributeName{"synthetic-feature"}},
++			} {
++				t.Run(test.name, func(t *testing.T) {
++					root := t.TempDir()
++					expression := "MASK_A " + operator.value + " MASK_B"
++					visible := strings.ReplaceAll("Combine `"+expression+"`.", "|", "\\|")
++					want := strings.ReplaceAll("Combine "+expression+".", "|", "\\|")
++					for name, contents := range map[string]string{
++						"main.adoc":    test.includes,
++						"visible.adoc": "[cols=\"1,1,4a\"]\n|===\n|Bit |Name |Summary\n|3 |SyntheticFlag |" + visible + "\n|===\n",
++						"sibling.adoc": "ifdef::synthetic-all,synthetic-feature[]\nHidden `MASK_C " + operator.value + " MASK_D`.\nendif::[]\n",
++					} {
++						if err := os.WriteFile(filepath.Join(root, name), []byte(contents), 0600); err != nil {
++							t.Fatal(err)
++						}
++					}
++					document, err := readFile(filepath.Join(root, "main.adoc"), root)
++					if err != nil {
++						t.Fatal(err)
++					}
++					library := NewLibrary(document, config.Library{}, nil, NewDocCache(root))
++					if err := library.Preparse(root, test.attributes); err != nil {
++						t.Fatal(err)
++					}
++					found := 0
++					parse.Traverse(document, library, document, library.Children(document), func(doc *asciidoc.Document, table *asciidoc.Table, _ asciidoc.ParentElement, _ int) parse.SearchShould {
++						info, err := ReadTable(doc, library, table)
++						if err != nil {
++							t.Fatal(err)
++						}
++						if len(info.Rows) != 2 {
++							t.Fatalf("rows = %d, want 2", len(info.Rows))
++						}
++						for _, reader := range []struct {
++							name  string
++							value asciidoc.Reader
++						}{
++							{"raw", asciidoc.RawReader},
++							{"preprocessed", library},
++						} {
++							value, err := info.ReadValue(reader.value, info.Rows[1], matter.TableColumnSummary)
++							if err != nil {
++								t.Fatal(err)
++							}
++							if value != want {
++								t.Errorf("%s summary = %q, want %q", reader.name, value, want)
++							}
++						}
++						found++
++						return parse.SearchShouldContinue
++					})
++					if found != 1 {
++						t.Fatalf("visible table count = %d, want 1", found)
++					}
++					hidden := 0
++					parse.Traverse(document, library, document, library.Children(document), func(_ *asciidoc.Document, element *asciidoc.Monospace, _ asciidoc.ParentElement, _ int) parse.SearchShould {
++						var text strings.Builder
++						for child := range library.Iterate(element, library.Children(element)) {
++							switch child := child.(type) {
++							case *asciidoc.String:
++								text.WriteString(child.Value)
++							case asciidoc.SpecialCharacter:
++								text.WriteString(child.Character)
++							default:
++								t.Fatalf("unexpected synthetic expression child: %T", child)
++							}
++						}
++						value := text.String()
++						if strings.Contains(value, "MASK_C") {
++							hidden++
++							if value != "MASK_C "+operator.value+" MASK_D" {
++								t.Errorf("enabled sibling expression = %q", value)
++							}
++						}
++						return parse.SearchShouldContinue
++					})
++					wantHidden := 0
++					if test.name == "enabled" {
++						wantHidden = 1
++					}
++					if hidden != wantHidden {
++						t.Errorf("sibling expression count = %d, want %d", hidden, wantHidden)
++					}
++				})
++			}
++		})
++	}
++}
