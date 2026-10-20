@@ -609,6 +609,19 @@ check. Four old fully successful Darwin runs retain all1,600 PASS records;
 all summaries, failed/interrupted evidence and other agents' work remain.
 The8-GiB reserve is restored; linked/native qualification has not yet run.
 
+The [16:48 linked integration report](../reports/2026-10-20_16-48-14.md)
+supersedes the unlinked-build limitation: original and proposed complete
+Bluetooth families each link 18 ARM64 modules against the running Pi package,
+with successful modpost, matching vermagic and 13 actual private-header
+consumers per variant. No bootable kernel image was built. The physical
+comparison stopped before its first native attempt: idle WirePlumber listeners
+initially held RFCOMM; after their reversible release, the packaged Bluetooth
+core retained two references with no module holders and BlueZ stopped throughout
+a 20-second check. No force unload, experimental module load or reboot occurred.
+Both packaged stacks/adapters, audio and linger are restored; temporary daemons,
+credentials and the emergency reboot timer are closed. Runtime correction,
+native GATT/StartNotify and DNS-SD validation remain unperformed; all six OPEN.
+
 #### Separate Operational Discovery Failures
 
 The original a04 `ca3d300af4dc9e9e`, a09 `dbb5d8f70aca047e` and a10
@@ -669,7 +682,7 @@ gates must pass first. No timing-only DNS-SD/CASE fix or new capture framework.
 | January 2025 iteration 78 | CASE E43681 Sigma3 at 14:15:35.228 followed by secure-channel status at 14:15:35.929; native final CommandSender.cpp:343 timeout. Earlier catalog identifies subsequent encrypted CommissioningComplete. | Distinct post-CASE command-progress failure, high confidence in phase, not root cause. | Authenticate command/response capture and responder delivery; missing relevant DUT/OTBR evidence. OPEN, investigation owner. |
 | PR528 enabled Ubuntu iteration 36 | Wildcard SubscribeRequest INVALID_ACTION after report/status retransmission and timeout; intended controller/OTBR/DUT network identities agree. | ReportData pretty-print Cluster->Attribute gap83.226 seconds; checksum-verified host global OOM kills20-GB cpptools at recovery boundary. Controller status93.319 seconds after logged receipt; exact blocking mechanism unproved. | Bind controller PID/TID and exact build; monotonic pretty-print/status points, on-stall stack and memory-pressure observations. No timeout/retry change. OPEN, investigation owner. |
 | Wi-Fi IP PASE IncorrectState | Native exception alone does not identify protocol phase. | Discovery, initialization and transport/session hypotheses remain distinct. | Exact original call, peer-discovery evidence, PASE headers and native error origin; not an inferred BLE defect. |
-| Six BLE-Wi-Fi EATT failures, including a02 subscription | Wrong-bearer ATT replies followed by teardown contradicting advertised CID pairs. | Original bytes plus pinned disconnect handler expose DUT local65 -> controller65; requester ordering reproduces this state. Case B supported; full list scheduling unobserved. | Bounded multi-bearer dual-peer socket observation and correction at the original GATT/notification phase. Hardware remains disk-blocked; all six OPEN. |
+| Six BLE-Wi-Fi EATT failures, including a02 subscription | Wrong-bearer ATT replies followed by teardown contradicting advertised CID pairs. | Original bytes plus pinned disconnect handler expose DUT local65 -> controller65; requester ordering reproduces this state. Case B supported; full list scheduling unobserved. | Complete original/corrected module families now link; live core replacement is blocked by two persistent references. No native comparison ran. Safe replacement/boot path then matched multi-bearer GATT/StartNotify test still required; all six OPEN. |
 | Three BLE-Wi-Fi operational timeouts | Post-provisioning phase, separate from BLE pairing. | IPv6 reachability, publication, DNS-SD and CASE remain distinct. | Actual interface/global address and route at failure, corresponding discovery result and CASE exchange. |
 | Native SIGSEGV / prolonged PASE | Crashes and long pending protocol work are distinct observations. | No new independent mechanism established. | Matching core/backtrace/build/faulting callback per crash; last actual protocol/callback progress per hang. |
 | Thread/SRP/publication | Timeout does not establish a failed network layer. | Dataset, attachment, address, SRP and delivery remain separate. | Exact peer's dataset fingerprint, SRP record, operational address and routed packet timestamps. |

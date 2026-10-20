@@ -1,4 +1,4 @@
-"""Probe pinned ECRED functions or compile native objects; never load a kernel."""
+"""Probe pinned ECRED functions or build matching native modules; never load them."""
 
 import argparse
 from datetime import datetime, timezone
@@ -11,6 +11,7 @@ import resource
 import shutil
 import struct
 import subprocess
+import tarfile
 import tempfile
 import urllib.request
 
@@ -715,6 +716,105 @@ def kernel_check(source: bytes, build: Path) -> str:
         'source_hashes': {name: hashlib.sha256(data).hexdigest() for name, data in files.items()}}, sort_keys=True) + '\n'
 
 
+def kernel_modules(source: bytes, directory: Path) -> str:
+    """Link both complete Bluetooth module sets against exact native package inputs."""
+    release = '6.12.47+rpt-rpi-2712'
+    if os.uname().machine != 'aarch64' or os.uname().release != release:
+        raise ValueError('Matching native Raspberry Pi kernel required')
+    if hashlib.sha256(source).hexdigest() != SOURCE_SHA256:
+        raise ValueError('Pinned source mismatch')
+    if not directory.is_absolute() or directory.exists():
+        raise ValueError('Use a new absolute build directory; preserve prior attempts')
+    if shutil.disk_usage(directory.parent).free < 14 * 1024**3:
+        raise ValueError('Build budget 6 GiB plus protected 8 GiB reserve required')
+    available = re.search(r'^MemAvailable:\s+(\d+) kB$', Path('/proc/meminfo').read_text(), re.M)
+    if not available or int(available.group(1)) * 1024 < 3 * 1024**3:
+        raise ValueError('At least 3 GiB native memory headroom required')
+    build = Path('/lib/modules', release, 'build').resolve()
+    config = build / '.config'
+    if hashlib.sha256(config.read_bytes()).hexdigest() != '9bb549d81cc44c5420e50027882088ba83e862013e976f10f976901255c7c4fc':
+        raise ValueError('Prepared kernel config mismatch')
+    patch = Path(__file__).resolve().parents[1] / 'patches/ecred-request-index.patch'
+    if hashlib.sha256(patch.read_bytes()).hexdigest() != '4fb8f962a8d8b4ab98161b8f290a1ba7fac02721c657e471f5d38f794bb0204f':
+        raise ValueError('Reviewed patch mismatch')
+    directory.mkdir(mode=0o700)
+    archive = directory / 'source.tar.gz'
+    with urllib.request.urlopen(f'https://codeload.github.com/raspberrypi/linux/tar.gz/{REVISION}', timeout=90) as incoming:
+        with archive.open('wb') as destination:
+            shutil.copyfileobj(incoming, destination, 1024 * 1024)
+    selected = {}
+    consumers = []
+    with tarfile.open(archive) as snapshot:
+        for member in snapshot:
+            if not member.isfile():
+                continue
+            relative = '/'.join(member.name.split('/')[1:])
+            if '..' in Path(relative).parts or relative.startswith('/'):
+                raise ValueError('Unsafe snapshot path')
+            keep = relative.startswith(('net/bluetooth/', 'drivers/bluetooth/', 'include/net/bluetooth/'))
+            if not keep and not relative.endswith(('.c', '.h')):
+                continue
+            with snapshot.extractfile(member) as stream:
+                content = stream.read()
+            if re.search(rb'(?:struct\s+l2cap_chan\b|#\s*include\s*[<"]net/bluetooth/l2cap\.h[>"])', content):
+                consumers.append(relative)
+                if not keep:
+                    raise ValueError('Additional L2CAP consumer requires integration: ' + relative)
+            if keep:
+                selected[relative] = content
+    if hashlib.sha256(selected['net/bluetooth/l2cap_core.c']).hexdigest() != SOURCE_SHA256:
+        raise ValueError('Snapshot core mismatch')
+    if hashlib.sha256(selected['include/net/bluetooth/l2cap.h']).hexdigest() != HEADER_SHA256:
+        raise ValueError('Snapshot header mismatch')
+    records = []
+    for variant in ('original', 'proposed'):
+        work = directory / variant
+        work.mkdir()
+        for relative, content in selected.items():
+            destination = work / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(content)
+        if variant == 'proposed':
+            subprocess.run(['patch', '--batch', '--fuzz=0', '-p1', '-i', str(patch)],
+                cwd=work, check=True, capture_output=True)
+        (work / 'Makefile').write_text('obj-m := net/bluetooth/ drivers/bluetooth/\n'
+            'LINUXINCLUDE := -I$(src)/include $(LINUXINCLUDE)\n')
+        command = ['make', '-C', str(build), 'M=' + str(work), '-j2', 'modules']
+        with (work / 'build.log').open('w') as log:
+            result = subprocess.run(command, stdout=log, stderr=subprocess.STDOUT, timeout=1200,
+                preexec_fn=lambda: os.nice(15))
+        if result.returncode:
+            raise ValueError(f'{variant} module build failed; preserve {work / "build.log"}')
+        modules = sorted(work.rglob('*.ko'))
+        if not modules or not (work / 'Module.symvers').is_file():
+            raise ValueError('No linked modules or modpost symbol result')
+        dependencies = sorted(work.rglob('.*.o.cmd'))
+        header_users = []
+        for dependency in dependencies:
+            if str(work / 'include/net/bluetooth/l2cap.h') in dependency.read_text():
+                header_users.append(str(dependency.relative_to(work)))
+        if not any('l2cap_core.o.cmd' in name for name in header_users):
+            raise ValueError('Compiled core did not consume the private changed header')
+        manifest = {}
+        for module in modules:
+            vermagic = subprocess.check_output(['/usr/sbin/modinfo', '-F', 'vermagic', str(module)], text=True).strip()
+            if not vermagic.startswith(release + ' '):
+                raise ValueError('Linked module release mismatch')
+            manifest[str(module.relative_to(work))] = {'sha256': hashlib.sha256(module.read_bytes()).hexdigest(),
+                'bytes': module.stat().st_size, 'vermagic': vermagic}
+        records.append({'variant': variant, 'exit': result.returncode, 'command': command,
+            'modules': manifest, 'private_header_users': header_users,
+            'symvers_sha256': hashlib.sha256((work / 'Module.symvers').read_bytes()).hexdigest()})
+        print(f'LINKED: {variant}, {len(modules)} matching modules', flush=True)
+    record = {'revision': REVISION, 'kernel': release, 'source_consumers': sorted(consumers),
+        'source_archive_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+        'prepared_config_sha256': hashlib.sha256(config.read_bytes()).hexdigest(),
+        'package_symvers_sha256': hashlib.sha256((build / 'Module.symvers').read_bytes()).hexdigest(),
+        'records': records, 'loaded': False, 'runtime_validated': False}
+    (directory / 'linked-result.json').write_text(json.dumps(record, indent=2, sort_keys=True) + '\n')
+    return json.dumps(record, sort_keys=True) + '\n'
+
+
 def check(source: bytes, compiler: str, sanitize: bool = False) -> str:
     """Compile the pinned functions with ordered-list stubs, not a kernel or BlueZ."""
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
@@ -804,23 +904,30 @@ if __name__ == '__main__':
     parser.add_argument('--compiler', default='cc')
     parser.add_argument('--sanitize', action='store_true', help='Run host variants with ASan and UBSan')
     parser.add_argument('--kernel-build', type=Path, help='Native Pi prepared headers: bounded RAM-only Kbuild instead of host stubs')
+    parser.add_argument('--kernel-modules', type=Path, help='New native Pi output directory: link complete original/proposed Bluetooth module sets')
     parser.add_argument('--metadata', type=Path, help='Optional private value-free btmon reconstruction')
     parser.add_argument('--captures', type=Path, help='Optional original captures root; emit only teardown headers')
     args = parser.parse_args()
-    if args.kernel_build and args.sanitize:
+    if (args.kernel_build or args.kernel_modules) and args.sanitize:
         parser.error('--sanitize is for host execution, not the native kernel object compile')
+    if args.kernel_build and args.kernel_modules:
+        parser.error('Select object compilation or complete module linking, not both')
     if args.source:
         content = args.source.read_bytes()
     else:
         with urllib.request.urlopen(SOURCE_URL, timeout=30) as stream:
             content = stream.read(300000)
     try:
-        print(kernel_check(content, args.kernel_build) if args.kernel_build else check(content, args.compiler, args.sanitize), end='')
+        if args.kernel_modules:
+            print(kernel_modules(content, args.kernel_modules), end='')
+        else:
+            print(kernel_check(content, args.kernel_build) if args.kernel_build else check(content, args.compiler, args.sanitize), end='')
     except subprocess.CalledProcessError as error:
         raise SystemExit(error.stderr or str(error)) from error
     if args.metadata:
         print(json.dumps({'historical_negotiations': negotiations(args.metadata)}, sort_keys=True))
     if args.captures:
         print(json.dumps({'historical_teardowns': historical_teardowns(args.captures)}, sort_keys=True))
-    print('PASS: bounded kernel object compile' if args.kernel_build else
+    print('PASS: complete linked native Bluetooth modules; not loaded or runtime-validated' if args.kernel_modules else
+        'PASS: bounded kernel object compile' if args.kernel_build else
         'PASS: pinned-function host probe; not live kernel, socket, BlueZ, or corrective hardware validation')
