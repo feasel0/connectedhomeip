@@ -44,6 +44,7 @@ and API credentials are not included in this directory or its commits.
 The reusable role and process guidance and the current presentation summary live in `datamodel/docs/`:
 
 - [Matter 1.7 SVE — work summary and findings](docs/2026-10-19_SVE_status_and_findings.md) — shareable status, the generator fix, verified outputs, and the mismatch investigation queue.
+- [Current-state integration PR description](docs/SVE_integration_PR_description_current.md) — ready-to-apply replacement text for upstream draft #74862; maintain in sync with its current technical findings.
 - [Data Model Manager role and release playbook](docs/data_model_manager_role_and_release_playbook.md) — **start here for future agents**; responsibilities, milestone workflow, validation gates, triage, and release handoff. Update after each meaningful tested process change.
 - [Data model process improvements and automation backlog](docs/data_model_process_improvements.md) — lower-authority hypotheses, prototype proposals, and lessons to develop between releases. Promote successful improvements into the role playbook.
 
