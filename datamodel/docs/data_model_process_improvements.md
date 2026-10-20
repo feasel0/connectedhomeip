@@ -20,7 +20,7 @@ Goals:
 
 | ID | State | Priority | Proposal | Expected benefit |
 |---|---|---|---|---|
-| P01 | **Observed fix implemented; PR candidate** | Immediate | Support combined specification book and historical book layouts in XML generator | Restores actual current generation and avoids silent selection errors |
+| P01 | **Observed fix implemented; fork draft PR open** | Immediate | Support combined specification book and historical book layouts in XML generator | Restores actual current generation and avoids silent selection errors |
 | P02 | **Proposed in second meeting** | High, future | Periodic future-model validation against SDK applications | Move incompatibility discovery weeks/months before release |
 | P03 | **Proposed** | High | Track per-cluster ownership and compatibility debt with actionable evidence | Route fixes to experts instead of sole release integrator |
 | P04 | **Proposed in second meeting** | High, future | Spec-side protected CI / nightly prototype | Test private spec changes without publishing private material |
@@ -37,7 +37,7 @@ Goals:
 
 **Implemented on dedicated data-model work branch:** Detect the complete combined-book include entrypoint set; use its printed recursive include records; fall back to legacy book targets when needed; use exact AsciiDoc include basename membership instead of fragile substring matching. Six focused tests pass. Full current generation exited 0; 280 model XML and manifest checks passed. See [detailed evidence](../reports/2026-10-19_17-02-05.md).
 
-**Remaining:** Keep an upstream-facing generator/test PR isolated from non-tooling, private or experimental data-model changes; run upstream CI/review; verify old-spec behavior against an actual historical checkout when feasible. Expanded include-flag combinations (`None`, `All`) merit real integration validation later. Do not claim the fix means the new reference model is SVE-approved.
+**PR status:** [Fork-local draft PR #1](https://github.com/feasel0/connectedhomeip/pull/1) is open against the fork's master, containing exactly the generator fix and tests. Upstream PR creation was attempted but blocked by GitHub integration permissions; **no upstream PR exists yet**.\n\n**Remaining:** Transfer/recreate the narrow fix as an upstream-facing draft when authorized by GitHub permissions; run upstream CI/review; verify old-spec behavior against an actual historical checkout when feasible. Expanded include-flag combinations (`None`, `All`) merit real integration validation later. Do not claim the fix means the new reference model is SVE-approved.
 
 **Promotion:** Once merged upstream, mark this as an established generator compatibility feature in the playbook, with commit/PR reference.
 
