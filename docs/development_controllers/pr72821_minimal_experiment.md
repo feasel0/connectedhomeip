@@ -792,11 +792,15 @@ job 118997391301 and macOS framework TSan job 119001487723 all succeeded.
 Those prior-head successes are distinct from the fresh corrected-head
 native Apple and portable results above.
 
-At this publication, corrected-head Restyled job 119021329082 passes;
-Darwin simulated job 119021500682 and Linux `python_lib` job 119021500583
-are executing in workflow 39538731741. Framework workflow 39538731896 is
-still building before its TSan tests. These gates are pending, not claimed
-as corrected-head successes. The existing watcher remains attached.
+The final receipt verifies corrected-head Darwin simulated job 119021500682
+and Restyled job 119021329082 succeeded. Linux `python_lib` job 119021500583
+is still executing in workflow 39538731741. Framework TSan job 119025233209
+is executing in workflow 39538731896. These two gates remain pending, not
+claimed as corrected-head successes. The existing watcher remains attached.
+The exact-head snapshot contains 24 successful checks, 42 pending, one
+cancelled, one neutral and one skipped; none reports failure or timeout.
+Local source HEAD, the fork branch and the PR head all match the corrected
+SHA. All review threads are resolved, with no pagination remaining.
 
 No fresh Gemini review or response was present at the review closeout;
 no duplicate request was sent. The PR remains OPEN, non-draft and unmerged
