@@ -611,9 +611,9 @@ Three Darwin-only tests in `TestDarwinBleConnection.mm` use the real delegate
 and layer with a substituted central-manager allocation, without starting a
 physical Bluetooth manager. They cover normal browsing/stop/retry and old
 callback suppression, reentrant retry, and prewarm preservation. They are
-registered only for Darwin with both BLE layers enabled. These tests have
-not been compiled or executed on an Apple host in this session; source,
-formatting and GN checks are not a substitute for that qualification.
+registered only for Darwin with both BLE layers enabled. Native compilation
+and execution were pending at the first follow-up closeout; the qualification
+below supersedes that limitation, but does not qualify physical Bluetooth.
 
 Fresh local checks after the follow-up pass 68 native tests (layer 39,
 fallback 17, pairer 12), and the same 68 under ASan with `detect_leaks=1`.
@@ -623,10 +623,183 @@ The earlier 128-native/25-disabled totals above apply to the parent head;
 they are not additional fresh executions for this Darwin follow-up.
 
 The parent's Linux `python_lib` job 118910032177 completed successfully,
-including build/native, Python, payload and credential tests. New-head CI
-has started and is pending; final-head Restyled job 118939026466 passes
-after the newline repair. No completed native Apple qualification is
-claimed. Gemini has not produced a new review following request 6302735819.
+including build/native, Python, payload and credential tests. At this first
+closeout, new-head CI was pending and Restyled job 118939026466 passed
+after the newline repair. Native Apple qualification was not yet available.
+Gemini had not produced a new review following request 6302735819.
 There are no new Gemini findings to assess and no separate speculative PR.
 The PR remains unmerged. Physical BLE, CoreBluetooth delivery, Thread Meshcop
 and other platform backends remain unqualified.
+
+## Native Darwin Qualification and Framework TSan Diagnosis
+
+### Test-only Compilation Correction
+
+The simulated Darwin build on `b1521ac41dcfd8fe3e214feea6c7dfde149d3a2c`
+failed because Pigweed equality assertions try to format Objective-C and
+dispatch-source pointers through `const void *`. Five pointer equality or
+inequality assertions in the new test have the same issue. Commit
+`b66db8f83ff8c1a6ac6868a024b317bca3d69e36` changes all five to boolean
+comparisons. Scalar and CHIP_ERROR equality checks are retained. There is
+no production-code change, and browsing replacement, stale callback,
+reentrant retry and prewarm coverage are preserved.
+
+### Executed Apple Qualification
+
+Fork workflow run 39529817926, native job 118992885242, compiled target
+`src/platform/tests:TestDarwinBleConnection.mm` on a macOS ARM64 runner and
+executed its real Objective-C++ test executable. All three cases pass:
+
+- `NormalBrowsingRetiresPendingRequest`
+- `BrowsingReplacementAllowsReentrantRetry`
+- `PrewarmPreservesPendingRequest`
+
+The workflow runs only on the existing experimental branch, not in #72821.
+To avoid cancelling the unchanged-head framework rerun, the Apple checkout
+starts from published `b1521ac41dc`, applies only the committed assertion
+correction, and requires `git write-tree` to equal
+`278ae53c5988e10f5b3dcbcf5c9fe7e9e6218ec8`, the exact source tree of
+`b66db8f83ff`. That identity check passed before bootstrap and compilation.
+The executable exited zero and the workflow positively required each named
+case to pass. There were no additional compile, link or runtime corrections.
+The central-manager test substitution avoids physical radio operations;
+this is native Darwin lifecycle qualification, not accessory interoperability.
+
+Fresh portable checks also pass: 39 layer, 17 fallback and 12 pairer cases,
+68 total, plus the same 68 with ASan and `detect_leaks=1`. clang-format 16,
+the final-newline byte check and scoped diff checks pass.
+
+### Exact Framework Failure
+
+Original TSan job 118945849675 (run 39513209315, attempt 1) exited 65.
+Its ordinary job log did not identify a test. Artifact 12310192358,
+`darwin-framework-test-logs-tsan`, contains the XCTest result bundle.
+The separate Apple `xcresult` job 118992885303 used `xcrun xcresulttool`
+to decode it: 468 passed, one failed, two skipped. The sole failure is
+`MTRAsyncWorkQueueTests/testRunItem`, asserting that `weakItem` is nil at
+line 59. The retained object is described as `<MTRAsyncWorkItem 30 complete>`.
+The reported failure is an XCTest assertion, not a TSan data-race report.
+
+Baseline TSan job 118916713521 on `22ee84d9c90` passed. The actual
+`MTRAsyncWorkQueue.mm`, its header, and `MTRAsyncWorkQueueTests.m` are
+byte-identical between that baseline and `b1521ac41dc`. The test fulfills
+its expectation inside a global-queue ready handler. That handler's
+completion block retains the work item; fulfilling the expectation does not
+prove the enclosing dispatch block has returned and released its captures.
+The immediate teardown weak-reference assertion is therefore timing-sensitive
+even after the item has completed. No BLE-specific failure or data race was
+identified, and no queue or production behavior is modified for this result.
+The unchanged-head TSan rerun, job 118985983726 (attempt 2 of the original
+run), completed successfully at 2026-10-21T02:06:45Z. Its exact head remains
+`b1521ac41dcfd8fe3e214feea6c7dfde149d3a2c`. Together with the successful
+baseline and the failure's asynchronous retention window, this supports an
+intermittent pre-existing lifetime assertion rather than an attributable BLE
+regression. The original failure is preserved; success does not erase it.
+
+Only after that rerun completed was the assertion-only commit
+`b66db8f83ff8c1a6ac6868a024b317bca3d69e36` pushed to the existing fork
+feature branch. The upstream PR API confirms that head, OPEN, non-draft and
+unmerged. The experimental workflow and this report remain outside #72821.
+
+## Delayed Darwin Error and Ownership Reviews
+
+### Native Ordering Reproduction and Local Correction
+
+Copilot review 4332342309 identified a second, distinct Darwin ordering issue.
+With no browser, the object-based connection entry point asynchronously queues
+`CHIP_ERROR_INCORRECT_STATE`. Cancellation previously returned success without
+invalidating that block. The layer could accept request B, after which A's
+queued trampoline used the same layer pointer to invoke and clear B's state.
+
+Test-only commit `91f7c73d3e78bdb3b6dd6ce3da9bfa811c7ee477` adds
+`CanceledObjectErrorDoesNotRetireReplacement`. One real Matter-queue block
+queues A, cancels A and starts B; a second synchronous block executes after
+the queued error. Apple run 39537958230, native job 119018891410, compiled
+and executed the test. The three browsing/prewarm cases passed; the new case
+failed its no-error-to-B and B-remains-busy assertions. This is an executed
+native regression rejection, not a compile failure or portable simulation.
+
+Correction `54af63db0d926b8442973262c1605556b60c3891` adds a cancellation
+count to the Darwin delegate. The deferred rejection captures the original
+callback and count; `CancelConnection` increments the count, and the queued
+block calls back only if it still matches. This state is used only by that
+Darwin deferred-error branch. There is no global registry, common-layer
+ownership relaxation, Linux production change, or generalized event redesign.
+Delegates must still outlive unfinished queued backend work.
+
+Positive Apple run 39538831501, native job 119021650077, verified the exact
+corrected checkout, compiled/linked the executable and passed all seven cases:
+
+- `NormalBrowsingRetiresPendingRequest`
+- `BrowsingReplacementAllowsReentrantRetry`
+- `PrewarmPreservesPendingRequest`
+- `CanceledObjectErrorDoesNotRetireReplacement`
+- `ObjectErrorsRemainAsynchronousAndReusable`
+- `CanceledObjectErrorDoesNotConsumeFreshObjectError`
+- `NormalCancellationAllowsFreshRequest`
+
+The additional queued-object control places a marker between A's old rejection
+and B's new rejection: A must remain suppressed while B remains pending, and
+B must then receive exactly one error. The normal delivery control proves
+errors remain asynchronous across fresh requests. The cancellation control
+checks timer cleanup, no callbacks on successful cancellation and fresh
+connection completion. Existing browsing replacement and prewarm tests are
+preserved. These are native Objective-C++ lifecycle/queue tests with a
+substituted central manager, not physical CoreBluetooth commissioning.
+
+### Callback Context and Post-completion Cancellation
+
+`mConnectionAppState` is the opaque caller callback context for tracked
+single-result discriminator/object requests, with the layer substituted for
+null. It is not an owned allocation. The backend receives the surviving layer
+pointer; the terminal trampoline retrieves the original context, clears the
+saved state, and then calls the caller. Owner-specific cancellation matches
+that saved context, preventing one commissioner from canceling another.
+Cancellation detaches it even if the platform operation must still drain.
+Plural-discriminator requests forward their context directly and do not use
+this slot. A short field comment documents both roles without changing its
+representation. Direct reply to Cecille: review reply 4332767728.
+
+`ReleaseCommissioneeDevice` attempts owner-specific cancellation only for
+`mDeviceInPASEEstablishment`. Success and error trampolines clear the pending
+flag, context and callbacks before notifying the commissioner. Consequently
+the subsequent `CancelBleIncompleteConnection(this)` does not match and is
+a successful no-op, including when invoked inside the success callback.
+This terminal operation is platform BLE connection establishment, not necessarily
+PASE completion. Established endpoint cleanup remains the existing separate
+`CloseAllBleConnections` branch in `ReleaseCommissioneeDevice`.
+
+The added portable case
+`OwnerCancellationAfterCompletionPreservesEstablishedEndpoint` observes actual
+callback context and backend cancellation/close counts. It proves no backend
+cancellation after success or error, no cancellation of a replacement owner,
+and one established endpoint close only when explicit cleanup is requested.
+No commissioner behavior change was needed. Direct reply to Cecille:
+review reply 4332767848.
+
+All three threads were resolved only after direct replies and evidence.
+Copilot reply 4332773948 links both executed Apple runs. Fresh corrected-head
+portable results are 40 layer, 17 fallback and 12 pairer cases: 69 passed,
+plus the same 69 under ASan with `detect_leaks=1`. No sanitizer/leak or
+GLib-critical diagnostics were observed. All verified Linux fallback and
+restart regressions remain unchanged and pass. clang-format 16, editor
+diagnostics and scoped diff checks pass.
+
+### CI and Qualification Boundary
+
+On `b66db8f83ff`, Darwin simulated job 118997391448, Linux `python_lib`
+job 118997391301 and macOS framework TSan job 119001487723 all succeeded.
+Those prior-head successes are distinct from the fresh corrected-head
+native Apple and portable results above.
+
+At this publication, corrected-head Restyled job 119021329082 passes;
+Darwin simulated job 119021500682 and Linux `python_lib` job 119021500583
+are executing in workflow 39538731741. Framework workflow 39538731896 is
+still building before its TSan tests. These gates are pending, not claimed
+as corrected-head successes. The existing watcher remains attached.
+
+No fresh Gemini review or response was present at the review closeout;
+no duplicate request was sent. The PR remains OPEN, non-draft and unmerged
+at `54af63db0d926b8442973262c1605556b60c3891`. Physical BLE accessory
+commissioning, real CoreBluetooth delivery, Thread Meshcop and other backend
+or arbitrary delegate-lifetime qualification remain outside the evidence.
