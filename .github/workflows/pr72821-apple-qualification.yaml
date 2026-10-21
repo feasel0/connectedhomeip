@@ -18,13 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: b1521ac41dcfd8fe3e214feea6c7dfde149d3a2c
-      - name: Construct and verify exact assertion-fix source tree
+          ref: 91f7c73d3e78bdb3b6dd6ce3da9bfa811c7ee477
+      - name: Verify exact Darwin cancellation regression source
         run: |
-          perl -pi -e 's/ASSERT_NE\(previous\.timer, nullptr\)/ASSERT_TRUE(previous.timer != nullptr)/; s/EXPECT_EQ\(previous\.timer, nullptr\)/EXPECT_TRUE(previous.timer == nullptr)/; s/EXPECT_EQ\(ble, nil\)/EXPECT_TRUE(ble == nil)/; s/EXPECT_EQ\(ble, previous\)/EXPECT_TRUE(ble == previous)/; s/EXPECT_NE\(previous\.timer, nullptr\)/EXPECT_TRUE(previous.timer != nullptr)/' src/platform/tests/TestDarwinBleConnection.mm
-          git add src/platform/tests/TestDarwinBleConnection.mm
-          test "$(git write-tree)" = 278ae53c5988e10f5b3dcbcf5c9fe7e9e6218ec8
-          printf 'Verified source tree of b66db8f83ff8c1a6ac6868a024b317bca3d69e36\n'
+          test "$(git rev-parse HEAD)" = 91f7c73d3e78bdb3b6dd6ce3da9bfa811c7ee477
       - name: Record exact source and Apple toolchain
         run: |
           git rev-parse HEAD
@@ -37,7 +34,7 @@ jobs:
       - name: Compile native BLE regression executable
         run: |
           scripts/run_in_build_env.sh 'gn gen out/pr72821-native --args="chip_build_tests=true chip_enable_ble=true chip_config_network_layer_ble=true chip_support_thread_meshcop=false symbol_level=0" && ninja -C out/pr72821-native -j4 src/platform/tests:TestDarwinBleConnection.mm'
-      - name: Execute all three native regressions
+      - name: Execute native browsing and cancellation regressions
         run: |
           python3 - <<'PY'
           import subprocess
@@ -58,13 +55,14 @@ jobs:
               "NormalBrowsingRetiresPendingRequest",
               "BrowsingReplacementAllowsReentrantRetry",
               "PrewarmPreservesPendingRequest",
+              "CanceledObjectErrorDoesNotRetireReplacement",
           ):
               assert any("[       OK ]" in line and name in line for line in lines), name
           assert result.returncode == 0, result.returncode
-          print("Verified all three native Darwin BLE regressions passed.")
+          print("Verified all native Darwin BLE regressions passed.")
           PY
   xcresult:
-    if: github.repository == 'feasel0/connectedhomeip'
+    if: github.repository == 'feasel0/connectedhomeip' && github.event_name == 'workflow_dispatch'
     runs-on: macos-26
     timeout-minutes: 15
     steps:
