@@ -1,0 +1,1557 @@
+{
+  "base": "c020be76689eca1840f94e0b910bbc50bded2bde",
+  "paths": [
+    "data_model/1.7/clusters/ACL-Cluster.xml",
+    "data_model/1.7/clusters/AccountLogin.xml",
+    "data_model/1.7/clusters/ActionsCluster.xml",
+    "data_model/1.7/clusters/AdminCommissioningCluster.xml",
+    "data_model/1.7/clusters/AirQuality.xml",
+    "data_model/1.7/clusters/AlarmBase.xml",
+    "data_model/1.7/clusters/ApplicationBasic.xml",
+    "data_model/1.7/clusters/ApplicationLauncher.xml",
+    "data_model/1.7/clusters/AudioOutput.xml",
+    "data_model/1.7/clusters/BasicInformationCluster.xml",
+    "data_model/1.7/clusters/Binding-Cluster.xml",
+    "data_model/1.7/clusters/BooleanState.xml",
+    "data_model/1.7/clusters/BooleanStateConfiguration.xml",
+    "data_model/1.7/clusters/BridgedDeviceBasicInformationCluster.xml",
+    "data_model/1.7/clusters/CameraAVSettingsUserLevelManagement.xml",
+    "data_model/1.7/clusters/CameraAVStreamManagement.xml",
+    "data_model/1.7/clusters/Channel.xml",
+    "data_model/1.7/clusters/Chime.xml",
+    "data_model/1.7/clusters/ClosureControl.xml",
+    "data_model/1.7/clusters/ClosureDimension.xml",
+    "data_model/1.7/clusters/ColorControl.xml",
+    "data_model/1.7/clusters/CommissionerControlCluster.xml",
+    "data_model/1.7/clusters/CommodityMetering.xml",
+    "data_model/1.7/clusters/CommodityPrice.xml",
+    "data_model/1.7/clusters/CommodityTariff.xml",
+    "data_model/1.7/clusters/ConcentrationMeasurement.xml",
+    "data_model/1.7/clusters/ContentAppObserver.xml",
+    "data_model/1.7/clusters/ContentControl.xml",
+    "data_model/1.7/clusters/ContentLauncher.xml",
+    "data_model/1.7/clusters/Descriptor-Cluster.xml",
+    "data_model/1.7/clusters/DeviceEnergyManagement.xml",
+    "data_model/1.7/clusters/DiagnosticLogsCluster.xml",
+    "data_model/1.7/clusters/DiagnosticsEthernet.xml",
+    "data_model/1.7/clusters/DiagnosticsGeneral.xml",
+    "data_model/1.7/clusters/DiagnosticsSoftware.xml",
+    "data_model/1.7/clusters/DiagnosticsThread.xml",
+    "data_model/1.7/clusters/DiagnosticsWiFi.xml",
+    "data_model/1.7/clusters/DishwasherAlarm.xml",
+    "data_model/1.7/clusters/DoorLock.xml",
+    "data_model/1.7/clusters/EcosystemInformationCluster.xml",
+    "data_model/1.7/clusters/ElectricalEnergyMeasurement.xml",
+    "data_model/1.7/clusters/ElectricalGridConditions.xml",
+    "data_model/1.7/clusters/ElectricalPowerMeasurement.xml",
+    "data_model/1.7/clusters/ElectricalProtectionAlarm.xml",
+    "data_model/1.7/clusters/EnergyEVSE.xml",
+    "data_model/1.7/clusters/EnergyPreference.xml",
+    "data_model/1.7/clusters/FanControl.xml",
+    "data_model/1.7/clusters/FixedLabel-Cluster.xml",
+    "data_model/1.7/clusters/FlowMeasurement.xml",
+    "data_model/1.7/clusters/GeneralCommissioningCluster.xml",
+    "data_model/1.7/clusters/Group-Key-Management-Cluster.xml",
+    "data_model/1.7/clusters/Groups.xml",
+    "data_model/1.7/clusters/Humidistat.xml",
+    "data_model/1.7/clusters/ICDManagement.xml",
+    "data_model/1.7/clusters/Identify.xml",
+    "data_model/1.7/clusters/IlluminanceMeasurement.xml",
+    "data_model/1.7/clusters/JointFabricAdministratorCluster.xml",
+    "data_model/1.7/clusters/JointFabricDatastoreCluster.xml",
+    "data_model/1.7/clusters/KeypadInput.xml",
+    "data_model/1.7/clusters/Label-Cluster.xml",
+    "data_model/1.7/clusters/LaundryDryerControls.xml",
+    "data_model/1.7/clusters/LaundryWasherControls.xml",
+    "data_model/1.7/clusters/LevelControl.xml",
+    "data_model/1.7/clusters/LocalizationConfiguration.xml",
+    "data_model/1.7/clusters/LocalizationTimeFormat.xml",
+    "data_model/1.7/clusters/LocalizationUnit.xml",
+    "data_model/1.7/clusters/LowPower.xml",
+    "data_model/1.7/clusters/MediaInput.xml",
+    "data_model/1.7/clusters/MediaPlayback.xml",
+    "data_model/1.7/clusters/Messages.xml",
+    "data_model/1.7/clusters/MeterIdentification.xml",
+    "data_model/1.7/clusters/MicrowaveOvenControl.xml",
+    "data_model/1.7/clusters/ModeBase.xml",
+    "data_model/1.7/clusters/ModeSelect.xml",
+    "data_model/1.7/clusters/Mode_DeviceEnergyManagement.xml",
+    "data_model/1.7/clusters/Mode_Dishwasher.xml",
+    "data_model/1.7/clusters/Mode_EVSE.xml",
+    "data_model/1.7/clusters/Mode_LaundryWasher.xml",
+    "data_model/1.7/clusters/Mode_MicrowaveOven.xml",
+    "data_model/1.7/clusters/Mode_Oven.xml",
+    "data_model/1.7/clusters/Mode_RVCClean.xml",
+    "data_model/1.7/clusters/Mode_RVCRun.xml",
+    "data_model/1.7/clusters/Mode_Refrigerator.xml",
+    "data_model/1.7/clusters/Mode_Thermostat.xml",
+    "data_model/1.7/clusters/Mode_WaterHeater.xml",
+    "data_model/1.7/clusters/NetworkCommissioningCluster.xml",
+    "data_model/1.7/clusters/OTAProvider.xml",
+    "data_model/1.7/clusters/OTARequestor.xml",
+    "data_model/1.7/clusters/OccupancySensing.xml",
+    "data_model/1.7/clusters/OnOff.xml",
+    "data_model/1.7/clusters/OperationalCredentialCluster.xml",
+    "data_model/1.7/clusters/OperationalState.xml",
+    "data_model/1.7/clusters/OperationalState_Oven.xml",
+    "data_model/1.7/clusters/OperationalState_RVC.xml",
+    "data_model/1.7/clusters/PowerSourceCluster.xml",
+    "data_model/1.7/clusters/PowerSourceConfigurationCluster.xml",
+    "data_model/1.7/clusters/PowerTopology.xml",
+    "data_model/1.7/clusters/PressureMeasurement.xml",
+    "data_model/1.7/clusters/ProximityRanging.xml",
+    "data_model/1.7/clusters/PumpConfigurationControl.xml",
+    "data_model/1.7/clusters/PushAVStreamTransport.xml",
+    "data_model/1.7/clusters/RefrigeratorAlarm.xml",
+    "data_model/1.7/clusters/ResourceMonitoring.xml",
+    "data_model/1.7/clusters/Scenes.xml",
+    "data_model/1.7/clusters/ServiceArea.xml",
+    "data_model/1.7/clusters/SmokeCOAlarm.xml",
+    "data_model/1.7/clusters/SoilMeasurement.xml",
+    "data_model/1.7/clusters/Switch.xml",
+    "data_model/1.7/clusters/TLSCertificateManagement.xml",
+    "data_model/1.7/clusters/TLSClientManagement.xml",
+    "data_model/1.7/clusters/TargetNavigator.xml",
+    "data_model/1.7/clusters/TemperatureControl.xml",
+    "data_model/1.7/clusters/TemperatureMeasurement.xml",
+    "data_model/1.7/clusters/Thermostat.xml",
+    "data_model/1.7/clusters/ThermostatUserInterfaceConfiguration.xml",
+    "data_model/1.7/clusters/ThreadBorderRouterManagement.xml",
+    "data_model/1.7/clusters/ThreadNetworkDirectory.xml",
+    "data_model/1.7/clusters/TimeSync.xml",
+    "data_model/1.7/clusters/UserLabel-Cluster.xml",
+    "data_model/1.7/clusters/ValveConfigurationControl.xml",
+    "data_model/1.7/clusters/WakeOnLAN.xml",
+    "data_model/1.7/clusters/WaterContentMeasurement.xml",
+    "data_model/1.7/clusters/WaterHeaterManagement.xml",
+    "data_model/1.7/clusters/WebRTC_Provider.xml",
+    "data_model/1.7/clusters/WebRTC_Requestor.xml",
+    "data_model/1.7/clusters/WiFiNetworkManagement.xml",
+    "data_model/1.7/clusters/WindowCovering.xml",
+    "data_model/1.7/clusters/ZoneManagement.xml",
+    "data_model/1.7/device_types/Aggregator.xml",
+    "data_model/1.7/device_types/AirPurifier.xml",
+    "data_model/1.7/device_types/AirQualitySensor.xml",
+    "data_model/1.7/device_types/AudioDoorbell.xml",
+    "data_model/1.7/device_types/BaseDeviceType.xml",
+    "data_model/1.7/device_types/BasicVideoPlayer.xml",
+    "data_model/1.7/device_types/BatteryStorage.xml",
+    "data_model/1.7/device_types/BridgedNode.xml",
+    "data_model/1.7/device_types/Camera.xml",
+    "data_model/1.7/device_types/CameraController.xml",
+    "data_model/1.7/device_types/CastingVideoClient.xml",
+    "data_model/1.7/device_types/CastingVideoPlayer.xml",
+    "data_model/1.7/device_types/Chime.xml",
+    "data_model/1.7/device_types/Closure.xml",
+    "data_model/1.7/device_types/ClosureController.xml",
+    "data_model/1.7/device_types/ClosurePanel.xml",
+    "data_model/1.7/device_types/ColorDimmerSwitch.xml",
+    "data_model/1.7/device_types/ColorTemperatureLight.xml",
+    "data_model/1.7/device_types/ContactSensor.xml",
+    "data_model/1.7/device_types/ContentApp.xml",
+    "data_model/1.7/device_types/ControlBridge.xml",
+    "data_model/1.7/device_types/CookSurface.xml",
+    "data_model/1.7/device_types/Cooktop.xml",
+    "data_model/1.7/device_types/DeviceEnergyManagement.xml",
+    "data_model/1.7/device_types/DimmableLight.xml",
+    "data_model/1.7/device_types/DimmablePlug-InUnit.xml",
+    "data_model/1.7/device_types/DimmerSwitch.xml",
+    "data_model/1.7/device_types/Dishwasher.xml",
+    "data_model/1.7/device_types/DoorLock.xml",
+    "data_model/1.7/device_types/DoorLockController.xml",
+    "data_model/1.7/device_types/Doorbell.xml",
+    "data_model/1.7/device_types/EVSE.xml",
+    "data_model/1.7/device_types/ElectricalEnergyTariff.xml",
+    "data_model/1.7/device_types/ElectricalMeter.xml",
+    "data_model/1.7/device_types/ElectricalSensor.xml",
+    "data_model/1.7/device_types/ElectricalUtilityMeter.xml",
+    "data_model/1.7/device_types/ExtendedColorLight.xml",
+    "data_model/1.7/device_types/ExtractorHood.xml",
+    "data_model/1.7/device_types/Fan.xml",
+    "data_model/1.7/device_types/FloodlightCamera.xml",
+    "data_model/1.7/device_types/FlowSensor.xml",
+    "data_model/1.7/device_types/GenericSwitch.xml",
+    "data_model/1.7/device_types/HeatPump.xml",
+    "data_model/1.7/device_types/HumiditySensor.xml",
+    "data_model/1.7/device_types/Intercom.xml",
+    "data_model/1.7/device_types/IrrigationSystem.xml",
+    "data_model/1.7/device_types/JointFabricAdmin.xml",
+    "data_model/1.7/device_types/LaundryDryer.xml",
+    "data_model/1.7/device_types/LaundryWasher.xml",
+    "data_model/1.7/device_types/LightSensor.xml",
+    "data_model/1.7/device_types/MeterReferencePoint.xml",
+    "data_model/1.7/device_types/MicrowaveOven.xml",
+    "data_model/1.7/device_types/ModeSelectDeviceType.xml",
+    "data_model/1.7/device_types/MountedDimmableLoadControl.xml",
+    "data_model/1.7/device_types/MountedOnOffControl.xml",
+    "data_model/1.7/device_types/NetworkInfraManager.xml",
+    "data_model/1.7/device_types/OccupancySensor.xml",
+    "data_model/1.7/device_types/OnOffLight.xml",
+    "data_model/1.7/device_types/OnOffLightSwitch.xml",
+    "data_model/1.7/device_types/OnOffPlug-inUnit.xml",
+    "data_model/1.7/device_types/OnOffSensor.xml",
+    "data_model/1.7/device_types/OtaProvider.xml",
+    "data_model/1.7/device_types/OtaRequestor.xml",
+    "data_model/1.7/device_types/Oven.xml",
+    "data_model/1.7/device_types/PowerSource.xml",
+    "data_model/1.7/device_types/PressureSensor.xml",
+    "data_model/1.7/device_types/Pump.xml",
+    "data_model/1.7/device_types/PumpController.xml",
+    "data_model/1.7/device_types/RainSensor.xml",
+    "data_model/1.7/device_types/Refrigerator.xml",
+    "data_model/1.7/device_types/RoboticVacuumCleaner.xml",
+    "data_model/1.7/device_types/RoomAirConditioner.xml",
+    "data_model/1.7/device_types/RootNodeDeviceType.xml",
+    "data_model/1.7/device_types/SecondaryNetworkInterface.xml",
+    "data_model/1.7/device_types/SmokeCOAlarm.xml",
+    "data_model/1.7/device_types/SnapshotCamera.xml",
+    "data_model/1.7/device_types/SoilSensor.xml",
+    "data_model/1.7/device_types/SolarPower.xml",
+    "data_model/1.7/device_types/Speaker.xml",
+    "data_model/1.7/device_types/TemperatureControlledCabinet.xml",
+    "data_model/1.7/device_types/TemperatureSensor.xml",
+    "data_model/1.7/device_types/Thermostat.xml",
+    "data_model/1.7/device_types/ThermostatController.xml",
+    "data_model/1.7/device_types/ThreadBorderRouter.xml",
+    "data_model/1.7/device_types/VideoDoorbell.xml",
+    "data_model/1.7/device_types/VideoRemoteControl.xml",
+    "data_model/1.7/device_types/WaterFreezeDetector.xml",
+    "data_model/1.7/device_types/WaterHeater.xml",
+    "data_model/1.7/device_types/WaterLeakDetector.xml",
+    "data_model/1.7/device_types/WaterValve.xml",
+    "data_model/1.7/device_types/WindowCovering.xml",
+    "data_model/1.7/device_types/WindowCoveringController.xml",
+    "data_model/1.7/namespaces/Namespace-Closure-Cabinet.xml",
+    "data_model/1.7/namespaces/Namespace-Closure-Covering.xml",
+    "data_model/1.7/namespaces/Namespace-Closure-Window.xml",
+    "data_model/1.7/namespaces/Namespace-Closure.xml",
+    "data_model/1.7/namespaces/Namespace-ClosurePanel.xml",
+    "data_model/1.7/namespaces/Namespace-CommodityTariff-Chronology.xml",
+    "data_model/1.7/namespaces/Namespace-CommodityTariff-Commodity.xml",
+    "data_model/1.7/namespaces/Namespace-CommodityTariff-Flow.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Area.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Closure.xml",
+    "data_model/1.7/namespaces/Namespace-Common-CompassDirection.xml",
+    "data_model/1.7/namespaces/Namespace-Common-CompassLocation.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Direction.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Landmark.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Level.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Location.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Number.xml",
+    "data_model/1.7/namespaces/Namespace-Common-Position.xml",
+    "data_model/1.7/namespaces/Namespace-Common-RelativePosition.xml",
+    "data_model/1.7/namespaces/Namespace-ElectricalMeasurement.xml",
+    "data_model/1.7/namespaces/Namespace-Laundry.xml",
+    "data_model/1.7/namespaces/Namespace-PowerSource.xml",
+    "data_model/1.7/namespaces/Namespace-Refrigerator.xml",
+    "data_model/1.7/namespaces/Namespace-RoomAirConditioner.xml",
+    "data_model/1.7/namespaces/Namespace-Switches.xml",
+    "data_model/1.7/scraper_version",
+    "data_model/1.7/spec_sha",
+    "data_model/1.7/spec_tag",
+    "docs/ids_and_codes/spec_clusters.md",
+    "src/app/zap-templates/zcl/data-model/chip/closure-dimension-cluster.xml",
+    "src/app/zap-templates/zcl/data-model/chip/electrical-protection-alarm-cluster.xml",
+    "src/app/zap-templates/zcl/data-model/chip/global-enums.xml",
+    "src/app/zap-templates/zcl/data-model/chip/global-structs.xml"
+  ],
+  "reference_files": [
+    {
+      "path": "data_model/1.7/clusters/ACL-Cluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1a4a079e09559be03eb697caa393d1c7cb5d732373acd3c3f6ee4eb3472ae3db"
+    },
+    {
+      "path": "data_model/1.7/clusters/AccountLogin.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f90294fb60720a3712e431a97c8b70febaee6ff09c26ba3f98eed06b4a2e326c"
+    },
+    {
+      "path": "data_model/1.7/clusters/ActionsCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "4c2cd308b53bd27d9b2d2285f1222d1d84770555ebf00b21bf1f9480b06cef5e"
+    },
+    {
+      "path": "data_model/1.7/clusters/AdminCommissioningCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "86347f48889247409bdf68c74e3f306dc3158efc89d46d493197f8aa41183590"
+    },
+    {
+      "path": "data_model/1.7/clusters/AirQuality.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d7db77874d5dda900739235c39e9411b93c281c20becca5d5fe65b6b8e85e89a"
+    },
+    {
+      "path": "data_model/1.7/clusters/AlarmBase.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6cdb7b8c4670209c80b7d46c11e434c98ac62d6a36b868e8eafdb33e34ee3f1b"
+    },
+    {
+      "path": "data_model/1.7/clusters/ApplicationBasic.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2a467c4abd22d4f0a86e4a80a75b33591f97e4420bd8c26ebb9d075e97e60f4d"
+    },
+    {
+      "path": "data_model/1.7/clusters/ApplicationLauncher.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "c41f7e1098d44ea28ae6eeb3b501cfc68b3b8499b58946c5cfd2351a6ff7d114"
+    },
+    {
+      "path": "data_model/1.7/clusters/AudioOutput.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "46a01934ee03d94a444f623e291d59961ae930f239eae9b630ad1fc529f5836c"
+    },
+    {
+      "path": "data_model/1.7/clusters/BasicInformationCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1f5b5fe818a7fae0bf5590469d3f2d16251c001f34f3340ff675fff387dbe469"
+    },
+    {
+      "path": "data_model/1.7/clusters/Binding-Cluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2fa261f6eb5504609175822a367e4e54a42da8b5d85cf166b04ef8fa770bfbe1"
+    },
+    {
+      "path": "data_model/1.7/clusters/BooleanState.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "5e05c47b148002e0edadc0950d91fbf1b7a05b78d38262b45b2a2cc14780f42a"
+    },
+    {
+      "path": "data_model/1.7/clusters/BooleanStateConfiguration.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "194b6e27bd8b449c2ed2491de53ba88835d82446eed45f14f9407ea4e2d20b21"
+    },
+    {
+      "path": "data_model/1.7/clusters/BridgedDeviceBasicInformationCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "e760883cdc83fc5b4396a9b8570a619be491ab2982fba201051509e65efc4872"
+    },
+    {
+      "path": "data_model/1.7/clusters/CameraAVSettingsUserLevelManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8862badb64a6dc081d83c311187b522f2b918cef64d0a7469626e84e0c81db37"
+    },
+    {
+      "path": "data_model/1.7/clusters/CameraAVStreamManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3931d7850e3cc2a7189a5e328e2c8ab9d3f37a59434bd7298cd5b66759d9dfd9"
+    },
+    {
+      "path": "data_model/1.7/clusters/Channel.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1aa339ca634d7baedabcaf26f7fa6ae6398e2b5fd23a3755d750a2ee63ece81c"
+    },
+    {
+      "path": "data_model/1.7/clusters/Chime.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f394f5ec5267c38eda9317581896d944de75253ebba91b7541accbd59468d0c7"
+    },
+    {
+      "path": "data_model/1.7/clusters/ClosureControl.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "f38058276d1afb4f9628b9053879351c55602d9dae4447d996db283cdc6b60b1"
+    },
+    {
+      "path": "data_model/1.7/clusters/ClosureDimension.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "7361d04e850e3d33aa2fa384c2e4c0227ca40a1eaeb46136430dc09b7fed1f87"
+    },
+    {
+      "path": "data_model/1.7/clusters/ColorControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2b940d39948503d8a514cc8a5f9e689e07923f8d8d4a18f3245efc08e11021d5"
+    },
+    {
+      "path": "data_model/1.7/clusters/CommissionerControlCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "751d517a2c878087f9d35b4c6fb335d0500ad71b0f04f3bafc80bd3912d60ef6"
+    },
+    {
+      "path": "data_model/1.7/clusters/CommodityMetering.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d7ed51361878117a26f472012b2f20618b71e960d1c18c53298cad5f9fcc72c2"
+    },
+    {
+      "path": "data_model/1.7/clusters/CommodityPrice.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0554833915b120e066e3ab6fb510d4a1df7ebd177037a4995421eab462abd02c"
+    },
+    {
+      "path": "data_model/1.7/clusters/CommodityTariff.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "20aad2643576ebc373aa64494ea06a4d84a7d18ab1facd0a8741b76cc925eca5"
+    },
+    {
+      "path": "data_model/1.7/clusters/ConcentrationMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b1d20645dd0d3c55a978c65dcf03e3e9870d7f683901e6a42abb958001644308"
+    },
+    {
+      "path": "data_model/1.7/clusters/ContentAppObserver.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d240d9e946946557042fa12d4ac1f4e2be1028b076e14977ee1185939f105042"
+    },
+    {
+      "path": "data_model/1.7/clusters/ContentControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "57eaea04f9f468ddbaf16cfd8dd1ad2de8251ac39f247a16b8ec7275df453d55"
+    },
+    {
+      "path": "data_model/1.7/clusters/ContentLauncher.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "97ae8c14452b9eee0ec3abbaacb057b534a3af41dd32a1d7446c2d6dc3fac61a"
+    },
+    {
+      "path": "data_model/1.7/clusters/Descriptor-Cluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3a898a87843b6a66cab71ad49d08a5e46608b9a879cb8fa84547f48f6973b2d0"
+    },
+    {
+      "path": "data_model/1.7/clusters/DeviceEnergyManagement.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "aeb1618c3ceb354a1a3788aa420962ae2c8ffc85b15c7bbbdb28224bc27ed67b"
+    },
+    {
+      "path": "data_model/1.7/clusters/DiagnosticLogsCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b5714e2fa69d96d72910bb06be709f98469371de3bbc496a41de6bedaf4ecc1e"
+    },
+    {
+      "path": "data_model/1.7/clusters/DiagnosticsEthernet.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "90fc24f0497e28969d066c41a114510a33673914bed1480d460700fe7ebb4e32"
+    },
+    {
+      "path": "data_model/1.7/clusters/DiagnosticsGeneral.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b55c3c8279fb68cbd8462994d9b4e88d335e03d943fdf12dcc5f8232fc014607"
+    },
+    {
+      "path": "data_model/1.7/clusters/DiagnosticsSoftware.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "4ce81b351d852e5d3a886f2f5a4f2c4293686e0a2a8d07ba6db61ad89c78012b"
+    },
+    {
+      "path": "data_model/1.7/clusters/DiagnosticsThread.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "51652e55fcd780a6b7edee5887fd41a2340d1406d2040c2b34b7cabfe16363cb"
+    },
+    {
+      "path": "data_model/1.7/clusters/DiagnosticsWiFi.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b5754372b87904b0a16f925c792f21ee31cf40ce6592fff7842c714b2c9cc430"
+    },
+    {
+      "path": "data_model/1.7/clusters/DishwasherAlarm.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6aaed738fe1e49a810e425a4334a36324f4f60ae04a189597438e629017de169"
+    },
+    {
+      "path": "data_model/1.7/clusters/DoorLock.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f6740b47286b713b39dba9ec97c164a924fea7b33075b4533c38389b89cdc765"
+    },
+    {
+      "path": "data_model/1.7/clusters/EcosystemInformationCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ba4deedb9bf6d71c6e5d311ebce28d6ccd8ed2e138f49cb253e8a7e99749230b"
+    },
+    {
+      "path": "data_model/1.7/clusters/ElectricalEnergyMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ebc024fb75d3656c2c3a2b70a1758ce2e842c1fc580b69e17e1e9cfd0c68b06e"
+    },
+    {
+      "path": "data_model/1.7/clusters/ElectricalGridConditions.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "46265205bc8222d82eb4480f321bfb1a0d2097f111716ea486cac64dd39749d4"
+    },
+    {
+      "path": "data_model/1.7/clusters/ElectricalPowerMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "fd94ba7b64235a20aba6e9bcbe32b032f68de6ed8ee57f42195c32654571aef7"
+    },
+    {
+      "path": "data_model/1.7/clusters/ElectricalProtectionAlarm.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "2512f22708ccee58be2222d8bf97179f4370351286e67c21d5743f4ca2a91b23"
+    },
+    {
+      "path": "data_model/1.7/clusters/EnergyEVSE.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3b629a9d796a46e2c1b709c67656be1c542bdb054e617527ab20e4d332d49c04"
+    },
+    {
+      "path": "data_model/1.7/clusters/EnergyPreference.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "586ea19aa61f756b4065c82fe0de443b9040948d802ba92fdc3a840ddced5ee0"
+    },
+    {
+      "path": "data_model/1.7/clusters/FanControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f68fd845137f140fc64a650a355d7da9cf92de01e1ce97795513dfff4238f37e"
+    },
+    {
+      "path": "data_model/1.7/clusters/FixedLabel-Cluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "4e555b57bbc527ea63e986870f9bd5dbc4d8ca9856c1155cff143ec4b3a30b72"
+    },
+    {
+      "path": "data_model/1.7/clusters/FlowMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ed8c7a2ee5d9f0c4b1a4cbb997a98a7548c2fc80e27a974e3dc60852308723d2"
+    },
+    {
+      "path": "data_model/1.7/clusters/GeneralCommissioningCluster.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "2e102a79ce822648f6238b1ea208903f38b68f614d948c68f6c4b3a84c07f281"
+    },
+    {
+      "path": "data_model/1.7/clusters/Group-Key-Management-Cluster.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "e46eff8d9bf8017d794dceeab2a39209bc80396da6d8151cb94d83abc4bfb4d1"
+    },
+    {
+      "path": "data_model/1.7/clusters/Groups.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f19c1060880831af667ce56b51bed72cb0c78edcfa5385671f06adccc9cfc3c4"
+    },
+    {
+      "path": "data_model/1.7/clusters/Humidistat.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "8832f3f5996659aa303ad4e100602e5ff330f090ca742f5b629ca42dcd969007"
+    },
+    {
+      "path": "data_model/1.7/clusters/ICDManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0adf837c84a1b8b7f0a3785927eee8dca90fa0ca505072650a8014a756fe3d1e"
+    },
+    {
+      "path": "data_model/1.7/clusters/Identify.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "7845c9e6a2e26812b3f72d295b243c6161e2303b56cdbbe45ba7dfee5e019d9a"
+    },
+    {
+      "path": "data_model/1.7/clusters/IlluminanceMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "56eb43619021de553f7ee245397faf0de52cb6c531e5db711e15d622b39661fe"
+    },
+    {
+      "path": "data_model/1.7/clusters/JointFabricAdministratorCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9bd00e3221f2a94cee74c524b6dc13a9609a42b76fff9a185d72099449c7bef6"
+    },
+    {
+      "path": "data_model/1.7/clusters/JointFabricDatastoreCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "cf99c1821d4dd03a449ed16007b9d5cfdde62b3c6f6b196245aa508a6b1c6efa"
+    },
+    {
+      "path": "data_model/1.7/clusters/KeypadInput.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "096e3e84c532bc76bf7d3487177e9f436e2a10773211dda46df0a28c9370de25"
+    },
+    {
+      "path": "data_model/1.7/clusters/Label-Cluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "194993132ba750f10c5a9a2ebd75e656da5305585f9ac0bda775408043082c99"
+    },
+    {
+      "path": "data_model/1.7/clusters/LaundryDryerControls.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2ddfdc5562a42ec5d13009613be9a862ba75f524e7377893e016cf0e945dfe91"
+    },
+    {
+      "path": "data_model/1.7/clusters/LaundryWasherControls.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "e8cb5a39fc5b5787c25f08c13691b09b02d1d1ca171af5f441eff131a8275ea9"
+    },
+    {
+      "path": "data_model/1.7/clusters/LevelControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b61a599262cb609557b870e33752cee28d91c6a913a314e7d290399df3e792fd"
+    },
+    {
+      "path": "data_model/1.7/clusters/LocalizationConfiguration.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "fdfff9e2c865078a3379ffc7864effbc872320b33752fd2935319f3629c511d7"
+    },
+    {
+      "path": "data_model/1.7/clusters/LocalizationTimeFormat.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "82136222bbb9202a3e54c916e67d81c55bcbfb6e00e693cf1b6096e89f3ec685"
+    },
+    {
+      "path": "data_model/1.7/clusters/LocalizationUnit.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a3963080630a0344659f4b1d668385ac4e68ace3893ae389a55605f127f3776f"
+    },
+    {
+      "path": "data_model/1.7/clusters/LowPower.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d2111e1bbf82a0a89ba6a525f9b1ee858d88a4d6ad3e88f22a4a26eddc9824af"
+    },
+    {
+      "path": "data_model/1.7/clusters/MediaInput.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "bde1973bac14c34aec9b75c5e4adafceed8849e1f4f6bdc69b3165ee7b6e2e59"
+    },
+    {
+      "path": "data_model/1.7/clusters/MediaPlayback.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8f56c14e160a70865f19fb2de2b3d06f8dc21d73c8f30def536bcf1c5bcd01a5"
+    },
+    {
+      "path": "data_model/1.7/clusters/Messages.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d1e55af853d5ef03aa90f59f4db66d5353068a5abe6e16c10ced64e4dd81db42"
+    },
+    {
+      "path": "data_model/1.7/clusters/MeterIdentification.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "53ff5f0faa04c39f9f8230e51308735495ff34f45e2af60e32259619665344d5"
+    },
+    {
+      "path": "data_model/1.7/clusters/MicrowaveOvenControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3ea3435981f2a84379e880550448763919fcc12e907622031c889fe65de54c84"
+    },
+    {
+      "path": "data_model/1.7/clusters/ModeBase.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "2c556e7d1b8e52f2a22a8c372f9a068b502eece9834222a801ca18bae9390dc5"
+    },
+    {
+      "path": "data_model/1.7/clusters/ModeSelect.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "00945ac308afd905369712b76f247582c586d0ca578e8b9496256148fe8fd017"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_DeviceEnergyManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "71a79ed4d6c2083580786cb568827fcef37b5fdc90401bdc51e4790d563201b9"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_Dishwasher.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "5c3bb9e2d24941bc13b3c3e3440575a623b97a1de5271b63d9c54309b20c754a"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_EVSE.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f847e305b3cac4fb1b04f1b96d0aa8d7e7ff78be93a82398135b76e59c318e9a"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_LaundryWasher.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "26a6c2e686edefdcb16f7fe05c0e378ce7195abd6aad30b6367cefb44aae50ea"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_MicrowaveOven.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0c7384306dbde4affab3ee7a26be2809a1e009e15cc2c97c6362e096ed35ded4"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_Oven.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "644890246c92d847c5f77d155fda80968e7fa64506ba0017bcfd3d5643defbdb"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_RVCClean.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "82b0a4bf74a7b19ed597c3deb8a5817068b9723f453d7ffa7e135e90f43a6dd9"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_RVCRun.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9aaa54052813d63f78c82b248d693efb77f44d00363fa8a257ef98fe676631f1"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_Refrigerator.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "68f2f70a38113efe4fe48a8742faa4abe1804016664fc51c42e7d546207cdc79"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_Thermostat.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "bf1d00f69dc5a5a4b40fcd87e815273cddde470f360a0ca2088b4624b81483a1"
+    },
+    {
+      "path": "data_model/1.7/clusters/Mode_WaterHeater.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9c0120209bae3b499e15cb817afd1de86ea7d7cfdddd91c97cd0634f90756991"
+    },
+    {
+      "path": "data_model/1.7/clusters/NetworkCommissioningCluster.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "f000faedb444d4cda8862e5e9447590cc4284802b91977208f3b747078c04a0d"
+    },
+    {
+      "path": "data_model/1.7/clusters/OTAProvider.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6346e0799cc334fe6e83574b1c5861e017012fd7c83dff71bff391f28e1010b1"
+    },
+    {
+      "path": "data_model/1.7/clusters/OTARequestor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "bf549f556f2295ebc8ac7e55c7b2e4da0fd0748c0149ed1cadee69282da7f05d"
+    },
+    {
+      "path": "data_model/1.7/clusters/OccupancySensing.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "48596d468cd73d475c0d0c0126b3ab9e61f788b6ea2b507de36eed00bc64164a"
+    },
+    {
+      "path": "data_model/1.7/clusters/OnOff.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "69552eecfad59b82211df3a85376b138fa2312d082aa80c9cb1cb603eadf7742"
+    },
+    {
+      "path": "data_model/1.7/clusters/OperationalCredentialCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0787af1cd8a99f93843e3cf4019dbf4177134c22353182a2ba49ba9562c9a1b2"
+    },
+    {
+      "path": "data_model/1.7/clusters/OperationalState.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "140ded5574e39c715ceabec478192f42c109ab2b855db1c262ac69e17ffeac9e"
+    },
+    {
+      "path": "data_model/1.7/clusters/OperationalState_Oven.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "98dd34cc06263b9ef571dab594c24674b5a5c7c50870bfd7c3294424860ef495"
+    },
+    {
+      "path": "data_model/1.7/clusters/OperationalState_RVC.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "09402a1a4fe2081d3878dbca9da2534708085af8d3a25853ef47d83f2e3ccb0f"
+    },
+    {
+      "path": "data_model/1.7/clusters/PowerSourceCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f4a2eda8d09d0a05e0e459f32089f93974218dcfad2ffad0484a9f80e4477783"
+    },
+    {
+      "path": "data_model/1.7/clusters/PowerSourceConfigurationCluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "84a19c9667ca775f05bfc6b2c741f965089eba4c3234eb853edd2dd798bcc323"
+    },
+    {
+      "path": "data_model/1.7/clusters/PowerTopology.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "eca6d12ee5deed35c1ad111f22242775875f13e07f34b34cd9151028b548d14b"
+    },
+    {
+      "path": "data_model/1.7/clusters/PressureMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "29158245a384ae14ece943ed7ffc2197280b22775bfc4ff0396b55627a1c7083"
+    },
+    {
+      "path": "data_model/1.7/clusters/ProximityRanging.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "fa4e92dc57ff528dab13d928fe131281d277d97b42b1f71c9b381cdfd871e3a3"
+    },
+    {
+      "path": "data_model/1.7/clusters/PumpConfigurationControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8819d60a549bd016e2f004289259a2deda7493eb89d2f3d4468f54b20754ceb3"
+    },
+    {
+      "path": "data_model/1.7/clusters/PushAVStreamTransport.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "6302034b25b296a0ae9387b369fe6667955f8a90472eebfbb6ec30ddc4f025d0"
+    },
+    {
+      "path": "data_model/1.7/clusters/RefrigeratorAlarm.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9be73520d4ebc42140908fd7dc849e3f68ac1695d00bb92f2859b2c35a366b98"
+    },
+    {
+      "path": "data_model/1.7/clusters/ResourceMonitoring.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "643b0bf9999dd857cbd88cc396cc07e2e6cae32b4d6d0b49fa86e54f935d4fc5"
+    },
+    {
+      "path": "data_model/1.7/clusters/Scenes.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a4cd366d571daa71f655985e8a390c0316f66c2974145a347093cd613cb15284"
+    },
+    {
+      "path": "data_model/1.7/clusters/ServiceArea.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a9b61ea82f7eedaa6a04f1ddd4d0d4cc022f8f056e90c064a815bcfaf03742cb"
+    },
+    {
+      "path": "data_model/1.7/clusters/SmokeCOAlarm.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ccfa631c00561c66ed9ddfbb692ff340840f64ee803543ddb139d37068fc60f3"
+    },
+    {
+      "path": "data_model/1.7/clusters/SoilMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "14656dcbe04fb4227bfa794856c9a66c5956c61218054426ea567554184b89ff"
+    },
+    {
+      "path": "data_model/1.7/clusters/Switch.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "df840e5d0166f0fa5120b1496cfd3b61d8525f588d242a2e4888a18041a591dd"
+    },
+    {
+      "path": "data_model/1.7/clusters/TLSCertificateManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1e43a77f435bdec0118858125c02fcdc82bac60e6f322b1d2d9e06b7e5a9ae06"
+    },
+    {
+      "path": "data_model/1.7/clusters/TLSClientManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6206b4b6b1bd9428b929ff2d0978843f90151b3a59b0d24a8d3da421f1bc1f81"
+    },
+    {
+      "path": "data_model/1.7/clusters/TargetNavigator.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2b56441b24d146c1374d8b010471c5ec081fa15f3a1a48e87c6d9b2619d869bd"
+    },
+    {
+      "path": "data_model/1.7/clusters/TemperatureControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b6f56de4ff7a7f6d4abea8a0a14dac40f00d37482176d705d87d77c40e0d94d1"
+    },
+    {
+      "path": "data_model/1.7/clusters/TemperatureMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "812006e6322ac7a029ab7a7984300d7c92b2a19c0223f14d7b13fd8b1ece9934"
+    },
+    {
+      "path": "data_model/1.7/clusters/Thermostat.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d3e8fe21727ad192afa1804ccdda2130a0ceb3d434f009e7cf06d8bca47f7478"
+    },
+    {
+      "path": "data_model/1.7/clusters/ThermostatUserInterfaceConfiguration.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "855de93da3669f3b7e0c27c39dd714fb535632f14a13b8e4df234e327fcb6957"
+    },
+    {
+      "path": "data_model/1.7/clusters/ThreadBorderRouterManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "11e86bedfd35d34ed0a5423836b9bc588ae67c6bbb42cf49ce7ff265af176522"
+    },
+    {
+      "path": "data_model/1.7/clusters/ThreadNetworkDirectory.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "433b3e4b88415d4f78a9eb8fc8e02c07c8dfe7857f033c84f1290ff026302e15"
+    },
+    {
+      "path": "data_model/1.7/clusters/TimeSync.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "06d4f082f519997461a81ca32a37730c056996a8a19ec65eb99f3fcd9ae93b32"
+    },
+    {
+      "path": "data_model/1.7/clusters/UserLabel-Cluster.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1fb13261b55a956f73c8eba04131d77bcee0ec086e8ff0317b29904824ef14c5"
+    },
+    {
+      "path": "data_model/1.7/clusters/ValveConfigurationControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "377e8b43db545ff13aaa710be0b2fc20bcc11fdd74d858497f58bd4957533709"
+    },
+    {
+      "path": "data_model/1.7/clusters/WakeOnLAN.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f7ba510883f3aad8d5c7f7f4964b630bf2610ee99cc22ce05d1a831f480e043b"
+    },
+    {
+      "path": "data_model/1.7/clusters/WaterContentMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "4dee49567b5bce47d8a6e0406e5d2b5922804c3e52c999e0683ff19b04a419be"
+    },
+    {
+      "path": "data_model/1.7/clusters/WaterHeaterManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a6713b2bc604db2e438febe510196910fdfda1beb41d06833f89924defc6f3bb"
+    },
+    {
+      "path": "data_model/1.7/clusters/WebRTC_Provider.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "424aae2a4e5c81164d79ef0a0820e388dab180f080a07813d5cdf7ce2335b3e3"
+    },
+    {
+      "path": "data_model/1.7/clusters/WebRTC_Requestor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3efac455ab87e0706ad92bed874847128dbb5f203e3603ba2b9366ecbc1d60d7"
+    },
+    {
+      "path": "data_model/1.7/clusters/WiFiNetworkManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6c689776199fe184bd0dea7e87445a0ad593546f196c7c05ce3b2e96554ce3c4"
+    },
+    {
+      "path": "data_model/1.7/clusters/WindowCovering.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3076a5f722b4a8090d37910edeb755196d23453c90e65ee5b709f9439510858c"
+    },
+    {
+      "path": "data_model/1.7/clusters/ZoneManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3ddf366791ccc0a207d0abeea6fc01e2140fc30128def200efc5c99922cc9177"
+    },
+    {
+      "path": "data_model/1.7/device_types/Aggregator.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "e84beb904908bbae337a636e70c66bb62d08c6d6f3b2a31c131c95b7f8cf46c2"
+    },
+    {
+      "path": "data_model/1.7/device_types/AirPurifier.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "70a8fec60d3c7721d8f62e327020e997ac3fa7790bde3b5fdb22f9960093e0a5"
+    },
+    {
+      "path": "data_model/1.7/device_types/AirQualitySensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f63678cde015ad81de9b421c22848c5c488237c6ffda5809c320fdca64f5c495"
+    },
+    {
+      "path": "data_model/1.7/device_types/AudioDoorbell.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "e1d2b6e68af96a57b11be5d1da5aaf0e815cb9a682e227344defebf97181efcf"
+    },
+    {
+      "path": "data_model/1.7/device_types/BaseDeviceType.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "4d32738f1bde5e4279d38cb6eb34b4a49a770be3f0f4e5c0a48ed7b83d852b6a"
+    },
+    {
+      "path": "data_model/1.7/device_types/BasicVideoPlayer.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "14c8543643d8a9afc3da359789eda3abc9c7e189b3d6e8b67af66af612f45041"
+    },
+    {
+      "path": "data_model/1.7/device_types/BatteryStorage.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "735799df643730274f7afeb0b8bafb08f866aa8051bacee727e1724aabbae7d2"
+    },
+    {
+      "path": "data_model/1.7/device_types/BridgedNode.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "53a0684203dfb0051e5b05a221d54d9ab93cb05cfad7ae2b04293ddff137dffa"
+    },
+    {
+      "path": "data_model/1.7/device_types/Camera.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "00476d24802de0b15442f149d4ade0297d4ca4148b147852515c1f0af459a9bb"
+    },
+    {
+      "path": "data_model/1.7/device_types/CameraController.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8cabe34869cd5e66a914dc9505d52bacb16c2bf3d0058a422734544e390b9390"
+    },
+    {
+      "path": "data_model/1.7/device_types/CastingVideoClient.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "e1f6155e188775be413a788bcd33f591ff3e206604b27ffd9f125a8c0df118c2"
+    },
+    {
+      "path": "data_model/1.7/device_types/CastingVideoPlayer.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "54cd0132bb839b5aa97d190c66f9d009a30ca4cd2a64e873904edd54d1c0e3c4"
+    },
+    {
+      "path": "data_model/1.7/device_types/Chime.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2a883f9e5e41456e2d18e5755d8387175ffcf5e375bdbcabe393cf259910bbc6"
+    },
+    {
+      "path": "data_model/1.7/device_types/Closure.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "128f677e208b587490310a9691a913add5d2cbb957c1acb35688db65234e8146"
+    },
+    {
+      "path": "data_model/1.7/device_types/ClosureController.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d856b13a9c71d80e9e73703feed30a12c9a37795e09551f7520b360544d783a1"
+    },
+    {
+      "path": "data_model/1.7/device_types/ClosurePanel.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6126d55d27c2fd4a21f6358f0af38097ef7c0d3838b3a0f8c1b235867faf8ab9"
+    },
+    {
+      "path": "data_model/1.7/device_types/ColorDimmerSwitch.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "cd96b31f7881e7d130fcb2ed5d6aab88ef0a507eb70f5b13efc04c4e8882d0b6"
+    },
+    {
+      "path": "data_model/1.7/device_types/ColorTemperatureLight.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b11facaf3d970e604e3d4b4b69eee5a94f53018117e2c3fe53a46d2d9abe3ae7"
+    },
+    {
+      "path": "data_model/1.7/device_types/ContactSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "69b4d7531af4c48564ac980f6b6e95403e093d2cc490d18174f16d5c5ef39b6a"
+    },
+    {
+      "path": "data_model/1.7/device_types/ContentApp.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "88648e342ec592e3f9237fdb48919efb6e3163e0ea9977d56d306bb34ba736ce"
+    },
+    {
+      "path": "data_model/1.7/device_types/ControlBridge.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "68cacaa552d25f629d66e0e72578137fef6caf602e2ffbe0827c8094a6faf92f"
+    },
+    {
+      "path": "data_model/1.7/device_types/CookSurface.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8e18da6535c773ccdbc08c4ba687acb20e63030ca204f2b7ebfa391dfe23df69"
+    },
+    {
+      "path": "data_model/1.7/device_types/Cooktop.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "795af711b288eb5d6eb59bb2cad4c63ee08dd659e956a879aeafa6352b70cbe6"
+    },
+    {
+      "path": "data_model/1.7/device_types/DeviceEnergyManagement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6c580f7c8013c0c271253e0baf70c86e0490f3aebcec8886009d760106651e77"
+    },
+    {
+      "path": "data_model/1.7/device_types/DimmableLight.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6e8baa5f70ef08aee45b60f1db8af6f2aa2ab2e6c5e431b1d4465d162da7a396"
+    },
+    {
+      "path": "data_model/1.7/device_types/DimmablePlug-InUnit.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ceadb1cb60f7573f7f53e29b5df48e587abcf2fc4112a19ebb6f7afccb7a8fae"
+    },
+    {
+      "path": "data_model/1.7/device_types/DimmerSwitch.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8fac36f49f6b2af5e039b5703b1118fbff9980398eb0d8009458b957509597b1"
+    },
+    {
+      "path": "data_model/1.7/device_types/Dishwasher.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "bd6a212251df61ec4cd807a65b11428c3df7993eaec0e5f036b7956e0282ec9c"
+    },
+    {
+      "path": "data_model/1.7/device_types/DoorLock.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "c3a645a98c7115ecc13899897d1a89dc7b93e109beb15fc8e314bab697e5d0a1"
+    },
+    {
+      "path": "data_model/1.7/device_types/DoorLockController.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "67838ce2be4f88c740765f5c3381d078f665c96c6328456e99557fc38537e3a8"
+    },
+    {
+      "path": "data_model/1.7/device_types/Doorbell.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3c0eae40f9737e201922b25b898a359469c26a4b523bfa32465622c7ce7fdac3"
+    },
+    {
+      "path": "data_model/1.7/device_types/EVSE.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d9d17d77fd7fb672882a862d3f19c5bc29fc6ffddd136136fb48d09e52c38494"
+    },
+    {
+      "path": "data_model/1.7/device_types/ElectricalEnergyTariff.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f902680418626b75d2335b6a3146f98c4d9e6e47e1878a2b68c4dd304923d607"
+    },
+    {
+      "path": "data_model/1.7/device_types/ElectricalMeter.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0980ee852505add333963a45492606cc835f31a3bb9b5018679f0818e8a98767"
+    },
+    {
+      "path": "data_model/1.7/device_types/ElectricalSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "913d6d6a475936abd29b922eab460e743a999c2a007ef063bf5cd7d6e0993367"
+    },
+    {
+      "path": "data_model/1.7/device_types/ElectricalUtilityMeter.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0de9d9607a70ade523a8d8b704c4c343e332b8c782139c950e8d6b07e9fa104c"
+    },
+    {
+      "path": "data_model/1.7/device_types/ExtendedColorLight.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ee4c82621e7c92837a44a8f8d72e3a3bdb230bce1fc57cd44e49eadb8bfe1e18"
+    },
+    {
+      "path": "data_model/1.7/device_types/ExtractorHood.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "4271e1bb1324e109e63cc70430996b82712ec6b6cc006f20217c3a083ddf6cf3"
+    },
+    {
+      "path": "data_model/1.7/device_types/Fan.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "dc6e8fc5dd5bc6a849f87920fb03809233bfe1af55030fb20daac498e93a73a9"
+    },
+    {
+      "path": "data_model/1.7/device_types/FloodlightCamera.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "fad1a3e8f5e9b8bb6e9bcb528aa365228f8fad49992b97e79eb1a65ba76b4fcf"
+    },
+    {
+      "path": "data_model/1.7/device_types/FlowSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "545bfa4851b28771ecdbc3d18ff263a399f52582337be393a22408d19e402f05"
+    },
+    {
+      "path": "data_model/1.7/device_types/GenericSwitch.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "06264c901fcfaf8e883b5736c3a9e5522c44855d756281501b87884e32f69474"
+    },
+    {
+      "path": "data_model/1.7/device_types/HeatPump.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a6e54f1e23bbb1646de4592ab4a79896f6613f5b2e9d197defb7142e96c02b27"
+    },
+    {
+      "path": "data_model/1.7/device_types/HumiditySensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ed64f2b5e24ab4aa7cf08ccb4a62c0007dd3189ebb013267fdc2987a546db6a2"
+    },
+    {
+      "path": "data_model/1.7/device_types/Intercom.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d2c7653cab3dcb63afaa237a872e552cc908c592f0c50f4cb533ccd3e600c9ae"
+    },
+    {
+      "path": "data_model/1.7/device_types/IrrigationSystem.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "cd8ed6eda0f70b46aa55205a42ae1c631dc62e1dc96d94b2e712759e67594a3a"
+    },
+    {
+      "path": "data_model/1.7/device_types/JointFabricAdmin.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "fa583dfbe63954128dcb644e67dd93a9f3627d011780dd5f15559b945e2e53cf"
+    },
+    {
+      "path": "data_model/1.7/device_types/LaundryDryer.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "de706cc16853f2c8b30f178d30c79cfe7c97c22deaa218ce68400845e4b07f5e"
+    },
+    {
+      "path": "data_model/1.7/device_types/LaundryWasher.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "82792b43ff1fe45667b2d1f35cf15fa6cf6d6ae57cee86f4555e5bacb42fb836"
+    },
+    {
+      "path": "data_model/1.7/device_types/LightSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "c65ee1b86c6e470e453429e260a2c5b9f5e24b1c15c8c3471f9fea765cad40b8"
+    },
+    {
+      "path": "data_model/1.7/device_types/MeterReferencePoint.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3c403951dac1590d813b8beaa4e5c16c87d4c490642bd574d7e064bacdd8f979"
+    },
+    {
+      "path": "data_model/1.7/device_types/MicrowaveOven.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6f49e66d333606c6af4455b35e80485bb94de1b52a5672875a4d8c9e7a287234"
+    },
+    {
+      "path": "data_model/1.7/device_types/ModeSelectDeviceType.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "5b3caf6e04df7b442bef64d51120bb50c34603b8fdf02af6133c2738bb74f6eb"
+    },
+    {
+      "path": "data_model/1.7/device_types/MountedDimmableLoadControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "79684dcbd05f593a0779300e9a76fd1b3a3b13ec44664506247f291a4670b52d"
+    },
+    {
+      "path": "data_model/1.7/device_types/MountedOnOffControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1b15bea712e481a5da143ff97f7abe63f177ab0974fdf2c7d9522083911b4132"
+    },
+    {
+      "path": "data_model/1.7/device_types/NetworkInfraManager.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "1381d7c1c9d6d86d9cacf256aa32efc8846ab9bc0f6aed5083d95ba81cdc1012"
+    },
+    {
+      "path": "data_model/1.7/device_types/OccupancySensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "7b67262919ccf4632b452c8d055a45082bd6411d494a1be46d07c24f992a341c"
+    },
+    {
+      "path": "data_model/1.7/device_types/OnOffLight.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "319ae1ea275cd572f1a7ac9a3209428443a545f9d1aeb7906397e0028362b41c"
+    },
+    {
+      "path": "data_model/1.7/device_types/OnOffLightSwitch.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9429f171142801b5826ae2e9c3fa9c570f25a722bc4daed802edabf1ff459912"
+    },
+    {
+      "path": "data_model/1.7/device_types/OnOffPlug-inUnit.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9cac95381e5a680f9230e73848087a32f446f5e9960ea49f5ed7bf70a9f08288"
+    },
+    {
+      "path": "data_model/1.7/device_types/OnOffSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "fe22dc3e606a02e175183ea3bebd328a25b7bbc0e36544780fb0f1f44d42a0cf"
+    },
+    {
+      "path": "data_model/1.7/device_types/OtaProvider.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "e0c958dc1d5ca432f4eeb5ecce440c6ab3ac7b3018cbcc187cb0d8831c49aac4"
+    },
+    {
+      "path": "data_model/1.7/device_types/OtaRequestor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "4686f4c97a3d45ac56c21e811e5373807c01a2a78ffc750e41d45751645169b9"
+    },
+    {
+      "path": "data_model/1.7/device_types/Oven.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d4f8c70804a12020e0595f1a238c88147fd108455da06195350b5469784222e0"
+    },
+    {
+      "path": "data_model/1.7/device_types/PowerSource.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8d69e0b0bae10f9571cac683f0e5fdff0ecea9500d996a017e7745a6add6ff2c"
+    },
+    {
+      "path": "data_model/1.7/device_types/PressureSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1aeabdd84a3adc84b8b971a4271c93acb7668a29b390435396eea83a221862ad"
+    },
+    {
+      "path": "data_model/1.7/device_types/Pump.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "3776de2c993f8f1e981618c8d35d156631828fcddf9fb3ead78d0e532468f057"
+    },
+    {
+      "path": "data_model/1.7/device_types/PumpController.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "bf52b3f0b69087d02f2152f39166438034a638e3d0c0f7a39df805f431ec85c3"
+    },
+    {
+      "path": "data_model/1.7/device_types/RainSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ee271c9571c157fb2b1c273f21c2412aea33785624c6d0e2c3acf540b267a6fd"
+    },
+    {
+      "path": "data_model/1.7/device_types/Refrigerator.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "e56d067bd21a9bad43417b068dcb2ee377b4f8fb84b5778b7a0e0d35465a4b35"
+    },
+    {
+      "path": "data_model/1.7/device_types/RoboticVacuumCleaner.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "567e82e3e4b3d15d5e2605c2fe0c5f0c576e348b43113106701bc82c9e24720d"
+    },
+    {
+      "path": "data_model/1.7/device_types/RoomAirConditioner.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "b60d3ce7ea1b0537fe42d4b8e9f43d6a5af1728f03e0abe4faf61548f61a3810"
+    },
+    {
+      "path": "data_model/1.7/device_types/RootNodeDeviceType.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0175e7309d29e60bfaae90272fbd77b4d0f4b95685f9f02b4dbd96f0273bda2e"
+    },
+    {
+      "path": "data_model/1.7/device_types/SecondaryNetworkInterface.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "ff78cdba2dec415adb0b6ba57fef46072ceb883706e09a57d11cba19fe6ff8d5"
+    },
+    {
+      "path": "data_model/1.7/device_types/SmokeCOAlarm.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2e08c13baa7b316c03502ec454deb5132e9886869c72ff61abff4dd8994a1665"
+    },
+    {
+      "path": "data_model/1.7/device_types/SnapshotCamera.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f6c17d60776316ec4f8e3da39fc50529e43930cb71b9c6528bf288d7f5e64991"
+    },
+    {
+      "path": "data_model/1.7/device_types/SoilSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0d27465a9233602df406e82a0d4fbb603dfc7618ed5aebdbb5d999e0d487b5ea"
+    },
+    {
+      "path": "data_model/1.7/device_types/SolarPower.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "dccedb8127b9556b2bf58097714b19f726f4f4dd15a0f8ac1681a1039f594398"
+    },
+    {
+      "path": "data_model/1.7/device_types/Speaker.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "808573d18b4198ef59f12895390b3b17d45c32ee733036272d47c2e21adc9711"
+    },
+    {
+      "path": "data_model/1.7/device_types/TemperatureControlledCabinet.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "db3db930c9d66aa83c1431dae1ba765f2f0e812adc81bf42c8b3bc5642c89f5e"
+    },
+    {
+      "path": "data_model/1.7/device_types/TemperatureSensor.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2a80be127261cd0163fb8fc50cdd6a17abe18014daa03aec70d9470d0c94dad5"
+    },
+    {
+      "path": "data_model/1.7/device_types/Thermostat.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "8777c518a6d231098def4769c8e50fa8473b95f75fdaad2d4605ae684a263bfa"
+    },
+    {
+      "path": "data_model/1.7/device_types/ThermostatController.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "386214cf87fd78f97791610628dbe242d128e0415151ac12a4a6b7837ed15323"
+    },
+    {
+      "path": "data_model/1.7/device_types/ThreadBorderRouter.xml",
+      "classification": "model-or-editorial-tree-delta",
+      "candidate_sha256": "7111a237482ef5304437241e8893c267143561f35827159055cdda0d218a2783"
+    },
+    {
+      "path": "data_model/1.7/device_types/VideoDoorbell.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "cdf401d5288e7c79644f35448323c61cc3ba964cd3f1a9a1b2ed26e039fe379b"
+    },
+    {
+      "path": "data_model/1.7/device_types/VideoRemoteControl.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6d23add066654a549299123f9827c9da550c8b3075d8d4c6b614c6a45dc056e9"
+    },
+    {
+      "path": "data_model/1.7/device_types/WaterFreezeDetector.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f1d5e63e6be130f2428c602df01d40b18f638ddaff87ece541cd69ef63fa7df2"
+    },
+    {
+      "path": "data_model/1.7/device_types/WaterHeater.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a3426f03f7bad212387ca4534af46a5a52141d216f32ffdb9097d8e7e3ef0adc"
+    },
+    {
+      "path": "data_model/1.7/device_types/WaterLeakDetector.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1ea5dc10914b359d4df897686226f17851a821a7e5f0188e801db64b8c91ab7d"
+    },
+    {
+      "path": "data_model/1.7/device_types/WaterValve.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a2374c2e581eee48b0865128c3601633f4ac50688cdeed326b333fd1be87f2ce"
+    },
+    {
+      "path": "data_model/1.7/device_types/WindowCovering.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a618f9adbeec1919b87456def2989c1fead51ad1b2ade43b18e4aa0dbf76f7d5"
+    },
+    {
+      "path": "data_model/1.7/device_types/WindowCoveringController.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9b287b26a357d5e60fd6749ef0917423015819058f830857016067054b990175"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Closure-Cabinet.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "59cb22b8f4137ff87bf114c925e7bf45d60d78dcde4f7f56206950fa8e849975"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Closure-Covering.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "1c0225a6a5f58f06db7aa2c9be885d36b5e3a3de986ff15096038db05d556197"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Closure-Window.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "36e1a6e8fcd43225a23cf1b382009993329fd24a6388faa0919cb40c836c534b"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Closure.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "16e92885e17a9e6168488c948a91375c2056fca7fd7560ac585b1d0f871fc3a7"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-ClosurePanel.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "4386bafb436a4329239a0e2a3719b10405eda43794bf8e760d7208308e2063e0"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-CommodityTariff-Chronology.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "730784c8cbae9f4f827518aa01ba58c56643536e1df3bc4076ce8541200ec157"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-CommodityTariff-Commodity.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "318f8d39fad954fd87199dd4521bbf7f4ab30f9fcc6b6cb2348d1c08a0670742"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-CommodityTariff-Flow.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "6e7e23a3d08219baa0b0f5468c1d93ef2c350f3d9842fed7698b1a94ca29a701"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Area.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a46cba0220dcf9a755040db652686a974b0eb548fb6364cca4845580d62159e1"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Closure.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "c669df2406905ea1d45248ec5c594f2603fbc605012ed488576dc0c2319e42ed"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-CompassDirection.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "a3fa1d5ff6e6f05afea247b3ad5438d9a40c2b454108f7a60cf794c9295d9fe5"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-CompassLocation.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "56f9ad782741d477e6fa19315c9717324010782d65d45811869107bb5e628370"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Direction.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "d6295eed47512d242463c541c1ef9d5cd602bf09e2f37d4701d50a3d1c8d4225"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Landmark.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "0d54e62df27ad378b64421231771cab1d37b6b44248adef58f37c4ded809a573"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Level.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "2a9f005783f151d05c17fb8dd8392e5fe2ff603e8d267c99afce6f5e5c2b1a71"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Location.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "f16e24f9804e945117fd462ed8f861a0580af864473e21b6c9f2714bc4a069b7"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Number.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9b6a27525673b691b19bcda4cdf5e3753f4748c4b69faf2314ba5e8450f40049"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-Position.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "32ad7fc2b1e3189904e4bcf59b940307094423606063bde6319dd1f4e7df42f2"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Common-RelativePosition.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "92e9c561b46b8f3648e6ad5358d6a83e35bc2d003726bfa4dd4208ba84ea085e"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-ElectricalMeasurement.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9d372ec8d0fbe964152d8e6e3b4fbb1bc70be12774f20b4a47e03107126d85ea"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Laundry.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "23f7952eca233eb523654660088f5d8768984a81345acd0bb112551442bcb51b"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-PowerSource.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "91fd62155a9cc6f6f481460b1efa2de5f190f757636c66893fd7a8ca92b1a942"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Refrigerator.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "9cad29b420296f26025a2df380501eb6761e412f9e9f6c10a7ca4577832d718a"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-RoomAirConditioner.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "35254fcc1e80e1b78abdddb33d6bb20f70c6bb1bc50105cc5735dd0d7b639968"
+    },
+    {
+      "path": "data_model/1.7/namespaces/Namespace-Switches.xml",
+      "classification": "copyright-year-only",
+      "candidate_sha256": "5b422460002b83e5250a8b3dca4a23695b16ded1577e0b5e7bf48a72c41317c9"
+    }
+  ],
+  "classification_counts": {
+    "copyright-year-only": 226,
+    "model-or-editorial-tree-delta": 19
+  },
+  "restored_from_protected": [
+    ".github/workflows/lint.yml",
+    ".github/workflows/tests.yaml",
+    "scripts/tools/zap/test_cluster_constraints.py",
+    "src/app/clusters/closure-dimension-server/ClosureDimensionCluster.cpp",
+    "src/app/clusters/closure-dimension-server/ClosureDimensionCluster.h",
+    "src/app/clusters/closure-dimension-server/tests/TestClosureDimensionCluster.cpp",
+    "src/app/clusters/device-energy-management-server/tests/TestDeviceEnergyManagementCluster.cpp",
+    "src/app/clusters/electrical-protection-alarm-server/ElectricalProtectionAlarmCluster.cpp",
+    "src/app/clusters/electrical-protection-alarm-server/ElectricalProtectionAlarmCluster.h",
+    "src/app/clusters/electrical-protection-alarm-server/tests/TestElectricalProtectionAlarmCluster.cpp",
+    "src/app/clusters/group-key-mgmt-server/tests/BUILD.gn",
+    "src/app/clusters/group-key-mgmt-server/tests/TestGroupKeyManagementCluster.cpp",
+    "src/app/clusters/humidistat-server/HumidistatCluster.cpp",
+    "src/app/clusters/humidistat-server/tests/BUILD.gn",
+    "src/app/clusters/humidistat-server/tests/TestHumidistatCluster.cpp",
+    "src/app/clusters/mode-base-server/ModeBaseCluster.cpp",
+    "src/app/clusters/mode-base-server/tests/TestModeBaseCluster.cpp",
+    "src/app/clusters/push-av-stream-transport-server/tests/TestPushAVStreamTransportCluster.cpp",
+    "src/platform/Linux/WpaSupplicantClient.cpp",
+    "src/platform/Linux/WpaSupplicantClient.h",
+    "src/platform/tests/BUILD.gn",
+    "src/platform/tests/TestWpaSupplicantClient.cpp",
+    "src/python_testing/TC_IDM_9_1.py",
+    "src/python_testing/TC_S_common.py",
+    "src/python_testing/matter_testing_infrastructure/matter/testing/spec_parsing.py",
+    "src/python_testing/support_modules/idm_support.py",
+    "src/python_testing/test_testing/TestSpecParsingDataType.py",
+    "src/python_testing/test_testing/TestSpecParsingSelection.py",
+    "src/python_testing/test_testing/TestSpecParsingSupport.py",
+    "src/python_testing/test_testing/test_idm_support.py",
+    "src/python_testing/test_testing/test_idm_unsupported_constraints.py"
+  ],
+  "nonreference_files": [
+    "data_model/1.7/scraper_version",
+    "data_model/1.7/spec_sha",
+    "data_model/1.7/spec_tag",
+    "docs/ids_and_codes/spec_clusters.md",
+    "src/app/zap-templates/zcl/data-model/chip/closure-dimension-cluster.xml",
+    "src/app/zap-templates/zcl/data-model/chip/electrical-protection-alarm-cluster.xml",
+    "src/app/zap-templates/zcl/data-model/chip/global-enums.xml",
+    "src/app/zap-templates/zcl/data-model/chip/global-structs.xml"
+  ],
+  "candidate_head": "7da3f2168292e73f3f296202f90abef454058598",
+  "candidate_branch": "datamodel/sve-spec-errata-replay-20261021",
+  "canonical_head": "ecf22a62a677e21c5e2fedc297127dc18284d365",
+  "path_count": 253,
+  "original_head": "fd4843c02fd2a20a64765abc6f2084cbedca12b4",
+  "exact_canonical_tests": {
+    "IDMHelper": 19,
+    "SpecParsingSupport": 15,
+    "SpecParsingSelection": 2,
+    "SpecParsingDataType": 26,
+    "SpecParsingDeviceType": 29,
+    "SpecParsingNamespace": 7,
+    "ModeBase": 30,
+    "ClosureDimension": 39,
+    "ElectricalProtectionAlarm": 6,
+    "DeviceEnergyManagement": 17,
+    "Humidistat": 35,
+    "GroupKeyManagement": 16,
+    "PushAVStreamTransport": 9,
+    "Thermostat": 14,
+    "NetworkCommissioning": 5,
+    "WifiResponse": 2
+  },
+  "full_ci": "not run; normal full application build infrastructure-blocked before compilation",
+  "spec_relocation": "local committed private Spec proposal, not published"
+}
