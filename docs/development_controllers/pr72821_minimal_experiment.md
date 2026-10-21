@@ -792,13 +792,18 @@ job 118997391301 and macOS framework TSan job 119001487723 all succeeded.
 Those prior-head successes are distinct from the fresh corrected-head
 native Apple and portable results above.
 
-The final receipt verifies corrected-head Darwin simulated job 119021500682
-and Restyled job 119021329082 succeeded. Linux `python_lib` job 119021500583
-is still executing in workflow 39538731741. Framework TSan job 119025233209
-is executing in workflow 39538731896. These two gates remain pending, not
-claimed as corrected-head successes. The existing watcher remains attached.
-The exact-head snapshot contains 24 successful checks, 42 pending, one
-cancelled, one neutral and one skipped; none reports failure or timeout.
+The completed corrected-head receipts supersede the earlier pending snapshot:
+Darwin simulated job 119021500682, Linux `python_lib` job 119021500583 and
+Restyled job 119021329082 all succeeded. Builds workflow 39538731741
+completed successfully, including all six jobs: Python lighting app,
+`python_lib`, GCC debug, Darwin simulated, coverage and Linux simulated/ASan.
+The `python_lib` job includes native, Python, payload-generator and credential
+script checks. Framework workflow 39538731896 also completed successfully
+on exact head `54af63db0d926b8442973262c1605556b60c3891`.
+Its framework TSan job 119025233209 succeeded at 2026-10-21T04:15:43Z.
+These are final-head successes, not transferred from the earlier `b66` head.
+They establish completion of the relevant Linux, Darwin and framework gates;
+they do not claim every unrelated PR check succeeded.
 Local source HEAD, the fork branch and the PR head all match the corrected
 SHA. All review threads are resolved, with no pagination remaining.
 
