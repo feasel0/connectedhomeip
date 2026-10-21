@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "hosts": {
+    "dut": {
+      "configuration": {
+        "version": 1,
+        "operator": "feasel",
+        "machine_id": "fa898f2a8e5c487489c516aaa233f86a",
+        "profiles": {
+          "dut-mdns": {
+            "interfaces": ["wlan0"],
+            "hci_index": null,
+            "recovery_unit": null
+          }
+        }
+      }
+    },
+    "controller": {
+      "configuration": {
+        "version": 1,
+        "operator": "feasel",
+        "machine_id": "ef72df43fba94793ab724dc3013cec17",
+        "profiles": {
+          "controller-hci": {
+            "interfaces": [],
+            "hci_index": 0,
+            "recovery_unit": "bluetooth.service"
+          },
+          "controller-mdns": {
+            "interfaces": ["eth0", "wlan0"],
+            "hci_index": null,
+            "recovery_unit": null
+          }
+        }
+      }
+    }
+  }
+}

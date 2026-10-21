@@ -1,0 +1,103 @@
+From 3d59db1c7332691f16efd4a275aeaa0cc75ff6c6 Mon Sep 17 00:00:00 2001
+From: Jeff Feasel <jfeasel@csa-iot.org>
+Date: Tue, 20 Oct 2026 22:00:32 -0400
+Subject: [PATCH] Bluetooth: L2CAP: Match ECRED DCIDs by request position
+
+l2cap_ecred_connect() puts the initiating channel first in the request,
+then appends deferred channels from the connection list. The response
+handler instead assigns DCIDs while walking that list. When these orders
+differ, channels receive another channel's DCID. This can route ATT traffic
+to the wrong bearer and prevent GATT discovery or subscription setup.
+
+Record each channel's SCID position when building an outgoing request and
+use that position to select its response DCID. Check the response length
+for that position and reject duplicate positions without compacting the
+remaining array when a pending channel has disappeared. Only match
+channels with an outgoing ECRED request pending.
+
+Keep the existing identifier allocator, locking, channel references and
+duplicate-DCID timer handling unchanged.
+
+Fixes: da49b602f7f7 ("Bluetooth: L2CAP: Use DEFER_SETUP to group ECRED connections")
+Assisted-by: LLM
+---
+ include/net/bluetooth/l2cap.h |  1 +
+ net/bluetooth/l2cap_core.c    | 16 ++++++++++------
+ 2 files changed, 11 insertions(+), 6 deletions(-)
+
+diff --git a/include/net/bluetooth/l2cap.h b/include/net/bluetooth/l2cap.h
+index 54eddcdd341f980e310be2f99db507e414587243..e92457e670a4b4af947d71471071524959559098 100644
+--- a/include/net/bluetooth/l2cap.h
++++ b/include/net/bluetooth/l2cap.h
+@@ -535,6 +535,7 @@ struct l2cap_chan {
+ 	__u8		sec_level;
+ 
+ 	__u8		ident;
++	__u8		ecred_tx_index;
+ 
+ 	__u8		conf_req[64];
+ 	__u8		conf_len;
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index 4dd56e0074fdafcc7b43ec919ecf9e45863ecb5e..303908b0d68c98382c662f7f8587a4a50dfdb116 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -1466,6 +1466,8 @@ static void l2cap_ecred_defer_connect(struct l2cap_chan *chan, void *data)
+ 	/* Set the same ident so we can match on the rsp */
+ 	chan->ident = conn->chan->ident;
+ 
++	chan->ecred_tx_index = conn->count;
++
+ 	/* Include all channels deferred */
+ 	conn->pdu.scid[conn->count] = cpu_to_le16(chan->scid);
+ 
+@@ -1492,6 +1494,7 @@ static void l2cap_ecred_connect(struct l2cap_chan *chan)
+ 	data.pdu.req.mps     = cpu_to_le16(chan->mps);
+ 	data.pdu.req.credits = cpu_to_le16(chan->rx_credits);
+ 	data.pdu.scid[0]     = cpu_to_le16(chan->scid);
++	chan->ecred_tx_index = 0;
+ 
+ 	chan->ident = l2cap_get_ident(conn);
+ 
+@@ -5602,7 +5605,7 @@ static inline int l2cap_ecred_conn_rsp(struct l2cap_conn *conn,
+ 	u16 mtu, mps, credits, result;
+ 	struct l2cap_chan *chan, *tmp;
+ 	int err = 0, sec_level;
+-	int i = 0;
++	unsigned long dcid_used = 0;
+ 
+ 	if (cmd_len < sizeof(*rsp))
+ 		return -EPROTO;
+@@ -5623,7 +5626,8 @@ static inline int l2cap_ecred_conn_rsp(struct l2cap_conn *conn,
+ 
+ 		if (chan->ident != cmd->ident ||
+ 		    chan->mode != L2CAP_MODE_EXT_FLOWCTL ||
+-		    chan->state == BT_CONNECTED)
++		    chan->state == BT_CONNECTED ||
++		    !test_bit(FLAG_ECRED_CONN_REQ_SENT, &chan->flags))
+ 			continue;
+ 
+ 		l2cap_chan_hold(chan);
+@@ -5632,17 +5636,17 @@ static inline int l2cap_ecred_conn_rsp(struct l2cap_conn *conn,
+ 		lockdep_assert_held(&chan->conn->lock);
+ 
+ 		/* Check that there is a dcid for each pending channel */
+-		if (cmd_len < sizeof(dcid)) {
++		if (cmd_len < (chan->ecred_tx_index + 1) * sizeof(dcid) ||
++		    test_and_set_bit(chan->ecred_tx_index, &dcid_used)) {
+ 			l2cap_chan_del(chan, ECONNREFUSED);
+ 			l2cap_chan_unlock(chan);
+ 			l2cap_chan_put(chan);
+ 			continue;
+ 		}
+ 
+-		dcid = __le16_to_cpu(rsp->dcid[i++]);
+-		cmd_len -= sizeof(u16);
++		dcid = __le16_to_cpu(rsp->dcid[chan->ecred_tx_index]);
+ 
+-		BT_DBG("dcid[%d] 0x%4.4x", i, dcid);
++		BT_DBG("dcid[%d] 0x%4.4x", chan->ecred_tx_index, dcid);
+ 
+ 		orig = __l2cap_get_chan_by_dcid(conn, dcid);
+ 
+
+base-commit: 27731ba091954eccddb2657053b590d2113e8d98
