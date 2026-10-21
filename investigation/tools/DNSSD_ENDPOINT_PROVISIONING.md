@@ -1,7 +1,8 @@
 # Endpoint IP Capture Provisioning Request
 
 Prepared 2026-10-21 UTC. **Administrator installation required; not executed.**
-This extends the existing approved helper, not its caller privilege surface.
+This uses the existing approved helper without expanding its command surface.
+The separate direct-capture privilege grant below requires administrator review.
 The two private bundles are already staged through identity-verified SSH at
 `/home/feasel/lab-mdns-admin-20261021/` on their respective Pis. Their originals
 and SHA256 manifests are under
@@ -24,7 +25,8 @@ which eligible interface receives the original response. Preserve pcapng
 interface IDs; routing output alone is not proof of packet ingress.
 
 - Both Pis: install distribution `wireshark-common` and `libcap2-bin`;
-  grant only the existing helper's normal-user dumpcap execution mechanism.
+   grant the existing helper's normal-user dumpcap execution mechanism and
+   explicitly approve the operator's resulting direct dumpcap access below.
 - DUT: install the reviewed existing helper, unit, bounded sudoers rule and
   protected state directories, with only the dut-mdns profile.
 - Controller: preserve installed helper, sudoers, state, existing runs and
@@ -39,6 +41,23 @@ The current installer hardcodes thread-lab/controller-hci and refuses a
 different existing policy. **Do not rerun it to overwrite these policies.**
 These are explicit administrator-reviewed deployment steps using its existing
 source, unit and sudoers conventions. No new NOPASSWD script is introduced.
+
+## Administrator Privilege Review
+
+Adding feasel to wireshark with dumpcap mode 0750 and file capabilities
+cap_net_raw,cap_net_admin=eip permits direct dumpcap execution outside the
+helper. That execution is not confined to the helper's fixed interfaces,
+run IDs, retention limits or ownership checks; it can capture other traffic
+accessible on the host. This is not root shell access, but it is broader
+packet-capture access than the named profiles. The existing helper workflow
+remains mandatory for this investigation; it does not enforce that restriction
+on direct group-authorized execution.
+
+Record administrator acceptance of this separate privilege grant, the exact
+operator/group membership, binary ownership/mode/capabilities, traffic scope
+and rollback in the installation log. If that grant is not approved, leave
+installation blocked; do not redesign the helper or silently weaken policy.
+Restoring membership also requires ending sessions retaining the old groups.
 
 ## Administrator Steps
 
@@ -132,10 +151,46 @@ alongside controller-mdns. This DNS-specific experiment requires no BLE arm.
    in both captures, including interface IDs and endpoint addresses. The
    unfiltered existing ring retains this control. Do not infer coverage from
    file size or a cached hostname lookup.
-3. Stop only those runs with `capture-stop PROFILE RUN_ID`; require final
+3. In the same captures, exercise a known-good mDNS multicast publisher and
+   browser, independently of the Matter app/resolver. Use an already working
+   implementation, for example an existing Avahi daemon with
+   avahi-publish-service and avahi-browse. If tools or multicast operation are
+   unavailable, report acceptance blocked; do not install/start a new daemon
+   or change the Matter advertiser to manufacture coverage.
+
+   On both hosts set the same CONTROL to a unique `mdns-control-RUN_ID` name.
+   Start the controller browser first, then the DUT publisher while it runs:
+
+   ```sh
+   # Controller, normal user; keep endpoint captures running.
+   timeout -s INT -k 2s 30s avahi-browse --resolve --parsable _labcap._udp
+   ```
+
+   ```sh
+   # DUT, normal user; CONTROL is the fresh name recorded above.
+   timeout -s INT -k 2s 20s avahi-publish-service "$CONTROL" _labcap._udp 9 "control=$CONTROL"
+   ```
+
+   Timeout exit 124 is expected for these bounded, normally persistent control
+   tools, not for a capture worker. Record startup/publish errors separately;
+   forced kill or no actual publication invalidates the control. This publishes
+   only a temporary non-Matter DNS-SD record, not a UDP service or a new capture
+   framework. Let the owned publisher exit and withdraw that record.
+
+   Require a fresh controller-origin multicast query and DUT-origin multicast
+   response/announcement visible at both endpoints, with UDP 5353 and
+   224.0.0.251 or ff02::fb destinations. Match the fresh service's PTR/SRV/TXT
+   identity and SRV port 9 across DUT wlan0 egress and controller ingress,
+   preserving interface IDs, addresses, family, timestamps and payload match.
+   Browser output, cache hits and ICMP alone do not pass this gate. A control
+   passes only for the family/interface path actually observed; cover every
+   family eligible for the original resolution, or keep that coverage UNKNOWN
+   and do not start the observation. The control proves capture/multicast
+   visibility, not Matter responder transmission or native resolver delivery.
+4. Stop only those runs with `capture-stop PROFILE RUN_ID`; require final
    stopped state, null error, normal child exit and inactive unit. SIGKILL,
    unexpected exit, restart or missing final statistics is not clean closure.
-4. Preserve capture.json, dumpcap.log and every rotated pcapng segment.
+5. Preserve capture.json, dumpcap.log and every rotated pcapng segment.
    Record packet/interface statistics and capture drops from dumpcap's final
    output and pcapng interface statistics, using `capinfos -I`/tshark where
    supported. Missing counters mean UNKNOWN, never zero. Link counters are

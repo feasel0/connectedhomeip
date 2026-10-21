@@ -109,4 +109,20 @@ Signed-off-by, Reviewed-by or Tested-by tag is fabricated. A human must review
 the code and legal provenance, accept DCO responsibility and add their own
 genuine sign-off before any submission. No stable backport range is claimed.
 
+Final human handoff (engineering preparation complete; mail artifact unchanged):
+1. Review both request-index assignments and response matching/bounds against
+    the pinned source, including pending filtering and preserved lifetime/locks.
+2. Review source/authorship and legal provenance, the Assisted-by disclosure,
+    and the stated host-fixture and older-kernel physical-evidence limitations.
+3. If satisfied, personally certify the DCO with a genuine Signed-off-by and
+    decide public list submission versus private security/maintainer triage.
+    No approval, certification or disclosure decision is implied by this draft.
+4. Immediately before actual submission, refresh upstream HEAD and pending-fix
+    searches, revalidate routing and disclose inaccessible archives. If changed
+    code requires an update, review that specific delta before sending. Do not
+    refresh or repeat completed engineering tests merely to keep this draft busy.
+No automated sending is authorized. Keep the supplied mail artifact unchanged
+unless a specific final-review defect or submission-time upstream change needs
+an explicitly reviewed correction.
+
 base-commit: 27731ba091954eccddb2657053b590d2113e8d98
