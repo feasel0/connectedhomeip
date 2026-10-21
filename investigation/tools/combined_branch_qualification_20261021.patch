@@ -1,0 +1,233 @@
+diff --git a/src/app/tests/TestOperationalSessionSetupBusy.cpp b/src/app/tests/TestOperationalSessionSetupBusy.cpp
+index 9026bcd6ba5..e773c5a75aa 100644
+--- a/src/app/tests/TestOperationalSessionSetupBusy.cpp
++++ b/src/app/tests/TestOperationalSessionSetupBusy.cpp
+@@ -23,6 +23,8 @@
+ #include <app/tests/AppTestContext.h>
+ #include <credentials/GroupDataProviderImpl.h>
+ #include <lib/support/tests/ExtraPwTestMacros.h>
++#include <system/RAIIMockClock.h>
++#include <system/SystemLayerImpl.h>
+ 
+ namespace chip {
+ namespace {
+@@ -42,7 +44,8 @@ public:
+ class MockOperationalSessionReleaseDelegate : public OperationalSessionReleaseDelegate
+ {
+ public:
+-    void ReleaseSession(OperationalSessionSetup * sessionSetup) override {}
++    void ReleaseSession(OperationalSessionSetup * sessionSetup) override { ++mReleaseCalls; }
++    unsigned mReleaseCalls = 0;
+ };
+ 
+ } // namespace
+@@ -54,6 +57,11 @@ public:
+     void BusyResponseKeepsExistingResolveRetryBudget();
+     void BusyResponseWithRemainingBudgetDoesNotGrantExtra();
+     void BusyResponseGrantsExtraRetryOnlyOnce();
++    void BusyDelayRegistersDeadlineAndIsConsumed();
++    void BusyDelayDoesNotShortenBackoff();
++    void EvenAttemptAddsSigma2Timeout();
++    void BusyTimerConsumesGrantedBudgetsOnlyOnce();
++    void ExhaustedBusyErrorReleasesClientAndSchedulesGrantedRetry();
+ 
+     void SetUp() override
+     {
+@@ -156,6 +164,115 @@ TEST_F_FROM_FIXTURE(TestOperationalSessionSetupBusy, BusyResponseGrantsExtraRetr
+     EXPECT_TRUE(sessionSetup.mGrantedBusyRetryAfterAttemptExhaustion);
+ }
+ 
++TEST_F_FROM_FIXTURE(TestOperationalSessionSetupBusy, BusyDelayRegistersDeadlineAndIsConsumed)
++{
++    System::Clock::Internal::RAIIMockClock mockClock;
++    OperationalSessionSetup sessionSetup = CreateSessionSetup();
++    sessionSetup.mRemainingAttempts      = 0;
++    sessionSetup.mResolveAttemptsAllowed = 0;
++    sessionSetup.mAttemptsDone           = 1;
++    sessionSetup.OnResponderBusy(System::Clock::Milliseconds16(65001));
++    System::Clock::Seconds16 reportedDelay;
++    ASSERT_EQ(sessionSetup.ScheduleSessionSetupReattempt(reportedDelay), CHIP_NO_ERROR);
++    EXPECT_TRUE(GetSystemLayer().IsTimerActive(OperationalSessionSetup::TrySetupAgain, &sessionSetup));
++    EXPECT_EQ(GetSystemLayer().GetRemainingTime(OperationalSessionSetup::TrySetupAgain, &sessionSetup).count(), 65001u);
++    EXPECT_EQ(reportedDelay.count(), 65u);
++    EXPECT_EQ(sessionSetup.mRequestedBusyDelay, System::Clock::kZero);
++    sessionSetup.CancelSessionSetupReattempt();
++}
++
++TEST_F_FROM_FIXTURE(TestOperationalSessionSetupBusy, BusyDelayDoesNotShortenBackoff)
++{
++    System::Clock::Internal::RAIIMockClock mockClock;
++    OperationalSessionSetup sessionSetup = CreateSessionSetup();
++    sessionSetup.mRemainingAttempts      = 1;
++    sessionSetup.mAttemptsDone           = 3;
++    sessionSetup.OnResponderBusy(System::Clock::Milliseconds16(1));
++    System::Clock::Seconds16 reportedDelay;
++    ASSERT_EQ(sessionSetup.ScheduleSessionSetupReattempt(reportedDelay), CHIP_NO_ERROR);
++    const auto expected = System::Clock::Seconds16(CHIP_DEVICE_CONFIG_AUTOMATIC_CASE_RETRY_INITIAL_DELAY_SECONDS << 2);
++    EXPECT_EQ(GetSystemLayer().GetRemainingTime(OperationalSessionSetup::TrySetupAgain, &sessionSetup), expected);
++    sessionSetup.CancelSessionSetupReattempt();
++}
++
++TEST_F_FROM_FIXTURE(TestOperationalSessionSetupBusy, EvenAttemptAddsSigma2Timeout)
++{
++    System::Clock::Internal::RAIIMockClock mockClock;
++    OperationalSessionSetup sessionSetup = CreateSessionSetup();
++    sessionSetup.mRemainingAttempts      = 1;
++    sessionSetup.mAttemptsDone           = 2;
++    sessionSetup.OnResponderBusy(System::Clock::Milliseconds16(65001));
++    System::Clock::Seconds16 reportedDelay;
++    ASSERT_EQ(sessionSetup.ScheduleSessionSetupReattempt(reportedDelay), CHIP_NO_ERROR);
++    const auto expected = System::Clock::Milliseconds32(65001) +
++        CASESession::ComputeSigma2ResponseTimeout(GetLocalMRPConfig().ValueOr(GetDefaultMRPConfig()));
++    EXPECT_EQ(GetSystemLayer().GetRemainingTime(OperationalSessionSetup::TrySetupAgain, &sessionSetup), expected);
++    sessionSetup.CancelSessionSetupReattempt();
++}
++
++TEST_F_FROM_FIXTURE(TestOperationalSessionSetupBusy, BusyTimerConsumesGrantedBudgetsOnlyOnce)
++{
++    System::Clock::Internal::RAIIMockClock mockClock;
++    OperationalSessionSetup sessionSetup(CreateInitParams(), &mClientPool, ScopedNodeId(kTestNodeId, kUndefinedFabricIndex),
++                                         &mReleaseDelegate);
++    sessionSetup.mRemainingAttempts      = 0;
++    sessionSetup.mResolveAttemptsAllowed = 0;
++    sessionSetup.mAttemptsDone           = 1;
++    sessionSetup.OnResponderBusy(System::Clock::Milliseconds16(5000));
++    System::Clock::Seconds16 reportedDelay;
++    ASSERT_EQ(sessionSetup.ScheduleSessionSetupReattempt(reportedDelay), CHIP_NO_ERROR);
++    sessionSetup.MoveToState(OperationalSessionSetup::State::WaitingForRetry);
++    const auto delay = GetSystemLayer().GetRemainingTime(OperationalSessionSetup::TrySetupAgain, &sessionSetup);
++    mockClock.AdvanceMonotonic(delay - System::Clock::Milliseconds32(1));
++    EXPECT_EQ(sessionSetup.mRemainingAttempts, 1u);
++    EXPECT_EQ(sessionSetup.mResolveAttemptsAllowed, 1u);
++    EXPECT_EQ(mReleaseDelegate.mReleaseCalls, 0u);
++    mockClock.AdvanceMonotonic(System::Clock::Milliseconds32(1));
++    auto & loop = static_cast<System::LayerSelectLoop &>(GetSystemLayer());
++    loop.PrepareEvents();
++    loop.WaitForEvents();
++    loop.HandleEvents();
++    EXPECT_EQ(mReleaseDelegate.mReleaseCalls, 1u);
++    EXPECT_EQ(sessionSetup.mRemainingAttempts, 0u);
++    EXPECT_EQ(sessionSetup.mResolveAttemptsAllowed, 0u);
++    EXPECT_EQ(sessionSetup.mAttemptsDone, 2u);
++    EXPECT_FALSE(GetSystemLayer().IsTimerActive(OperationalSessionSetup::TrySetupAgain, &sessionSetup));
++    sessionSetup.OnResponderBusy(System::Clock::Milliseconds16(5000));
++    EXPECT_EQ(sessionSetup.mRemainingAttempts, 0u);
++    EXPECT_EQ(sessionSetup.mResolveAttemptsAllowed, 0u);
++    EXPECT_TRUE(sessionSetup.mGrantedBusyRetryAfterAttemptExhaustion);
++}
++
++TEST_F_FROM_FIXTURE(TestOperationalSessionSetupBusy, ExhaustedBusyErrorReleasesClientAndSchedulesGrantedRetry)
++{
++    System::Clock::Internal::RAIIMockClock mockClock;
++    CASEClientPool<1> clients;
++    OperationalSessionSetup sessionSetup(CreateInitParams(), &clients, ScopedNodeId(kTestNodeId, kUndefinedFabricIndex),
++                                         &mReleaseDelegate);
++    sessionSetup.mCASEClient = clients.Allocate();
++    ASSERT_NE(sessionSetup.mCASEClient, nullptr);
++    sessionSetup.MoveToState(OperationalSessionSetup::State::Connecting);
++    sessionSetup.mRemainingAttempts      = 0;
++    sessionSetup.mResolveAttemptsAllowed = 0;
++    sessionSetup.mAttemptsDone           = 1;
++    sessionSetup.OnResponderBusy(System::Clock::Milliseconds16(5000));
++    sessionSetup.OnSessionEstablishmentError(CHIP_ERROR_BUSY, SessionEstablishmentStage{});
++    EXPECT_EQ(sessionSetup.mCASEClient, nullptr);
++    EXPECT_EQ(sessionSetup.mState, OperationalSessionSetup::State::WaitingForRetry);
++    EXPECT_EQ(sessionSetup.mRemainingAttempts, 1u);
++    EXPECT_EQ(sessionSetup.mResolveAttemptsAllowed, 1u);
++    EXPECT_EQ(mReleaseDelegate.mReleaseCalls, 0u);
++    EXPECT_TRUE(GetSystemLayer().IsTimerActive(OperationalSessionSetup::TrySetupAgain, &sessionSetup));
++    CASEClient * reclaimed = clients.Allocate();
++    EXPECT_NE(reclaimed, nullptr);
++    if (reclaimed != nullptr)
++    {
++        clients.Release(reclaimed);
++    }
++    sessionSetup.MoveToState(OperationalSessionSetup::State::NeedsAddress);
++    EXPECT_FALSE(GetSystemLayer().IsTimerActive(OperationalSessionSetup::TrySetupAgain, &sessionSetup));
++}
++
+ #endif // CHIP_DEVICE_CONFIG_ENABLE_AUTOMATIC_CASE_RETRIES
+ 
+ } // namespace chip
+diff --git a/src/ble/tests/TestBleLayer.cpp b/src/ble/tests/TestBleLayer.cpp
+index dd9cc606100..a1ab2a4682f 100644
+--- a/src/ble/tests/TestBleLayer.cpp
++++ b/src/ble/tests/TestBleLayer.cpp
+@@ -428,6 +428,21 @@ TEST_F(TestBleLayer, CloseUnclaimedConnection)
+     EXPECT_EQ(mLastClosedConnection, connObj);
+ }
+ 
++TEST_F(TestBleLayer, DetachedSuccessWhileClosingClosesConnection)
++{
++    const auto connObj = GetConnectionObject();
++    ASSERT_EQ(NewBleConnectionByDiscriminator(SetupDiscriminator(), static_cast<BleLayer *>(this)), CHIP_NO_ERROR);
++    IndicateBleClosing();
++    EXPECT_EQ(CancelBleIncompleteConnection(), CHIP_ERROR_INCORRECT_STATE);
++
++    BleConnectionDelegate::OnConnectionComplete(static_cast<BleLayer *>(this), connObj);
++
++    EXPECT_EQ(mOnBleConnectionCompleteCalls, 0);
++    EXPECT_EQ(mOnBleConnectionErrorCalls, 0);
++    EXPECT_EQ(mCloseConnectionCalls, 1);
++    EXPECT_EQ(mLastClosedConnection, connObj);
++}
++
+ TEST_F(TestBleLayer, ExceedBleConnectionEndPointLimit)
+ {
+     for (size_t i = 0; i < BLE_LAYER_NUM_BLE_ENDPOINTS; i++)
+diff --git a/src/setup_payload/tests/TestSetupPayload.cpp b/src/setup_payload/tests/TestSetupPayload.cpp
+index ddfbee7e29c..191066f8a8b 100644
+--- a/src/setup_payload/tests/TestSetupPayload.cpp
++++ b/src/setup_payload/tests/TestSetupPayload.cpp
+@@ -25,6 +25,7 @@
+ #include <pw_unit_test/framework.h>
+ 
+ #include <lib/core/StringBuilderAdapters.h>
++#include <setup_payload/ManualSetupPayloadGenerator.h>
+ 
+ using namespace chip;
+ 
+@@ -97,4 +98,43 @@ TEST(TestSetupPayload, TestFromStringMultiplePayloads)
+     }
+ }
+ 
++TEST(TestSetupPayload, ManualRoundTripSharesKnownDiscriminatorBucket)
++{
++    constexpr uint16_t discriminators[] = { 3840, 4021 };
++    for (uint16_t discriminator : discriminators)
++    {
++        auto payload = GetDefaultPayload();
++        payload.discriminator.SetLongValue(discriminator);
++        std::string code;
++        ASSERT_EQ(ManualSetupPayloadGenerator(payload).payloadDecimalStringRepresentation(code), CHIP_NO_ERROR);
++        std::vector<SetupPayload> parsed;
++        ASSERT_EQ(SetupPayload::FromStringRepresentation(code, parsed), CHIP_NO_ERROR);
++        ASSERT_EQ(parsed.size(), 1u);
++        EXPECT_TRUE(parsed[0].discriminator.IsShortDiscriminator());
++        EXPECT_EQ(parsed[0].discriminator.GetShortValue(), 15u);
++        EXPECT_TRUE(parsed[0].discriminator.MatchesLongDiscriminator(3840));
++        EXPECT_TRUE(parsed[0].discriminator.MatchesLongDiscriminator(4021));
++        EXPECT_FALSE(parsed[0].discriminator.MatchesLongDiscriminator(3839));
++    }
++}
++
++TEST(TestSetupPayload, QrRoundTripSeparatesKnownDiscriminatorPair)
++{
++    constexpr uint16_t discriminators[] = { 3840, 4021 };
++    for (uint16_t discriminator : discriminators)
++    {
++        auto payload = GetDefaultPayload();
++        payload.discriminator.SetLongValue(discriminator);
++        std::string code;
++        ASSERT_EQ(QRCodeSetupPayloadGenerator(payload).payloadBase38Representation(code), CHIP_NO_ERROR);
++        std::vector<SetupPayload> parsed;
++        ASSERT_EQ(SetupPayload::FromStringRepresentation(code, parsed), CHIP_NO_ERROR);
++        ASSERT_EQ(parsed.size(), 1u);
++        EXPECT_FALSE(parsed[0].discriminator.IsShortDiscriminator());
++        EXPECT_EQ(parsed[0].discriminator.GetLongValue(), discriminator);
++        EXPECT_TRUE(parsed[0].discriminator.MatchesLongDiscriminator(discriminator));
++        EXPECT_FALSE(parsed[0].discriminator.MatchesLongDiscriminator(discriminator == 3840 ? 4021 : 3840));
++    }
++}
++
+ } // anonymous namespace
