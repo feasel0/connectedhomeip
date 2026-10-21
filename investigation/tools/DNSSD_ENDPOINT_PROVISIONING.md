@@ -1,8 +1,10 @@
 # Endpoint IP Capture Provisioning Request
 
-Prepared 2026-10-21 UTC. **Administrator installation required; not executed.**
+Prepared and executed 2026-10-21 UTC after explicit user approval.
+**Installation and live capture acceptance passed.** See the
+[execution report](../reports/2026-10-21_12-08-59.md); do not repeat installation.
 This uses the existing approved helper without expanding its command surface.
-The separate direct-capture privilege grant below requires administrator review.
+The user approved the separate direct-capture privilege grant described below.
 The two private bundles are already staged through identity-verified SSH at
 `/home/feasel/lab-mdns-admin-20261021/` on their respective Pis. Their originals
 and SHA256 manifests are under
@@ -65,7 +67,9 @@ Perform directly on each verified Pi in an administrator terminal. Do not
 route a password through chat, a script or `sudo -S`. Review the staged
 manifest and source before copying; reject changed inputs. Keep all existing
 capture units inactive and confirm no unrelated dumpcap/btmon/tcpdump owner.
-The following commands are requests, not commands the agent has executed.
+The following blocks retain the administrator deployment recipe. Execution used
+fixed noninteractive administrator commands and retained private installation
+and rollback receipts; these blocks are not instructions to reinstall now.
 
 Both hosts, after verifying the matching machine ID and reviewing the bundle:
 Record existing dumpcap ownership/mode/capabilities and operator membership
@@ -198,10 +202,23 @@ alongside controller-mdns. This DNS-specific experiment requires no BLE arm.
    disappear before sealing. Retain a timestamped relative SHA256 manifest.
 
 If either endpoint fails this gate, do not start the deciding observation.
-No profile is installed or live-tested as of this request; provisioning is
-an administrator action, not an agent authorization question.
+Both profiles passed this gate on 2026-10-21: matched ICMP and exact-instance
+IPv4/IPv6 multicast traffic, normal worker exits and zero final dumpcap drops.
+pcapng interface-statistics blocks were unavailable, not assumed to show zero;
+final per-interface dumpcap statistics and packet counts were retained instead.
+Installed configuration is not by itself evidence for the Matter responder.
 
 ## One Original-Resolution Observation
+
+**Current blocker: retained original DUT operational state is unavailable.**
+The known a04/a09/a10 final KVS artifacts and their matching remote files
+contain no per-fabric NOC/root-certificate keys; the controller stores still
+contain their own fabric credentials. These are not a resumable operational
+pair. Starting that final DUT state would not reproduce its former Matter SRV
+identity. The original binary remains hash-matched, but no resolver request
+or Matter app launch was performed after acceptance. A newly commissioned
+diagnostic setup would be a different state and needs an explicit scope
+decision; do not manufacture credentials or repeat the completed EATT arms.
 
 After the live gate passes, recheck identities, clocks/bounds, interface
 addresses and fixture ownership. Start fresh endpoint captures before the
