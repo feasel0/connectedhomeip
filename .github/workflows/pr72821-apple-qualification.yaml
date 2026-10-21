@@ -18,10 +18,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 91f7c73d3e78bdb3b6dd6ce3da9bfa811c7ee477
+          ref: 54af63db0d926b8442973262c1605556b60c3891
       - name: Verify exact Darwin cancellation regression source
         run: |
-          test "$(git rev-parse HEAD)" = 91f7c73d3e78bdb3b6dd6ce3da9bfa811c7ee477
+          test "$(git rev-parse HEAD)" = 54af63db0d926b8442973262c1605556b60c3891
       - name: Record exact source and Apple toolchain
         run: |
           git rev-parse HEAD
@@ -56,6 +56,9 @@ jobs:
               "BrowsingReplacementAllowsReentrantRetry",
               "PrewarmPreservesPendingRequest",
               "CanceledObjectErrorDoesNotRetireReplacement",
+                "ObjectErrorsRemainAsynchronousAndReusable",
+                "CanceledObjectErrorDoesNotConsumeFreshObjectError",
+                "NormalCancellationAllowsFreshRequest",
           ):
               assert any("[       OK ]" in line and name in line for line in lines), name
           assert result.returncode == 0, result.returncode
