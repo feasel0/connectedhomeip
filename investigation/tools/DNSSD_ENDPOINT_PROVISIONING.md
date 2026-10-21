@@ -210,17 +210,28 @@ Installed configuration is not by itself evidence for the Matter responder.
 
 ## One Original-Resolution Observation
 
-**Current blocker: retained original DUT operational state is unavailable.**
+**Historical replay limitation: retained original DUT operational state is unavailable.**
 The known a04/a09/a10 final KVS artifacts and their matching remote files
 contain no per-fabric NOC/root-certificate keys; the controller stores still
 contain their own fabric credentials. These are not a resumable operational
 pair. Starting that final DUT state would not reproduce its former Matter SRV
-identity. The original binary remains hash-matched, but no resolver request
-or Matter app launch was performed after acceptance. A newly commissioned
-diagnostic setup would be a different state and needs an explicit scope
-decision; do not manufacture credentials or repeat the completed EATT arms.
+identity. The original binary remains hash-matched. No Matter observation ran
+under the installation-only approval; the user subsequently authorized one
+fresh-store diagnostic with standard commissioning. That diagnostic passed
+on 2026-10-21, without reproducing the historical failure. See the
+[fresh diagnostic report](../reports/2026-10-21_13-12-36.md).
 
-After the live gate passes, recheck identities, clocks/bounds, interface
+The fresh run established one operational fabric through CommissionOnNetwork,
+observed the exact operational SRV on DUT wlan0 and both controller interfaces,
+then observed the native exact-identity resolution callback, CASE and a
+successful operational read. The unsuccessful preceding driver-initialization
+window never called commissioning and is separately retained. Neither window
+uses historical credentials or changes historical failure attribution.
+Do not repeat installation, acceptance, completed EATT comparisons or this
+fresh diagnostic without a new concrete reason and scope decision.
+
+For an authorized historical replay, after the live gate passes, recheck
+identities, clocks/bounds, interface
 addresses and fixture ownership. Start fresh endpoint captures before the
 unchanged retained original app/resolver configuration. Invoke the original
 operational resolver entry point once, within the existing native timeout;
