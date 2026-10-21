@@ -216,6 +216,8 @@ After each release, review G0–G6, reconcile open mismatch records, retire supe
 - Invoke a virtualenv Python through its virtualenv path; resolving its symlink can select the system interpreter and lose the installed Matter packages. Assert parser and model-resource paths before counting results.
 - Compile new regressions in the normal registered target. Use independent metadata overlays for cross-version/dependency controls, verify both owner and test consume them, and distinguish repeat executions from distinct test cases.
 - For targeted Alchemy ZAP updates, retain the established provisional policy and check generated metadata/file-sync as well as bounds. A shallow pinned spec may need bounded reachable-tag ancestry; never invent a release tag or hand-edit provenance to make CI pass.
+- Invoke Alchemy with supported relative roots before proposing a provenance writer change. Compare absolute/relative replay XML semantically, retain truthful command metadata, and use existing SDK errata overlays for justified API/domain compatibility. Review generated project-index side effects separately; do not install collateral FeatureMap default changes.
+- Keep strict dependency tests honest. Compile both owner and test against the actual dependency metadata in isolation, verify consumed headers, and report combined success separately from standalone failure. Never accept either privilege while claiming to enforce the stronger one.
 
 ## Canonical integration PR description — current-state reporting policy
 
