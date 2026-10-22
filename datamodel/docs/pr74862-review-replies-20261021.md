@@ -1,8 +1,8 @@
 # PR #74862: Updated Human Review Reply Drafts
 
-All responses below are DRAFTS ONLY. None has been posted, submitted as a review or used to resolve a thread. They describe the published PR head `7da3f2168292e73f3f296202f90abef454058598`, not merely an experimental proposal. Hosted CI is still running; no full-CI acceptance is claimed.
+All responses below are DRAFTS ONLY. None has been posted, submitted as a review or used to resolve a thread. They describe the published PR head `7da3f2168292e73f3f296202f90abef454058598`, not merely an experimental proposal. Updated 2026-10-22 for the opened ModeBase draft and prepared parser/Linux branches. Hosted CI is still running; no full-CI acceptance is claimed.
 
-The 253-path diff contains only the approved reference model, provenance, four generated ZAP XML files and generated cluster index. Removed SDK implementations and tests remain reachable at original integration commit `fd4843c02fd2a20a64765abc6f2084cbedca12b4`, an ancestor of the published head. ModeBase additionally remains on `datamodel/modebase-manage-followup-2026-10-21@2b0aad233cfc`.
+The 253-path diff contains only the approved reference model, provenance, four generated ZAP XML files and generated cluster index. Removed SDK implementations and tests remain reachable at original integration commit `fd4843c02fd2a20a64765abc6f2084cbedca12b4`, an ancestor of the published head. ModeBase is now proposed separately in [draft #74886](https://github.com/project-chip/connectedhomeip/pull/74886); parser and Linux candidates are prepared on independent fork branches, not yet PRs. The live model assessment includes all nineteen entries without making these independent SDK fixes model-update dependencies.
 
 Reviewer text is reproduced with ASCII typography normalized. Counts from the earlier exact-canonical validation are not presented as a new full application/REPL run of this head. The private Spec dependency is published as [draft Spec PR #13695](https://github.com/CHIP-Specifications/connectedhomeip-spec/pull/13695), but is not merged.
 
@@ -126,7 +126,7 @@ Agreed. The new tests and write-policy change are removed and preserved separate
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The ModeBase implementation and tests are removed from the DM diff. The separate two-file branch `datamodel/modebase-manage-followup-2026-10-21` preserves the fix and essential tests: 33 pass with the fix, while current upstream fails three intended controls. Thermostat Manage, ordinary Operate and COREMODES behavior are covered. No standalone PR has been opened.
+Agreed. The ModeBase implementation and tests are removed from the DM diff and proposed in independent [draft #74886](https://github.com/project-chip/connectedhomeip/pull/74886), open and unmerged. Its two-file fix has 33 focused passes versus 30 passes and three intended failures with the upstream owner. Thermostat Manage, ordinary Operate and COREMODES behavior are covered. The authorization inputs remain identical at latest checked upstream `54b92365e766`; this is not a fresh full-SDK build or a dependency of the DM update.
 
 ## 13. Push AV Coverage
 
@@ -146,7 +146,7 @@ Agreed. The additional AmbientContext coverage is removed and preserved for a tr
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The BSS testability, mapping and test-registration changes are removed and preserved separately. The independent EAP wire-bit fix belongs with its essential decoder/TLV regressions, not this DM update. Existing Linux owners compile and the focused baseline suites passed.
+Agreed. The BSS testability, mapping and test-registration changes are removed from this DM update. Independent fork branch `datamodel/linux-eap-bitmap-20261022@d9316425a9de` now prepares the EAP translation with essential decoder/TLV regressions in the existing connectivity test file, without new registration. Exact upstream passes two and fails five focused tests; the candidate passes all seven. The bug drops EAP membership when clearing the sentinel; it does not leak bit 7. No PR is open yet, and live scan acquisition and advertised-version interpretation are not established by this offline proof.
 
 ## 15. Unsupported Parser Contract
 
@@ -200,7 +200,7 @@ Agreed. The pre-PR diagnostic behavior and original assertions are restored; the
 > Are the derived-command merging changes (`conformance_is_explicit`, `combine_command`, parsing fields for unknown commands, skipping access warnings for base/generated commands) and the `_parse_data_type` `iter` -> `findall` change required to keep an existing test/CI job passing with the refreshed 1.7 XML (e.g. the Thermostat Mode command overlays)? If yes, could you point to the failing test so we keep just the minimal piece? If not, I'd prefer moving them to a follow-up with the other parser improvements.
 
 **Draft Response:**
-No existing reduced-candidate failure justified retaining these changes, so the pre-PR parser is restored. The inheritance work remains preserved for a targeted follow-up. The sole generated-index inconsistency is corrected by the existing generator's one-cell PICS update, without parser changes.
+No existing reduced-candidate failure justified retaining these changes, so the pre-PR parser is restored. Independent fork branch `datamodel/parser-command-inheritance-20261022@704c456e0fbf` now prepares command metadata inheritance only: three executed upstream regressions fail, and all eleven focused candidate cases pass. No PR is open yet. Diagnostic propagation, historical expectations, broad iter/findall changes and expression policy are excluded. The sole generated-index inconsistency remains corrected by the existing generator's one-cell PICS update, without parser changes in this DM PR.
 
 ## 20. Added Python Coverage
 
