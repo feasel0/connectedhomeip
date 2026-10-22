@@ -22,10 +22,10 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 13c433879b3ac350cd88f329438cfda31945dfc0
+          ref: b0148010e424f48508500f8607a78cc41d5edb5b
       - name: Verify exact Darwin overlap regression source
         run: |
-          test "$(git rev-parse HEAD)" = 13c433879b3ac350cd88f329438cfda31945dfc0
+          test "$(git rev-parse HEAD)" = b0148010e424f48508500f8607a78cc41d5edb5b
       - name: Restore the selected rejection defect for the negative control
         if: matrix.variant != 'corrected'
         env:
