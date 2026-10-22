@@ -1002,3 +1002,93 @@ The full live PR has 24 paths, with 411 insertions/79 deletions across 16
 production paths. Existing no-radio, no-Thread, backend and lifetime limitations
 still apply. No merge, force-push, common plural ownership change or request
 registry was introduced.
+
+## October 22: Unconditional Cancellation and GCC CI
+
+This subsection supersedes the preceding source/count/CI checkpoint. Published
+source is `07018f25371dab511e22426d15c80e7d2eb69419`: the owner/unconditional
+cancellation correction, a separate test-only GCC fix, and the late-services
+request-identity follow-up below.
+
+[Andy's review](https://github.com/project-chip/connectedhomeip/pull/72821#discussion_r4352826792)
+identified that unconditional cancellation incorrectly used the same shortcut
+as canceling a rejected common-layer caller. The distinction is now preserved
+through a private BleLayer helper and a default-forwarding delegate method.
+Other backends retain their existing implementation through that default;
+this is source compatibility, not a binary-ABI guarantee. Darwin's owned path
+can discard only its queued rejection, while unconditional cancellation still
+stops and retires the active operation. Error-generation suppression applies
+only to owned errors, so unrelated direct callers retain their queued error.
+Plural request ownership, completion cardinality and browsing/prewarm remain
+unchanged. No registry or delegate-lifetime infrastructure was introduced.
+
+The common routing regression produces 40 passes/one intended failure with
+the single legacy owner-to-unconditional call restored, then 41 passes with
+the correction. Two new native Apple cases cover unconditional stop with a
+queued single/object rejection and preservation of a distinct direct error.
+The existing direct-error test now requires delivery rather than suppression.
+
+The original Builds run 39838526346 had three failed jobs: python_lib
+120033800866, gcc_debug 120033801027 and coverage 120033801119. All three logs
+identify the same two `-Werror=shadow` errors in the fallback fixture's Device1
+callbacks. Renaming those callback parameters to `deviceProxy` changes no test
+behavior. A GCC 11 source probe using the generated include/configuration flags
+passes with shadowing still fatal. Because that probe reuses a Clang-generated
+configuration, only unsupported capability-attribute warnings are demoted in
+the probe; repository/CI warning policy is unchanged. Hosted GCC job success
+must be established separately, not inferred from this probe.
+
+PR-validity run 39839818034/job 120037548729 required the exact `### Testing`
+heading. A guarded heading-only description correction satisfied that rule;
+new-head PR-validity run 39857250157 and Restyled run 39857250050 pass.
+The latest old-head SME check also passes; earlier manual/canceled SME runs
+are retained as history, not treated as current compiler failures.
+
+Fresh final local results: 139 native passes (26 fallback, 12 pairer,
+34 AutoCommissioner, 41 layer, 3 endpoint, 23 BTP), 79 ASan/leak-check passes
+(26 fallback, 12 pairer, 41 layer), and 25 supported BLE-disabled passes.
+The same three pre-existing AutoCommissioner disabled cases remain excluded.
+Formatting, whitespace and editor diagnostics pass.
+
+Apple [qualification](https://github.com/feasel0/connectedhomeip/actions/runs/39857512797)
+passes all five jobs on `3955d65f52463457f5feba3be4e6d9f354544a6d`:
+corrected job 120099459501 executes 25 passes; unconditional-cancel-disabled
+120099459767 produces 24 passes/one intended failure; overlap-disabled
+120099459887 produces 12 passes/13 intended failures; direct-error-gating
+120099459966 produces 23 passes/two intended failures; rejected-caller control
+120099460010 produces 21 passes/four intended failures. Each preserves the
+seven original cases. The two new controls fail their named regressions.
+The final Linux-only follow-up leaves the common/Darwin source and Apple tests
+byte-identical, but this is not a fresh Apple execution of that later commit.
+
+### Late Services Resolution During Replacement Connection
+
+[Copilot's new review](https://github.com/project-chip/connectedhomeip/pull/72821#discussion_r4353765825)
+found another concrete ordering: after A times out and B reaches Connecting,
+A's ServicesResolved notification was stamped with B's current request ID.
+The final unchanged-test control restoring only that producer yields 25
+passes/one intended failure; using the originating ID yields 26 passes.
+
+The existing retained BlueZ device proxy now stores the captured request ID
+before the synchronous Connect RPC. Services resolution and GATT-init errors
+use that ID instead of the manager's current request. GLib owns both the
+stamp and its destruction; there is no separate request registry or delegate
+lifetime mechanism. The RPC remains outside the ChipStack lock. An untagged
+central device has no matching request and follows discarded-link cleanup.
+The regression uses two independent private D-Bus device proxies, actually
+connects both, delivers A's services while B is Connecting, verifies A is
+closed without callback to B, then completes B exactly once without closing it.
+This is not a general solution for unversioned notifications from repeated
+attempts on the identical device proxy, nor physical-radio qualification.
+
+Replies 4353934726 and 4353935000 were read back with exact bodies, author and
+parents 4352826792 and 4353765825. Both are brief and contain no SHAs; both
+target conversations are resolved. The follow-up changes 12 source paths
+from the previously published e029 source: 199 insertions/39 deletions total,
+of which nine production/header paths account for 46 insertions/19 deletions.
+
+Final-head PR-validity 39860685090 and Restyled 39860684747 pass. Exact-source
+upstream [Builds](https://github.com/project-chip/connectedhomeip/actions/runs/39860684652)
+is pending; the three previously failing Linux jobs require executed success
+before this follow-up is considered CI-qualified. Earlier-head results and
+superseded workflows are not transferred to this source.
