@@ -18,14 +18,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [guard-disabled, rejection-cancel-disabled, corrected]
+        variant: [guard-disabled, rejection-cancel-disabled, unconditional-cancel-disabled, direct-error-gating, corrected]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: e0297e84024c8000b6c3d8a907ba65413c06696a
+          ref: 3955d65f52463457f5feba3be4e6d9f354544a6d
       - name: Verify exact Darwin overlap regression source
         run: |
-          test "$(git rev-parse HEAD)" = e0297e84024c8000b6c3d8a907ba65413c06696a
+          test "$(git rev-parse HEAD)" = 3955d65f52463457f5feba3be4e6d9f354544a6d
       - name: Restore the selected rejection defect for the negative control
         if: matrix.variant != 'corrected'
         env:
@@ -39,15 +39,24 @@ jobs:
           source = path.read_text()
           guard = "VerifyOrReturnError(![ble hasPendingConnectionCallbacks], CHIP_ERROR_BUSY);"
           object_guard = "if ([ble hasPendingConnectionCallbacks]) {\n                QueueConnectionError(appState, OnConnectionError, CHIP_ERROR_BUSY, appState == bleLayer);\n                return;\n            }"
-          cancel_guard = "if (mConnectionErrorPending) {\n                mConnectionErrorPending = false;\n                return CHIP_NO_ERROR;\n            }"
+          cancel_guard = "if (mConnectionErrorPending) {\n                ++mCancellationGeneration;\n                mConnectionErrorPending = false;\n                return CHIP_NO_ERROR;\n            }"
+          cancel_start = 'CHIP_ERROR BleConnectionDelegateImpl::CancelConnection()\n        {\n            assertChipStackLockedByCurrentThread();\n            ChipLogProgress(Ble, "ConnectionDelegate CancelConnection");\n            ++mCancellationGeneration;'
+          generation_guard = "if (!ownsCancellation || mCancellationGeneration == cancellationGeneration)"
           if os.environ["VARIANT"] == "guard-disabled":
               assert source.count(guard) == 1
               assert source.count(object_guard) == 1
               source = source.replace(guard, "").replace(object_guard, "")
-          else:
-              assert os.environ["VARIANT"] == "rejection-cancel-disabled"
+          elif os.environ["VARIANT"] == "rejection-cancel-disabled":
               assert source.count(cancel_guard) == 1
               source = source.replace(cancel_guard, "")
+          elif os.environ["VARIANT"] == "unconditional-cancel-disabled":
+              assert source.count(cancel_start) == 1
+              unconditional_guard = cancel_guard.replace("                ++mCancellationGeneration;\n", "")
+              source = source.replace(cancel_start, cancel_start + "\n            " + unconditional_guard)
+          else:
+              assert os.environ["VARIANT"] == "direct-error-gating"
+              assert source.count(generation_guard) == 1
+              source = source.replace(generation_guard, "if (mCancellationGeneration == cancellationGeneration)")
           path.write_text(source)
           print("Only the selected guards are disabled; tests and other fixes are unchanged.")
           PY
@@ -102,6 +111,8 @@ jobs:
                   "PluralPendingRejectsSingleAndObjectAsynchronously",
                   ),
                   "rejection-cancel-disabled": ("CanceledBusyErrorsDoNotRetireReplacement",),
+                  "unconditional-cancel-disabled": ("UnconditionalCancellationStopsPluralWithQueuedRejection",),
+                  "direct-error-gating": ("OwnerCancellationPreservesUnrelatedQueuedError",),
               }
               for name in expected[os.environ["VARIANT"]]:
                   assert any("[  FAILED  ]" in line and name in line for line in lines), name
@@ -119,6 +130,8 @@ jobs:
                   "QueuedBusyErrorPreservesReentrantPluralReplacement",
                   "PluralErrorAllowsReentrantPlural",
                   "DirectBusyErrorsDoNotPreventAcceptedOwnerCancellation",
+                  "UnconditionalCancellationStopsPluralWithQueuedRejection",
+                  "OwnerCancellationPreservesUnrelatedQueuedError",
                   "CanceledBusyErrorsDoNotRetireReplacement",
                   "CanceledBusyErrorDoesNotConsumeFreshBusyError",
                   "CanceledBusyErrorDoesNotConsumeFreshBusyCancellation",
@@ -127,7 +140,7 @@ jobs:
                   "PluralPrewarmPreservesPendingRequest",
               ):
                   assert any("[       OK ]" in line and name in line for line in lines), name
-              print("Verified all 23 native Darwin BLE regressions passed.")
+              print("Verified all 25 native Darwin BLE regressions passed.")
           PY
   xcresult:
     if: github.repository == 'feasel0/connectedhomeip' && github.event_name == 'workflow_dispatch'
