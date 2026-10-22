@@ -15,13 +15,35 @@ jobs:
     if: github.repository == 'feasel0/connectedhomeip'
     runs-on: macos-26
     timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [guard-disabled, corrected]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 54af63db0d926b8442973262c1605556b60c3891
-      - name: Verify exact Darwin cancellation regression source
+          ref: faa63a76fbb0ffc80f6f142e458339e64c097a53
+      - name: Verify exact Darwin overlap regression source
         run: |
-          test "$(git rev-parse HEAD)" = 54af63db0d926b8442973262c1605556b60c3891
+          test "$(git rev-parse HEAD)" = faa63a76fbb0ffc80f6f142e458339e64c097a53
+      - name: Restore silent replacement for the negative control
+        if: matrix.variant == 'guard-disabled'
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path("src/platform/Darwin/BleConnectionDelegateImpl.mm")
+          source = path.read_text()
+          guard = "VerifyOrReturnError(![ble hasPendingConnectionCallbacks], CHIP_ERROR_BUSY);"
+          object_guard = """if ([ble hasPendingConnectionCallbacks]) {
+                          QueueConnectionError(appState, OnConnectionError, CHIP_ERROR_BUSY);
+                          return;
+                      }"""
+          assert source.count(guard) == 1
+          assert source.count(object_guard) == 1
+          path.write_text(source.replace(guard, "").replace(object_guard, ""))
+          print("Only the two overlap guards are disabled; tests and other fixes are unchanged.")
+          PY
       - name: Record exact source and Apple toolchain
         run: |
           git rev-parse HEAD
@@ -34,9 +56,12 @@ jobs:
       - name: Compile native BLE regression executable
         run: |
           scripts/run_in_build_env.sh 'gn gen out/pr72821-native --args="chip_build_tests=true chip_enable_ble=true chip_config_network_layer_ble=true chip_support_thread_meshcop=false symbol_level=0" && ninja -C out/pr72821-native -j4 src/platform/tests:TestDarwinBleConnection.mm'
-      - name: Execute native browsing and cancellation regressions
+      - name: Execute native browsing, cancellation and overlap regressions
+        env:
+          VARIANT: ${{ matrix.variant }}
         run: |
           python3 - <<'PY'
+          import os
           import subprocess
 
           result = subprocess.run(
@@ -61,8 +86,34 @@ jobs:
                 "NormalCancellationAllowsFreshRequest",
           ):
               assert any("[       OK ]" in line and name in line for line in lines), name
-          assert result.returncode == 0, result.returncode
-          print("Verified all native Darwin BLE regressions passed.")
+              if os.environ["VARIANT"] == "guard-disabled":
+                assert result.returncode == 1, result.returncode
+                for name in (
+                  "SinglePendingRejectsPluralCommonAndBackend",
+                  "PluralPendingRejectsPluralCommonAndBackend",
+                  "PluralPendingRejectsSingleAndObjectAsynchronously",
+                ):
+                  assert any("[  FAILED  ]" in line and name in line for line in lines), name
+                print("Verified the overlap regressions reject silent replacement.")
+              else:
+                assert result.returncode == 0, result.returncode
+                for name in (
+                  "SinglePendingRejectsPluralCommonAndBackend",
+                  "PluralPendingRejectsPluralCommonAndBackend",
+                  "PluralPendingRejectsSingleAndObjectAsynchronously",
+                  "SinglePendingRejectsDirectSingleAndObjectAsynchronously",
+                  "EachPendingCallbackSlotRejectsOverlap",
+                  "CompletedPluralAllowsFreshSingleAndPlural",
+                  "PluralCompletionAllowsReentrantSingle",
+                  "QueuedBusyErrorPreservesReentrantPluralReplacement",
+                  "PluralErrorAllowsReentrantPlural",
+                  "CanceledBusyErrorsDoNotRetireReplacement",
+                  "CanceledBusyErrorDoesNotConsumeFreshBusyError",
+                  "PluralBrowsingRetiresPendingRequest",
+                  "PluralPrewarmPreservesPendingRequest",
+                ):
+                  assert any("[       OK ]" in line and name in line for line in lines), name
+                print("Verified all 20 native Darwin BLE regressions passed.")
           PY
   xcresult:
     if: github.repository == 'feasel0/connectedhomeip' && github.event_name == 'workflow_dispatch'
