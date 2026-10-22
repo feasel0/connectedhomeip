@@ -18,31 +18,38 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        variant: [guard-disabled, corrected]
+        variant: [guard-disabled, rejection-cancel-disabled, corrected]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: faa63a76fbb0ffc80f6f142e458339e64c097a53
+          ref: 13c433879b3ac350cd88f329438cfda31945dfc0
       - name: Verify exact Darwin overlap regression source
         run: |
-          test "$(git rev-parse HEAD)" = faa63a76fbb0ffc80f6f142e458339e64c097a53
-      - name: Restore silent replacement for the negative control
-        if: matrix.variant == 'guard-disabled'
+          test "$(git rev-parse HEAD)" = 13c433879b3ac350cd88f329438cfda31945dfc0
+      - name: Restore the selected rejection defect for the negative control
+        if: matrix.variant != 'corrected'
+        env:
+          VARIANT: ${{ matrix.variant }}
         run: |
           python3 - <<'PY'
+          import os
           from pathlib import Path
 
           path = Path("src/platform/Darwin/BleConnectionDelegateImpl.mm")
           source = path.read_text()
           guard = "VerifyOrReturnError(![ble hasPendingConnectionCallbacks], CHIP_ERROR_BUSY);"
-          object_guard = """if ([ble hasPendingConnectionCallbacks]) {
-                          QueueConnectionError(appState, OnConnectionError, CHIP_ERROR_BUSY);
-                          return;
-                      }"""
-          assert source.count(guard) == 1
-          assert source.count(object_guard) == 1
-          path.write_text(source.replace(guard, "").replace(object_guard, ""))
-          print("Only the two overlap guards are disabled; tests and other fixes are unchanged.")
+          object_guard = "if ([ble hasPendingConnectionCallbacks]) {\n                QueueConnectionError(appState, OnConnectionError, CHIP_ERROR_BUSY, appState == bleLayer);\n                return;\n            }"
+          cancel_guard = "if (mConnectionErrorPending) {\n                mConnectionErrorPending = false;\n                return CHIP_NO_ERROR;\n            }"
+          if os.environ["VARIANT"] == "guard-disabled":
+              assert source.count(guard) == 1
+              assert source.count(object_guard) == 1
+              source = source.replace(guard, "").replace(object_guard, "")
+          else:
+              assert os.environ["VARIANT"] == "rejection-cancel-disabled"
+              assert source.count(cancel_guard) == 1
+              source = source.replace(cancel_guard, "")
+          path.write_text(source)
+          print("Only the selected guards are disabled; tests and other fixes are unchanged.")
           PY
       - name: Record exact source and Apple toolchain
         run: |
@@ -81,23 +88,27 @@ jobs:
               "BrowsingReplacementAllowsReentrantRetry",
               "PrewarmPreservesPendingRequest",
               "CanceledObjectErrorDoesNotRetireReplacement",
-                "ObjectErrorsRemainAsynchronousAndReusable",
-                "CanceledObjectErrorDoesNotConsumeFreshObjectError",
-                "NormalCancellationAllowsFreshRequest",
+              "ObjectErrorsRemainAsynchronousAndReusable",
+              "CanceledObjectErrorDoesNotConsumeFreshObjectError",
+              "NormalCancellationAllowsFreshRequest",
           ):
               assert any("[       OK ]" in line and name in line for line in lines), name
-              if os.environ["VARIANT"] == "guard-disabled":
-                assert result.returncode == 1, result.returncode
-                for name in (
+          if os.environ["VARIANT"] != "corrected":
+              assert result.returncode == 1, result.returncode
+              expected = {
+                  "guard-disabled": (
                   "SinglePendingRejectsPluralCommonAndBackend",
                   "PluralPendingRejectsPluralCommonAndBackend",
                   "PluralPendingRejectsSingleAndObjectAsynchronously",
-                ):
+                  ),
+                  "rejection-cancel-disabled": ("CanceledBusyErrorsDoNotRetireReplacement",),
+              }
+              for name in expected[os.environ["VARIANT"]]:
                   assert any("[  FAILED  ]" in line and name in line for line in lines), name
-                print("Verified the overlap regressions reject silent replacement.")
-              else:
-                assert result.returncode == 0, result.returncode
-                for name in (
+              print("Verified the selected negative control fails its behavioral regressions.")
+          else:
+              assert result.returncode == 0, result.returncode
+              for name in (
                   "SinglePendingRejectsPluralCommonAndBackend",
                   "PluralPendingRejectsPluralCommonAndBackend",
                   "PluralPendingRejectsSingleAndObjectAsynchronously",
@@ -107,13 +118,16 @@ jobs:
                   "PluralCompletionAllowsReentrantSingle",
                   "QueuedBusyErrorPreservesReentrantPluralReplacement",
                   "PluralErrorAllowsReentrantPlural",
+                  "DirectBusyErrorsDoNotPreventAcceptedOwnerCancellation",
                   "CanceledBusyErrorsDoNotRetireReplacement",
                   "CanceledBusyErrorDoesNotConsumeFreshBusyError",
+                  "CanceledBusyErrorDoesNotConsumeFreshBusyCancellation",
+                  "DeliveredBusyErrorAllowsReentrantActiveCancellation",
                   "PluralBrowsingRetiresPendingRequest",
                   "PluralPrewarmPreservesPendingRequest",
-                ):
+              ):
                   assert any("[       OK ]" in line and name in line for line in lines), name
-                print("Verified all 20 native Darwin BLE regressions passed.")
+              print("Verified all 23 native Darwin BLE regressions passed.")
           PY
   xcresult:
     if: github.repository == 'feasel0/connectedhomeip' && github.event_name == 'workflow_dispatch'
