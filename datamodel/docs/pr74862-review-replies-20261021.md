@@ -146,7 +146,7 @@ Agreed. The additional AmbientContext coverage is removed and preserved for a tr
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The BSS testability, mapping and test-registration changes are removed from this DM update. Independent [draft #74889](https://github.com/project-chip/connectedhomeip/pull/74889) proposes the EAP translation at `d9316425a9de`, with essential decoder/TLV regressions in the existing connectivity test file and no new registration. Exact upstream passes two and fails five focused tests; the candidate passes all seven. The bug drops EAP membership when clearing the sentinel; it does not leak bit 7. The draft documents current 1.7 correctness separately from older advertised-version/backport compatibility. Offline proof does not establish live scan acquisition or universal backward compatibility.
+Agreed. The BSS testability, mapping and test-registration changes are removed from this DM update. Independent [draft #74889](https://github.com/project-chip/connectedhomeip/pull/74889) proposes the EAP translation at `8d021c02a266`, the formatting-only successor of tested `d9316425a9de`, with essential decoder/TLV regressions in the existing connectivity test file and no new registration. Exact upstream passes two and fails five focused tests; the tested candidate passes all seven. The bug drops EAP membership when clearing the sentinel; it does not leak bit 7. The draft documents current 1.7 correctness separately from older advertised-version/backport compatibility. Offline proof does not establish live scan acquisition or universal backward compatibility.
 
 ## 15. Unsupported Parser Contract
 
