@@ -1089,6 +1089,28 @@ of which nine production/header paths account for 46 insertions/19 deletions.
 
 Final-head PR-validity 39860685090 and Restyled 39860684747 pass. Exact-source
 upstream [Builds](https://github.com/project-chip/connectedhomeip/actions/runs/39860684652)
-is pending; the three previously failing Linux jobs require executed success
-before this follow-up is considered CI-qualified. Earlier-head results and
-superseded workflows are not transferred to this source.
+completed successfully on `07018f25371dab511e22426d15c80e7d2eb69419`:
+
+- Linux python_lib job 120110517837: success.
+- Linux gcc_debug job 120110517842: success.
+- Linux coverage job 120110518293: success.
+- Linux fake/gcc_release/clang/simulated job 120110517646: success.
+- Linux python lighting-app job 120110517766: success.
+- Darwin clang/simulated job 120110517835: success.
+
+Thus all three original compiler failures have executed hosted-success
+successors on the final source. PR-description-triggered validity run
+39861159666 also passes. The fresh review readback has no unresolved threads
+and no omitted next page. The raw final-head workflow checkpoint is 35 success,
+five running, one queued, one canceled and one SME-reviewer action_required;
+no workflow reports failure or timed_out. Darwin Tests remains running and
+Darwin queued. Pending/manual/canceled checks are not blanket CI approval;
+earlier-head results and superseded workflows are not transferred here.
+
+Individual-job inspection of every pending workflow found no failed jobs.
+SME run 39861303381 has action_required and zero jobs, not a compiler failure.
+All 80 current-head check runs have no failure, timed_out or action_required
+conclusion. External CLA and pre-commit statuses pass; PullApprove still has
+two groups pending. CodeRabbit reports success with "Review paused", which is
+not a fresh review or approval of this head. No policy bypass, merge or
+force-push was attempted; remaining manual approvals require their owners.
