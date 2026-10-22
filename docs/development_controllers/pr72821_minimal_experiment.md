@@ -812,3 +812,193 @@ no duplicate request was sent. The PR remains OPEN, non-draft and unmerged
 at `54af63db0d926b8442973262c1605556b60c3891`. Physical BLE accessory
 commissioning, real CoreBluetooth delivery, Thread Meshcop and other backend
 or arbitrary delegate-lifetime qualification remain outside the evidence.
+
+## October 22: Andy Review Corrections
+
+The first correction and its evidence are recorded below. The final interaction
+corrections subsection supersedes its source SHA, aggregate counts and footprint.
+
+Source: `faa63a76fbb0ffc80f6f142e458339e64c097a53`, a normal forward commit
+from `54af63db0d926b8442973262c1605556b60c3891` on the existing PR branch.
+The three underlying patterns also exist in the recorded upstream control
+`c0747b78f00f61b4c36d20db474fc9721b437f5d`; they are not all new PR regressions.
+They directly affect this PR's cancellation and unclaimed-connection guarantees.
+
+### Linux Cancellation Publication
+
+[Review](https://github.com/project-chip/connectedhomeip/pull/72821#discussion_r4350871164).
+The scan callback now creates the cancellation token under the stack lock before
+publishing `kConnecting`. Connect takes its own referenced snapshot under that
+lock and uses it throughout the synchronous RPC and retries, outside the lock.
+Cancellation retains and cancels the published token instead of replacing it.
+There is no asynchronous Connect implementation or new threading infrastructure.
+
+`LinuxCancellationBeforeConnectKeepsPublishedToken` pauses naturally between
+publishing the connecting state and invoking Connect. Reintroducing only the
+old reset-at-RPC-entry behavior produces 17 passes and one intended failure:
+Connect succeeds with a different token and the replacement remains busy.
+The correction passes all 18 cases at this stage, including an actual private
+D-Bus Connect after a fresh retry. Existing held-RPC/repeated-cancel tests remain.
+The lost-cancellation ordering is executed evidence; the unsynchronized GAutoPtr
+access is source-confirmed, not a separately executed TSan race report.
+
+### Late Successful Connection Cleanup
+
+[Review](https://github.com/project-chip/connectedhomeip/pull/72821#discussion_r4350871180).
+Central-success events now carry a one-shot ticket, not a borrowed connection
+pointer. A persistent endpoint-local counter supplies tickets in the existing
+connection map. GLib resolves and consumes the ticket before handoff or close.
+Rejected events disconnect only a currently tracked, unclaimed incarnation;
+missing or consumed tickets are harmless. There is no additional registry.
+
+The real generated private D-Bus fixture controls timeout, ServicesResolved,
+allocation, event dispatch, Disconnect and Connected=false removal. Restoring
+the old ignore branch yields 20 passes and two intended failures. The correction
+passes all 22 fallback cases. Controls cover duplicate rejection, replay after
+deletion, same-path replacement, accepted-link preservation, duplicate accepted
+handoff, and subsequent fresh connection. The existing closing-state test now
+uses an actually tracked connection rather than injecting an unowned pointer.
+
+This is connection-incarnation cleanup, not general delayed-event attribution.
+The existing request counter is still sampled when a terminal event is produced;
+no claim is made that it identifies every earlier connection attempt.
+
+### Darwin-Local Overlap Rejection
+
+[Review](https://github.com/project-chip/connectedhomeip/pull/72821#discussion_r4350871192).
+The Darwin delegate rejects overlaps while any connection-result callback remains
+pending. It does not use connecting mode alone: a completed Darwin request may
+remain in that mode. Plural calls return BUSY synchronously; void single/object
+calls queue their captured error callback using the existing cancellation count.
+The active operation is not stopped or overwritten. Completion still clears its
+callbacks before user notification, preserving reentrant retry.
+
+The common plural API and its multiple-success contract are unchanged. Darwin's
+existing one-result behavior is unchanged. Thirteen additional cases cover both
+overlap directions, plural/plural and object overlaps, all callback slots,
+post-success reuse and reentry, terminal error/retry, canceled queued errors,
+browsing replacement and prewarm. The seven earlier Apple cases remain intact.
+
+Native Apple [red/green qualification](https://github.com/feasel0/connectedhomeip/actions/runs/39830460322)
+completed successfully on the exact source above. Corrected job 120004920935
+compiled, linked and executed all 20 cases successfully. Guard-disabled job
+120004920694 executed 13 passes and seven intended behavioral failures,
+including both overlap directions and plural/plural replacement. Both variants
+preserved the seven earlier cases. The negative control disables only the two
+overlap guards and retains the callback-query helper for test observability;
+it is not an unmodified upstream binary.
+
+### Verification and Footprint
+
+- Native: 134 passes (22 fallback, 12 pairer, 34 AutoCommissioner, 40 layer,
+   3 endpoint, 23 BTP); the same three pre-existing disabled AutoCommissioner
+   cases remain excluded.
+- ASan with `detect_leaks=1`: 74 passes (22 fallback, 12 pairer, 40 layer),
+   without sanitizer/leak or GLib-critical diagnostics.
+- Supported BLE-disabled variants: 12 passes with both layers disabled and
+   13 with platform BLE disabled/network BLE enabled, 25 total.
+- Native Apple: 20 passes, with the seven intended negative-control failures
+   described above. These tests substitute the central manager, not a radio.
+- The inverse platform-enabled/network-disabled configuration remains outside
+   qualification, as before; its upstream failure was previously documented.
+- clang-format 16, scoped whitespace and editor diagnostics pass. Builds use
+   the pinned Pigweed Clang 23; a missing PATH and a system-Clang-16 annotation
+   mismatch were setup failures, not product regressions. BLE-disabled Ninja
+   regeneration additionally required the existing environment-root variable.
+- Follow-up footprint: 10 files, 974 insertions/72 deletions total; eight
+   production/header paths account for 127 insertions/39 deletions, including
+   the test-only friend in the object-manager header. Two existing test files
+   account for 847 insertions/33 deletions. No common BLE ownership change.
+   - Exact-head upstream CI at the post-Apple checkpoint: seven workflows passed,
+     31 running and one queued, with no reported failures. Restyled passed;
+     Builds, Darwin and Darwin Tests were still running. This is not a blanket
+     CI-success or approval claim.
+
+No physical BLE, CoreBluetooth delivery, Thread Meshcop, cached-device behavior,
+adapter recovery, other backend, or arbitrary delegate-lifetime qualification
+has been added. No merge or force-push was performed.
+
+### Final Interaction Corrections
+
+Final source is `e0297e84024c8000b6c3d8a907ba65413c06696a`, normally pushed to
+the existing PR branch. The three Andy replies are deliberately brief and contain
+no SHAs; their verified reply IDs are 4352024614, 4352025110 and 4352025645,
+respectively. All three conversations were verified resolved.
+
+Two subsequent review findings exposed interactions in the initial correction:
+
+- [Discovery lock ordering](https://github.com/project-chip/connectedhomeip/pull/72821#discussion_r4352019281):
+   the GLib discovery callback must not wait for the stack lock while Matter can
+   synchronously wait for GLib to stop scanning. It now retains the device, copies
+   identification data and captures the existing request ID before queueing work
+   to Matter. Matter validates the request and match, stops scanning, publishes
+   the cancellation token under the stack lock, starts its timer and queues the
+   synchronous Connect RPC back onto GLib. That worker owns the exact device/token
+   references, never takes the stack lock and posts failure with its captured ID.
+   No asynchronous D-Bus RPC or new threading framework was introduced.
+- [Rejected-caller cancellation](https://github.com/project-chip/connectedhomeip/pull/72821#discussion_r4352019189):
+   canceling a queued common-layer BUSY rejection must not stop another caller's
+   active plural operation. One private pending-error flag distinguishes that
+   cancellation. Conversely, direct backend errors must not protect an accepted
+   common-layer operation from its owner's cancellation. The flag is set only
+   for common-layer rejection ownership, and current error delivery clears it
+   before the callback; generation checks preserve canceled/fresh/reentrant cases.
+   The common plural-request ownership model remains unchanged.
+
+The bounded real-GLib discovery control restores the original callback at
+`faa63a76fbb0ffc80f6f142e458339e64c097a53`: 22 passes and three intended
+failures, without leaving a deadlocked process. Restoring the final handoff
+passes all 25 fallback cases. Additional cases cover cancel-before-match,
+cancel-after-handoff, copied identification data, duplicate results, stale
+failure events, token destruction and an uncanceled actual-scan connection.
+
+Final local verification: 137 native passes (25 fallback, 12 pairer,
+34 AutoCommissioner, 40 layer, 3 endpoint, 23 BTP), 77 ASan/leak-check passes
+(25 fallback, 12 pairer, 40 layer), and the same 25 supported BLE-disabled passes.
+Formatting, scoped whitespace and editor diagnostics pass. Timer/source-attach
+error handling is implemented but not separately fault-injected.
+
+The first 23-case Apple [run](https://github.com/feasel0/connectedhomeip/actions/runs/39836211126)
+at `13c433879b3ac350cd88f329438cfda31945dfc0` passed both negative controls,
+but the corrected implementation passed 22 cases and failed
+`DirectBusyErrorsDoNotPreventAcceptedOwnerCancellation`. Cancel stopped the
+accepted object without clearing its callback slots, so a forced stale error
+could consume a replacement. The final three-line correction clears only the
+canceled object's callbacks before stopping it; browsing retains its separate
+terminal dispatch. The intervening `b0148010e424f48508500f8607a78cc41d5edb5b`
+[run](https://github.com/feasel0/connectedhomeip/actions/runs/39837319493)
+also had 22 passes and the same failure: `stop` clears the global `ble`, so
+callback clearing after `stop` addressed a nil receiver and changed nothing.
+The final source orders callback retirement before that receiver is cleared.
+
+Final Apple [qualification](https://github.com/feasel0/connectedhomeip/actions/runs/39838609335)
+completed successfully on the final source: corrected job 120033374863 compiled,
+linked and passed all 23 native cases. Guard-disabled job 120033374385 recorded
+12 passes and 11 intended failures. Rejected-caller-cancellation-disabled job
+120033375181 recorded 20 passes and three intended failures. Each variant
+preserved the seven earlier cases. These are deliberately modified candidate
+controls, not unmodified upstream binaries. Earlier Apple results remain
+intermediate evidence, not final acceptance. The Linux native/ASan/disabled
+sources tested at `13c433879b3ac350cd88f329438cfda31945dfc0` are unchanged
+in the final source; only the Darwin cancellation receiver ordering changed.
+
+Follow-up replies 4352560175 and 4352560720 were verified against comments
+4352019189 and 4352019281. They are brief, contain no SHAs and accompany the
+qualified corrections. The Linux thread was already resolved on readback, so
+no duplicate resolution was attempted. All five affected conversations were
+finally verified resolved, with no unresolved threads or omitted next page.
+
+The raw exact-final-head upstream checkpoint has eight successful workflows,
+29 running, three queued, one canceled and one SME-reviewer `action_required`.
+Restyled passed; Builds, Darwin and Darwin Tests remained pending. No workflow
+reported `failure` or `timed_out`; the manual SME gate and pending/canceled runs
+are not CI approval. This snapshot includes review-triggered runs and does not
+transfer any earlier head's CI success to the final source.
+
+The complete correction from `54af63db0d926b8442973262c1605556b60c3891` changes
+10 paths: production/header changes are 235 insertions/55 deletions across eight
+paths; the two existing tests account for 1,279 insertions/33 deletions.
+The full live PR has 24 paths, with 411 insertions/79 deletions across 16
+production paths. Existing no-radio, no-Thread, backend and lifetime limitations
+still apply. No merge, force-push, common plural ownership change or request
+registry was introduced.
