@@ -1,10 +1,8 @@
 # PR #74862: Updated Human Review Reply Drafts
 
-All responses below are DRAFTS ONLY, prepared for user approval. None has been posted, submitted as a review or used to resolve a thread. They describe the published PR head `7da3f2168292e73f3f296202f90abef454058598`, not merely an experimental proposal. Rechecked 2026-10-22 for human handoff: all hosted build/test workflows have completed successfully, but PullApprove is pending, CHANGES_REQUESTED remains active and the SME-reviewer workflow requires action; no final approval is claimed.
+These are drafts for approval. None has been posted or used to resolve a thread.
 
-The 253-path diff contains only the approved reference model, provenance, four generated ZAP XML files and generated cluster index. Removed SDK implementations and tests remain reachable at original integration commit `fd4843c02fd2a20a64765abc6f2084cbedca12b4`, an ancestor of the published head. ModeBase [draft #74886](https://github.com/project-chip/connectedhomeip/pull/74886), parser [draft #74888](https://github.com/project-chip/connectedhomeip/pull/74888) and Linux [draft #74889](https://github.com/project-chip/connectedhomeip/pull/74889) are independently proposed and unmerged. The live model assessment includes all nineteen entries without making these independent SDK fixes model-update dependencies.
-
-Reviewer text is reproduced with ASCII typography normalized. Counts from the earlier exact-canonical validation are not presented as a new full application/REPL run of this head. The private Spec dependency is published as [draft Spec PR #13695](https://github.com/CHIP-Specifications/connectedhomeip-spec/pull/13695), but is not merged.
+Reviewer comments are unchanged apart from normalized ASCII typography.
 
 ## 1. Lint Workflow
 
@@ -14,7 +12,7 @@ Reviewer text is reproduced with ASCII typography normalized. Counts from the ea
 > To keep the scope minimal, the addition of this test can be done in a follow-up PR.
 
 **Draft Response:**
-Agreed. This PR now retains the baseline lint workflow; the added ZAP test and its registration have been removed. Their implementation is preserved in the original integration commit for separate tooling review.
+Done. I've removed the added test and restored the lint workflow. The test can go in a separate PR.
 
 ## 2. Python Workflow
 
@@ -24,7 +22,7 @@ Agreed. This PR now retains the baseline lint workflow; the added ZAP test and i
 > To keep the scope minimal, the addition of this test can be done in a follow-up PR.
 
 **Draft Response:**
-Agreed. The existing CI commands are restored, with no added unsupported-constraints suite registration. That suite remains preserved for the owning parser/harness follow-up, not this model update.
+Done. The original CI commands are restored; the new test suite is out of this PR.
 
 ## 3. BaseDeviceType Rendering
 
@@ -34,7 +32,7 @@ Agreed. The existing CI commands are restored, with no added unsupported-constra
 > This is an alchemy issue now tracked by https://github.com/project-chip/alchemy/issues/93
 
 **Draft Response:**
-Thanks; Alchemy #93 remains the rendering tracker. This PR retains the generated summaries without a hand-edited XML workaround or an unrelated eligibility change.
+Thanks, I'll leave this to Alchemy #93. I haven't added a workaround to the generated XML.
 
 ## 4. Errata Ownership
 
@@ -44,7 +42,7 @@ Thanks; Alchemy #93 remains the rendering tracker. This PR retains the generated
 > Errata lives in Spec repository. Please open a PR on Spec to add these changes to .github/alchemy/errata.yaml
 
 **Draft Response:**
-Moved to the Spec-owned configuration in private draft Spec PR #13695, published at `76fcb138fc42`. The SDK overlay is removed. Supported relative-root generation preserves all four intended XML trees; normal Spec review/merge is still pending. Independent project-index generator collateral is excluded.
+I've opened [Spec PR #13695](https://github.com/CHIP-Specifications/connectedhomeip-spec/pull/13695) for the errata and removed the SDK overlay. The Spec PR is still awaiting approval and merge.
 
 ## 5. Added ZAP Test
 
@@ -54,7 +52,7 @@ Moved to the Spec-owned configuration in private draft Spec PR #13695, published
 > To keep the scope minimal, the addition of this test can be done in a follow-up PR.
 
 **Draft Response:**
-Agreed. The added test and its CI registration are no longer in this PR; the coverage is preserved for a tooling follow-up. The existing metadata/hand-edit check accepts all 157 files on the published tree.
+Agreed. I've removed the test and its CI registration; they can be reviewed separately.
 
 ## 6. Closure Coverage
 
@@ -66,7 +64,7 @@ Agreed. The added test and its CI registration are no longer in this PR; the cov
 > Moreover, if a test fix is needed, the fix should be well documented and reported the owners of the test to fix-forward it.
 
 **Draft Response:**
-Agreed. Both the new configuration validation and expanded tests are removed from this PR and preserved for an owning follow-up, including the specified StepValue divisibility rule. No existing candidate failure established their necessity here; the 39 baseline Closure cases passed.
+Agreed. I've removed the new validation and extra tests. The existing Closure tests pass without them.
 
 ## 7. DEM Coverage
 
@@ -76,7 +74,7 @@ Agreed. Both the new configuration validation and expanded tests are removed fro
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The expanded DEM coverage is removed and preserved separately. The existing test file is unchanged from the PR base; its 17 baseline cases passed on the canonical reduction.
+Done. The extra DEM tests are removed, and the test file is back to its original version.
 
 ## 8. EPA Coverage
 
@@ -86,7 +84,7 @@ Agreed. The expanded DEM coverage is removed and preserved separately. The exist
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The additional coverage is removed from this PR and preserved with the separate minima-enforcement proposal. The six baseline EPA cases passed without those additions.
+Agreed. I've removed the extra EPA coverage and kept it with the separate implementation proposal.
 
 ## 9. EPA Implementation
 
@@ -96,7 +94,7 @@ Agreed. The additional coverage is removed from this PR and preserved with the s
 > if this is required to keep the CI passing, please add comments about why it's added and report the change to the Energy TT.
 
 **Draft Response:**
-No existing candidate failure established a CI need for the new validator, so it is removed from this PR. The implementation and essential regressions are preserved for separate review and Energy TT discussion; no owner contact or agreement is claimed.
+I've removed the validator; we haven't found an existing CI failure that needs it here. It can be reviewed separately with the Energy TT.
 
 ## 10. GKM Coverage
 
@@ -106,7 +104,7 @@ No existing candidate failure established a CI need for the new validator, so it
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The tests and dependencies now match the PR base. Reserved-path, wildcard and revision coverage remains preserved as one key-management follow-up, rather than separate PRs per test file; the 16 baseline cases passed.
+Done. The GKM tests and dependencies are restored to their original versions. The extra coverage can go in a follow-up.
 
 ## 11. Humidistat Coverage
 
@@ -116,7 +114,7 @@ Agreed. The tests and dependencies now match the PR base. Reserved-path, wildcar
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The new tests and write-policy change are removed and preserved separately; the 35 baseline cases passed. Attribute writes, command omission and persisted/startup zero behavior remain distinct questions for the owning follow-up, not policies introduced by this model update.
+Agreed. I've removed the new tests and write-policy change. The zero-value behavior needs a separate discussion.
 
 ## 12. ModeBase Coverage
 
@@ -126,7 +124,7 @@ Agreed. The new tests and write-policy change are removed and preserved separate
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The ModeBase implementation and tests are removed from the DM diff and proposed in independent [draft #74886](https://github.com/project-chip/connectedhomeip/pull/74886), open and unmerged. Its two-file fix has 33 focused passes versus 30 passes and three intended failures with the upstream owner. Thermostat Manage, ordinary Operate and COREMODES behavior are covered. The authorization inputs remain identical at checked upstream `54b92365e766`; that focused comparison is not a fresh full-SDK build or a dependency of the DM update.
+Agreed. I've moved the ModeBase fix and its tests out of this PR into [#74886](https://github.com/project-chip/connectedhomeip/pull/74886).
 
 ## 13. Push AV Coverage
 
@@ -136,7 +134,7 @@ Agreed. The ModeBase implementation and tests are removed from the DM diff and p
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The additional AmbientContext coverage is removed and preserved for a transport-testing follow-up. Production behavior is unchanged, and the nine baseline cases passed.
+Done. I've removed the extra AmbientContext tests and kept them for a follow-up.
 
 ## 14. Linux BSS Coverage
 
@@ -146,7 +144,7 @@ Agreed. The additional AmbientContext coverage is removed and preserved for a tr
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The BSS testability, mapping and test-registration changes are removed from this DM update. Independent [draft #74889](https://github.com/project-chip/connectedhomeip/pull/74889) at `3ced1ae3d9b8` translates EAP in both `WpaSupplicantClient::GetBssInfo` and the actual Network Commissioning decoder, `ConnectivityManagerImpl::_GetBssInfo`, with essential decoder/TLV regressions in the existing connectivity test file and no new registration. The original first-decoder control passes two and fails five tests. The combined second-decoder control passes eight and fails four intended assertions; the corrected and final formatted executables pass all twelve. The bug drops EAP membership when clearing the sentinel; it does not leak bit 7. The draft documents current 1.7 correctness separately from older advertised-version/backport compatibility. Offline proof does not establish live scan acquisition or universal backward compatibility.
+Agreed. I've removed the Linux BSS changes from this PR. The fix and tests are in [#74889](https://github.com/project-chip/connectedhomeip/pull/74889), with older-version compatibility called out for review.
 
 ## 15. Unsupported Parser Contract
 
@@ -158,7 +156,7 @@ Agreed. The BSS testability, mapping and test-registration changes are removed f
 > That also removes the need for the `require_supported()` calls in `idm_support.py` and `TC_S_common.py`. The `TC_S_common.py` one currently raises with no handler, so the Scenes tests can error out when the chosen scenable attribute has an expression bound.
 
 **Draft Response:**
-Agreed. The parser and both IDM/Scenes consumers now match the PR base; the added unsupported-expression API and imports are absent. That contract and all consumer handling are preserved for separate review. This does not claim that expression evaluation is solved or make unsupported evaluation a DUT failure.
+Agreed. I've restored the original parser behavior and removed the new API and its IDM/Scenes calls. Expression handling can be reviewed separately.
 
 ## 16. Strict IDM Gate
 
@@ -168,7 +166,7 @@ Agreed. The parser and both IDM/Scenes consumers now match the PR base; the adde
 > The changes in step 1 (`except UnsupportedConstraintError`, `command_coverage_failures`, the strict `asserts.fail(...)`, the new `ChipStackError` / `other_error` entries, and moving `enforce_constraint_policy`) add a new strict-mode gate: harness coverage gaps, transport errors and non-CONSTRAINT_ERROR statuses now fail the DUT, where they were previously skipped. That's a policy change beyond the DM update, and with the 1.7 XML it would fail compliant DUTs for harness reasons (e.g. `<compute>`-bounded command fields in CameraAVSettingsUserLevelManagement, ElectricalAlarm, TemperatureAlarm, AudioControl). Could we restore the pre-PR step 1 as-is?
 
 **Draft Response:**
-Agreed. Step 1 is restored byte-for-byte to the PR base, without the added incomplete-coverage gate. A source-bound diagnostic confirms the skip/probe path while preserving failures for accepted violations and no exercised probe. That diagnostic itself is not a full REPL pass; completed hosted check runs now report no failure, but review/approval gates remain open. Any stricter coverage policy remains separate.
+Done. Step 1 is restored exactly as it was before this PR, without the new strict-mode gate.
 
 ## 17. IDM/DEM Helpers
 
@@ -178,7 +176,7 @@ Agreed. Step 1 is restored byte-for-byte to the PR base, without the added incom
 > The DEM-specific helpers (`_is_dem_power_range`, `_dem_max_of_supported`, `_dem_power_range_request`), `_numeric_bound_expression` and the `minOf`/`maxOf` handling in `_resolved_command_field_constraints`, `coverage_failure`, the new `return 0` in `_generate_valid_command_field_value`, and the `power-mw` range entry are new harness capability. Unless one of these is required to keep an existing test green with the 1.7 XML, could we drop them and keep `idm_support.py` at its pre-PR behavior? If a piece is required (e.g. the `power-mw` range for the new DEM bounds), please call out which existing test needs it and keep only that.
 
 **Draft Response:**
-Agreed. The helper module is restored to the PR base, without those additions or a broad expression evaluator. No existing reduced-candidate failure required retaining them. Capability/correctness work and stricter policy remain preserved for separate review; the 19 baseline helper cases passed.
+Agreed. I've restored the original helper module. We haven't found an existing test failure that requires those additions here.
 
 ## 18. Diagnostics And Expectations
 
@@ -190,7 +188,7 @@ Agreed. The helper module is restored to the PR base, without those additions or
 > For this PR, could we keep the pre-PR behavior and the existing zero-problem asserts, and do the "surface parser warnings" fix plus the diagnostics expectations as a separate change? If the 1.7 XML introduces a genuinely new warning that breaks the existing assert, I'd prefer the smallest targeted fix for that one case.
 
 **Draft Response:**
-Agreed. The pre-PR diagnostic behavior and original assertions are restored; the warning table and diagnostic changes are removed from this PR. All 79 baseline parser cases passed without weakening those assertions. The propagation fix and owning regressions remain preserved separately.
+Agreed. The original diagnostic behavior and assertions are restored. The warning fix and updated expectations can go in a separate PR.
 
 ## 19. Derived Merge / Findall
 
@@ -200,7 +198,7 @@ Agreed. The pre-PR diagnostic behavior and original assertions are restored; the
 > Are the derived-command merging changes (`conformance_is_explicit`, `combine_command`, parsing fields for unknown commands, skipping access warnings for base/generated commands) and the `_parse_data_type` `iter` -> `findall` change required to keep an existing test/CI job passing with the refreshed 1.7 XML (e.g. the Thermostat Mode command overlays)? If yes, could you point to the failing test so we keep just the minimal piece? If not, I'd prefer moving them to a follow-up with the other parser improvements.
 
 **Draft Response:**
-No existing reduced-candidate failure justified retaining these changes, so the pre-PR parser is restored. Independent [draft #74888](https://github.com/project-chip/connectedhomeip/pull/74888) at `704c456e0fbf` proposes command metadata inheritance only: upstream passes eight and fails three intended regressions; the candidate passes all eleven focused cases. Diagnostic propagation, historical expectations, broad iter/findall changes and expression policy are excluded. The sole generated-index inconsistency remains corrected by the existing generator's one-cell PICS update, without parser changes in this DM PR.
+I've restored the original parser here. The command inheritance fix is in [#74888](https://github.com/project-chip/connectedhomeip/pull/74888); the broader parser changes are left out.
 
 ## 20. Added Python Coverage
 
@@ -210,4 +208,4 @@ No existing reduced-candidate failure justified retaining these changes, so the 
 > Same as the C++ test comments: these new test classes/methods (here, and in `TestSpecParsingSupport.py` / `TestSpecParsingSelection.py`, e.g. the derived-command, unsupported-constraint, diagnostics and `test_thermostat_mode_inherited_command_selection` tests) cover new behavior and increase coverage, which is out of the scope of the DM update. Please keep only test fixes needed for something this PR still changes.
 
 **Draft Response:**
-Agreed. Python tests and their executable modes now match the PR base; the added unsupported suite is absent. All 98 existing Python cases passed on the canonical reduction. The removed coverage remains preserved with the corresponding independent fixes, not silently discarded.
+Agreed. I've removed the added coverage and restored the original tests. The new tests are kept with their separate fixes.
