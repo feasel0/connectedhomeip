@@ -1,6 +1,6 @@
 # PR #74862: Updated Human Review Reply Drafts
 
-All responses below are DRAFTS ONLY. None has been posted, submitted as a review or used to resolve a thread. They describe the published PR head `7da3f2168292e73f3f296202f90abef454058598`, not merely an experimental proposal. Updated 2026-10-22 for opened parser/Linux drafts. Completed hosted check runs report no failure, but PullApprove is pending, CHANGES_REQUESTED remains active and the SME-reviewer workflow requires action; no final approval is claimed.
+All responses below are DRAFTS ONLY, prepared for user approval. None has been posted, submitted as a review or used to resolve a thread. They describe the published PR head `7da3f2168292e73f3f296202f90abef454058598`, not merely an experimental proposal. Rechecked 2026-10-22 for human handoff: all hosted build/test workflows have completed successfully, but PullApprove is pending, CHANGES_REQUESTED remains active and the SME-reviewer workflow requires action; no final approval is claimed.
 
 The 253-path diff contains only the approved reference model, provenance, four generated ZAP XML files and generated cluster index. Removed SDK implementations and tests remain reachable at original integration commit `fd4843c02fd2a20a64765abc6f2084cbedca12b4`, an ancestor of the published head. ModeBase [draft #74886](https://github.com/project-chip/connectedhomeip/pull/74886), parser [draft #74888](https://github.com/project-chip/connectedhomeip/pull/74888) and Linux [draft #74889](https://github.com/project-chip/connectedhomeip/pull/74889) are independently proposed and unmerged. The live model assessment includes all nineteen entries without making these independent SDK fixes model-update dependencies.
 
@@ -126,7 +126,7 @@ Agreed. The new tests and write-policy change are removed and preserved separate
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The ModeBase implementation and tests are removed from the DM diff and proposed in independent [draft #74886](https://github.com/project-chip/connectedhomeip/pull/74886), open and unmerged. Its two-file fix has 33 focused passes versus 30 passes and three intended failures with the upstream owner. Thermostat Manage, ordinary Operate and COREMODES behavior are covered. The authorization inputs remain identical at latest checked upstream `54b92365e766`; this is not a fresh full-SDK build or a dependency of the DM update.
+Agreed. The ModeBase implementation and tests are removed from the DM diff and proposed in independent [draft #74886](https://github.com/project-chip/connectedhomeip/pull/74886), open and unmerged. Its two-file fix has 33 focused passes versus 30 passes and three intended failures with the upstream owner. Thermostat Manage, ordinary Operate and COREMODES behavior are covered. The authorization inputs remain identical at checked upstream `54b92365e766`; that focused comparison is not a fresh full-SDK build or a dependency of the DM update.
 
 ## 13. Push AV Coverage
 
@@ -146,7 +146,7 @@ Agreed. The additional AmbientContext coverage is removed and preserved for a tr
 > Same here. It appears that these are intended to increase the coverage, which is out of the scope of DM Update.
 
 **Draft Response:**
-Agreed. The BSS testability, mapping and test-registration changes are removed from this DM update. Independent [draft #74889](https://github.com/project-chip/connectedhomeip/pull/74889) proposes the EAP translation at `8d021c02a266`, the formatting-only successor of tested `d9316425a9de`, with essential decoder/TLV regressions in the existing connectivity test file and no new registration. Exact upstream passes two and fails five focused tests; the tested candidate passes all seven. The bug drops EAP membership when clearing the sentinel; it does not leak bit 7. The draft documents current 1.7 correctness separately from older advertised-version/backport compatibility. Offline proof does not establish live scan acquisition or universal backward compatibility.
+Agreed. The BSS testability, mapping and test-registration changes are removed from this DM update. Independent [draft #74889](https://github.com/project-chip/connectedhomeip/pull/74889) at `3ced1ae3d9b8` translates EAP in both `WpaSupplicantClient::GetBssInfo` and the actual Network Commissioning decoder, `ConnectivityManagerImpl::_GetBssInfo`, with essential decoder/TLV regressions in the existing connectivity test file and no new registration. The original first-decoder control passes two and fails five tests. The combined second-decoder control passes eight and fails four intended assertions; the corrected and final formatted executables pass all twelve. The bug drops EAP membership when clearing the sentinel; it does not leak bit 7. The draft documents current 1.7 correctness separately from older advertised-version/backport compatibility. Offline proof does not establish live scan acquisition or universal backward compatibility.
 
 ## 15. Unsupported Parser Contract
 
