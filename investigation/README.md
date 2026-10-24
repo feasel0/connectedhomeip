@@ -34,10 +34,24 @@ test infrastructure configuration live here. The archival branch is
 ## Approved Next Batch
 
 The [approved 24-48-hour matrix plan](WEEKEND_MATRIX_PLAN_2026-10-24.md) is a
-test-design document, not an execution record or launch authorization. Installing
-it does not start preparation, preflight, or hardware execution. The future
-`campaigns/2026-10-weekend/LIVE_SUMMARY.md` must remain visibly untracked while
-the batch runs; it is deliberately not created during this cleanup.
+test-design document, not an execution record. The subsequent implementation
+request authorized launch subject to its mandatory gates. Preparation and
+synthetic standalone-service qualification ran; hardware admission is **BLOCKED**,
+with zero hardware executions. See the [implementation report](reports/2026-10-24_14-17-00.md).
+The local `campaigns/2026-10-weekend/LIVE_SUMMARY.md` exists and must remain visibly
+untracked, never staged, committed or ignored.
+
+Consolidated navigation: [historical failures](FAILURE_CATALOG.md),
+[evidence availability](EVIDENCE_INDEX.md), [current status](INVESTIGATION_STATUS.md)
+and [PR inventory](PR_INVENTORY.md). Historical results retain their own denominator.
+
+New campaign tools provide the SQLite ledger (`campaign_state.py`), guarded
+systemd coordinator/watchdog (`campaign_service.py`), native invocation boundary
+(`campaign_native.py`), exact-source build (`campaign_build.py`), rootless import
+proof (`campaign_isolation.py`), prelaunch assessment (`campaign_preflight.py`)
+and synthetic-only remote ownership proof (`campaign_remote_worker.py` and
+`qualify_remote_campaign.py`). These are **not** a qualified hardware fixture
+adapter; native reset, capture and remote supervision gates remain unresolved.
 
 The historical Nordic fixture adaptation is retained as
 `patches/nordic-identify-extra-endpoints.patch`, not applied to SDK source.
