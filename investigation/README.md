@@ -28,6 +28,21 @@ test infrastructure configuration live here. The archival branch is
 - `tools/pi_nordic_campaign.py`: future capture errors retain owner-only private
   phase/message/traceback without changing validation or stop policy. The original
   endurance is closed and must not restart.
+- `tools/consolidation_check.py`: offline historical failure identity and
+  158/80/78 accounting checks.
+
+## Approved Next Batch
+
+The [approved 24-48-hour matrix plan](WEEKEND_MATRIX_PLAN_2026-10-24.md) is a
+test-design document, not an execution record or launch authorization. Installing
+it does not start preparation, preflight, or hardware execution. The future
+`campaigns/2026-10-weekend/LIVE_SUMMARY.md` must remain visibly untracked while
+the batch runs; it is deliberately not created during this cleanup.
+
+The historical Nordic fixture adaptation is retained as
+`patches/nordic-identify-extra-endpoints.patch`, not applied to SDK source.
+It registers Identify instances for endpoints 2-4. Its presence is not approval
+to include it in the plan's clean upstream baseline or rebuild/flash a DUT.
 
 Raw logs, captures, controller private state, generated private indexes, firmware
 builds, environments and bulk archives remain on disk but are ignored. They must
@@ -47,6 +62,8 @@ Checks from the repository root:
 python3 -B investigation/tools/git_boundary.py self-test
 python3 -B investigation/tools/git_boundary.py audit
 python3 -B investigation/tools/git_boundary.py staged
+python3 -B investigation/tools/consolidation_check.py self-test
+python3 -B investigation/tools/consolidation_check.py catalog
 python3 -B investigation/tools/trace_lifecycle.py self-test
 python3 -B investigation/tools/reporting_fairness.py self-test
 python3 -B investigation/tools/discovery_isolation.py --self-test
