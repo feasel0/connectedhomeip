@@ -92,7 +92,8 @@ def namespace_sudo(arguments, root=None):
 def fixture_prepare(root, address, seconds, capture_ids=()):
     if not 10 <= seconds <= 172800 or not Path('/usr/sbin/sshd').is_file():
         raise ValueError('Bounded lifetime and installed OpenSSH server required')
-    if len(capture_ids) > 4 or any(not re.fullmatch('[a-z0-9_-]{1,64}', run_id) for run_id in capture_ids):
+    invalid = len(capture_ids) > 128 or len(capture_ids) != len(set(capture_ids))
+    if invalid or any(not re.fullmatch('[a-z0-9_-]{1,64}', run_id) for run_id in capture_ids):
         raise ValueError('Capture reservations must be explicit bounded broker run identities')
     root.mkdir(mode=0o700, parents=True, exist_ok=False)
     (root / 'context').mkdir(mode=0o700)
@@ -373,6 +374,12 @@ class IsolationTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 fixture_capture_command(profile, prefix + command)
         self.assertIsNone(fixture_capture_command(profile, 'sudo -n rm -rf /tmp/chip_*'))
+
+    def test_fixture_capture_reservations_reject_duplicate_or_unbounded_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            for reserved in [['duplicate', 'duplicate'], ['capture-' + str(index) for index in range(129)]]:
+                with self.assertRaisesRegex(ValueError, 'explicit bounded broker'):
+                    fixture_prepare(Path(directory) / 'fixture', '127.0.0.1', 10, reserved)
 
     def test_explicit_tmp_inventory_uses_directory_boundary_without_file_mounts(self):
         with tempfile.TemporaryDirectory(dir=Path.home()) as directory:

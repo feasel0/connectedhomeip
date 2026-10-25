@@ -47,6 +47,337 @@ def terminal(root):
 
 
 class ServiceTests(unittest.TestCase):
+    def test_versioned_xml_assets_are_verified_through_the_pinned_manifest_before_native_launch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            xml = root / 'cluster.xml'
+            xml.write_text('<cluster/>')
+            manifest = root / 'xml-manifest.json'
+            ledger.atomic(manifest, {str(xml): ledger.digest(xml)})
+            profile = {'source_hashes': {str(manifest): ledger.digest(manifest)}, 'asset_manifest': str(manifest)}
+            campaign_native.verify_profile_sources(profile)
+            xml.write_text('<changed/>')
+            with self.assertRaisesRegex(ValueError, 'XML asset'):
+                campaign_native.verify_profile_sources(profile)
+
+    def test_incomplete_native_block_preserves_both_outcomes_and_quarantines_only_qualified_cell(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'request.json', {'attempt_id': 'owned'})
+            ledger.atomic(root / 'identity.json', {'worker': 'owned'})
+            document = {'test_summary_record': {'total_number_of_iterations': 10,
+                'number_of_iterations_completed': 2, 'number_of_iterations_passed': 1, 'number_of_iterations_failed': 1},
+                'list_of_iteration_records': [{'iteration_number': ordinal, 'iteration_data': {'iteration_tc_execution_data': {
+                    'iteration_begin_time': 'start', 'iteration_end_time': 'end', 'iteration_result': outcome}}}
+                    for ordinal, outcome in [(1, 'PASS'), (2, 'FAIL')]]}
+            ledger.atomic(root / 'summary.json', document)
+            profile = {'baseline': 'pristine-upstream', 'requested_iterations': 10, 'capture_id': 'owned-test-capture',
+                'source_hashes': {str(root / 'summary.json'): ledger.digest(root / 'summary.json')},
+                'rf_lock': str(root / 'rf.lock'), 'argv': [sys.executable, '-B', '-c',
+                    'import threading;threading.Event().wait(0.2)'], 'native_timeout_seconds': 10,
+                'summary_glob': 'summary.json', 'incomplete_resources': ['cell:owned']}
+            with patch.object(campaign_native, 'hook', return_value={}):
+                result = campaign_native.execute_guarded(profile, root, threading.Event())
+            self.assertEqual(result['outcome'], 'INCOMPLETE')
+            self.assertEqual([row['outcome'] for row in result['iterations']], ['PASS', 'FAIL'])
+            self.assertEqual(result['quarantined_resources'], ['cell:owned'])
+            self.assertTrue(result['cleanup_complete'])
+            self.assertEqual(result['unexecuted'], 8)
+            complete = root / 'complete'
+            complete.mkdir(mode=0o700)
+            ledger.atomic(complete / 'request.json', {'attempt_id': 'complete'})
+            ledger.atomic(complete / 'identity.json', {'worker': 'owned'})
+            document['test_summary_record']['total_number_of_iterations'] = 2
+            ledger.atomic(complete / 'summary.json', document)
+            profile.update(requested_iterations=2, source_hashes={str(complete / 'summary.json'):
+                ledger.digest(complete / 'summary.json')}, argv=[sys.executable, '-B', '-c',
+                    'import sys,threading;threading.Event().wait(0.2);sys.exit(1)'])
+            with patch.object(campaign_native, 'hook', return_value={}):
+                result = campaign_native.execute_guarded(profile, complete, threading.Event(), qualification=True)
+            self.assertEqual(result['outcome'], 'FAIL')
+            self.assertTrue(result['complete_block'])
+
+    def test_production_admission_reuses_only_the_unlaunched_original_unowned_ledger(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'campaign'
+            original = ledger.initialize(root, PLAN)
+            options = settings(['PASS'])
+            options.update(mode='hardware', duration_seconds=172800)
+            options['cells'][0].pop('behavior')
+            options['cells'][0]['target_iterations'] = 15
+            service.prepare(root, PLAN, options)
+            document = ledger.status(root)
+            self.assertEqual(document['campaign']['id'], original)
+            self.assertIsNone(document['campaign']['started'])
+            self.assertEqual(document['executed'], 0)
+            with self.assertRaisesRegex(ValueError, 'unlaunched'):
+                service.prepare(root, PLAN, options)
+
+    def test_native_success_capture_retention_compiles_and_uses_only_verified_closed_segments(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'capture-evidence.json', {'integrity_complete': True, 'capture': {'state': 'stopped'},
+                'closed_segments': {'/var/lib/lab-resource-helper/runs/dut-mdns--owned/packets/capture.pcapng': 'a' * 64}})
+            profile = {'capture_access': ['verified-ssh'], 'capture_id': 'owned', 'dut_machine_id': 'verified-dut'}
+            def reply(transport, code):
+                compile(code, '<real-generated-capture-retention>', 'exec')
+                self.assertEqual(transport['remote_access'], ['verified-ssh'])
+                self.assertIn('dut-mdns--owned', code)
+                self.assertIn('st_nlink==1', code)
+                return {'all_absent': True}
+            with patch.object(campaign_native, 'remote_json', side_effect=reply):
+                campaign_native.retain_native_success(profile, root)
+            self.assertTrue(json.loads((root / 'capture-retention.json').read_text())['all_absent'])
+
+    def test_hardware_preparation_rejects_stretch_target_not_in_approved_plan(self):
+        with tempfile.TemporaryDirectory() as directory:
+            options = settings(['PASS'])
+            options['mode'] = 'hardware'
+            options['duration_seconds'] = 172800
+            options['cells'][0].pop('behavior')
+            options['cells'][0]['target_iterations'] = 30
+            with self.assertRaisesRegex(ValueError, 'approved plan'):
+                service.prepare(Path(directory) / 'campaign', PLAN, options)
+
+    def test_success_retention_resumes_without_requiring_already_deleted_raw_artifacts(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'receipt.json', {'outcome': 'PASS'})
+            ledger.atomic(root / 'remaining.log', 'closed raw detail')
+            plan = {'receipt_hash': ledger.digest(root / 'receipt.json'), 'bytes': 31, 'deletions': [
+                {'file': 'already-deleted.log', 'sha256': 'a' * 64},
+                {'file': 'remaining.log', 'sha256': ledger.digest(root / 'remaining.log')}]}
+            service.finish_retention(root, plan)
+            self.assertFalse((root / 'remaining.log').exists())
+            self.assertTrue(json.loads((root / 'retention-complete.json').read_text())['all_absent'])
+
+    def test_hardware_scheduler_finishes_all_minimums_before_stretch(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'campaign'
+            options = settings(['PASS', 'PASS'])
+            service.prepare(root, PLAN, options)
+            options['mode'] = 'hardware'
+            for cell in options['cells']:
+                cell.update(target_iterations=15, stretch_estimated_seconds=20)
+            options['native_profile'] = {cell['id']: {'stretch_profile': {'requested_iterations': 5}}
+                                        for cell in options['cells']}
+            database = ledger.connection(root)
+            first, second = options['cells']
+            with database:
+                database.execute('INSERT INTO attempts(id,cell_id,state,created) VALUES(?,?,?,?)',
+                                 ('first-minimum', first['id'], 'PASS', time.time()))
+                for ordinal in range(1, 11):
+                    ledger.record_outcome(database, 'first-minimum', ordinal, 'PASS', 'a' * 64)
+            selected = service.next_block(database, options)
+            self.assertEqual((selected['id'], selected['block_phase']), (second['id'], 'minimum'))
+            with database:
+                database.execute('INSERT INTO attempts(id,cell_id,state,created) VALUES(?,?,?,?)',
+                                 ('second-minimum', second['id'], 'FAIL', time.time()))
+                for ordinal in range(1, 11):
+                    ledger.record_outcome(database, 'second-minimum', ordinal, 'FAIL', 'b' * 64)
+            selected = service.next_block(database, options)
+            self.assertEqual((selected['id'], selected['block_phase']), (first['id'], 'stretch'))
+            self.assertEqual(selected['estimated_seconds'], 20)
+            database.close()
+
+    def test_native_success_pruning_retains_receipts_and_summaries_but_deletes_closed_raw_detail(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'campaign'
+            service.prepare(root, PLAN, settings(['PASS']))
+            database = ledger.connection(root)
+            cell = database.execute("SELECT id FROM cells WHERE state='ADMITTED'").fetchone()[0]
+            attempt = root / 'attempts/closed-success';attempt.mkdir(parents=True)
+            ledger.atomic(attempt / 'detail.log', 'closed native detail')
+            ledger.atomic(attempt / 'native.private.log', 'private raw log')
+            ledger.atomic(attempt / 'summary.json', {'passed': 1})
+            ledger.atomic(attempt / 'receipt.json', {'outcome': 'PASS', 'cleanup_complete': True,
+                'detail_hash': ledger.digest(attempt / 'detail.log'), 'artifacts': {
+                    filename: ledger.digest(attempt / filename) for filename in ['native.private.log', 'summary.json']}})
+            with database:
+                database.execute('INSERT INTO attempts(id,cell_id,state,unit,created,integrity) VALUES(?,?,?,?,?,?)',
+                                 ('closed-success', cell, 'PASS', 'owned-unit', time.time(), 'COMPLETE'))
+                ledger.record_outcome(database, 'closed-success', 1, 'PASS', ledger.digest(attempt / 'receipt.json'))
+            database.close()
+            with patch.object(service, 'unit_status', return_value={'MainPID': '0', 'SubState': 'exited'}):
+                service.prune(root)
+            self.assertFalse((attempt / 'native.private.log').exists())
+            self.assertFalse((attempt / 'detail.log').exists())
+            self.assertTrue((attempt / 'summary.json').exists())
+            self.assertTrue((attempt / 'receipt.json').exists())
+            self.assertTrue(json.loads((attempt / 'retention-complete.json').read_text())['all_absent'])
+
+    def test_remote_native_handoff_compiles_and_preserves_partial_outcomes_after_worker_closure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            template = root / 'remote-template.json'
+            ledger.atomic(template, {name: ['/usr/bin/true', '{remote_profile}'] for name in
+                ['argv', 'before', 'capture_start', 'capture_health', 'capture_stop', 'recovery', 'after']})
+            ledger.atomic(root / 'request.json', {'attempt_id': 'owned-attempt', 'rf_owner': {'machine_id': 'pi'}})
+            ledger.atomic(root / 'identity.json', {'worker': 'ubuntu-owner'})
+            summary = {'test_summary_record': {'total_number_of_iterations': 10, 'number_of_iterations_completed': 1,
+                'number_of_iterations_passed': 1, 'number_of_iterations_failed': 0}, 'list_of_iteration_records': [
+                {'iteration_number': 1, 'iteration_data': {'iteration_tc_execution_data': {
+                    'iteration_begin_time': 'start', 'iteration_end_time': 'end', 'iteration_result': 'PASS'}}}]}
+            profile = {'source_hashes': {str(template): ledger.digest(template)}, 'remote_root': '/private/remote',
+                'remote_template': str(template), 'remote_program': '/private/program', 'native_timeout_seconds': 60,
+                'controller_machine_id': 'pi', 'requested_iterations': 10, 'summary_glob': 'remote-summary/summary.json'}
+            def remote_reply(profile, code):
+                compile(code, '<real-generated-remote-snippet>', 'exec')
+                if 'queue(' in code:
+                    return {'state': 'RESERVED'}
+                return {'job': {'state': 'INCOMPLETE', 'live': False, 'child_live': False, 'cleanup_closed': True},
+                        'summary': summary, 'native_receipt': {'outcome': 'INCOMPLETE', 'cleanup_complete': True}}
+            with patch.object(campaign_native, 'remote_json', side_effect=remote_reply):
+                result = campaign_native.execute_remote(profile, root, threading.Event(), True)
+            self.assertTrue(result['remote_worker_stopped'])
+            self.assertEqual(result['iterations'][0]['outcome'], 'PASS')
+            self.assertTrue((root / 'iteration-receipts/00001.json').exists())
+
+    def test_native_guard_does_not_call_capture_stop_before_capture_was_requested(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(campaign_native, 'execute', side_effect=campaign_native.NativeResourceError('fixture unavailable')), \
+                    patch.object(campaign_native, 'hook', return_value={}) as hook:
+                result = campaign_native.execute_guarded({'failure_resources': ['fixture:wifi']}, root, threading.Event())
+            self.assertEqual(result['failure_domain'], 'resource')
+            self.assertTrue(result['cleanup_complete'])
+            self.assertEqual([call.args[1] for call in hook.call_args_list], ['after'])
+
+    def test_remote_native_transport_compiles_code_and_refuses_nonzero_exit(self):
+        result = subprocess.CompletedProcess([], 1, stdout='', stderr='private transport failure')
+        with patch.object(campaign_native.subprocess, 'run', return_value=result):
+            with self.assertRaises(campaign_native.NativeResourceError):
+                campaign_native.remote_json({'remote_access': ['/usr/bin/false']}, 'print("safe")')
+
+    def test_native_hook_distinguishes_resource_failures_from_integrity_failures(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile = {'before': ['/usr/bin/false']}
+            result = subprocess.CompletedProcess([], 1, stdout='', stderr='NativeResourceError: unreachable fixture')
+            with patch.object(campaign_native.subprocess, 'run', return_value=result):
+                with self.assertRaises(campaign_native.NativeResourceError):
+                    campaign_native.hook(profile, 'before', root, [])
+            result.stderr = 'ValueError: changed immutable source'
+            with patch.object(campaign_native.subprocess, 'run', return_value=result):
+                with self.assertRaises(ValueError):
+                    campaign_native.hook(profile, 'before', root, [])
+
+    def test_isolated_infrastructure_failure_quarantines_only_affected_cells(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'qualification'
+            options = settings(['PASS', 'PASS'])
+            service.prepare(root, PLAN, options)
+            first, second = options['cells']
+            first['resources'] = ['controller:pi']
+            second['resources'] = ['controller:ubuntu']
+            options['native_profile'] = {first['id']: {'failure_resources': ['controller:pi']}}
+            database = ledger.connection(root)
+            with database:
+                database.execute('INSERT INTO attempts(id,cell_id,state,created) VALUES(?,?,?,?)',
+                                 ('broken-pi', first['id'], 'INCOMPLETE', time.time()))
+                attempt = database.execute("SELECT * FROM attempts WHERE id='broken-pi'").fetchone()
+                service.isolate_failure(database, attempt, options, {'failure_domain': 'resource',
+                    'cleanup_complete': True, 'quarantined_resources': ['controller:pi']})
+            self.assertFalse(service.unsafe_attempt(database))
+            self.assertEqual(database.execute('SELECT state FROM cells WHERE id=?', (first['id'],)).fetchone()[0], 'QUARANTINED')
+            self.assertEqual(database.execute('SELECT state FROM cells WHERE id=?', (second['id'],)).fetchone()[0], 'ADMITTED')
+            with database:
+                service.isolate_failure(database, attempt, options, {'failure_domain': 'integrity', 'cleanup_complete': True})
+            self.assertTrue(service.unsafe_attempt(database))
+            database.close()
+
+    def test_native_wifi_capture_rejects_packet_loss_and_rotation_overwrite(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile = {'source_hashes': {}, 'capture_id': 'owned-capture'}
+            broker = {'capture': {'profile': 'dut-mdns', 'run_id': 'owned-capture', 'state': 'stopped',
+                                 'child_exit_codes': [0], 'error': None}}
+            evidence = {'free_bytes': 12 * 1024 ** 3, 'file_count': 1, 'bytes': 1024,
+                        'closed_segments': {'segment': 'a' * 64}, 'drop_counts': [0], 'packet_counts': [3]}
+            with patch.object(campaign_native, 'fixture_json', side_effect=[broker, evidence]):
+                self.assertTrue(campaign_native.wifi_hook(profile, root, 'capture_stop')['integrity_complete'])
+            with patch.object(campaign_native, 'fixture_json', side_effect=[broker, evidence]) as query:
+                campaign_native.wifi_hook(profile, root, 'capture_stop')
+                program = query.call_args_list[1].args[1][-1]
+            import re
+            expression = re.search(r're.findall\(r"(Packets received/dropped[^\"]+)"', program).group(1)
+            self.assertEqual(re.findall(expression, "Packets received/dropped on interface 'wlan0': 1132/0 (pcap:0/dumpcap:0)"), ['0'])
+            self.assertEqual(re.findall(expression, "Packets received/dropped on interface 'wlan0': 1132/184 (pcap:184/dumpcap:0)"), ['184'])
+            with patch.object(campaign_native, 'fixture_json', side_effect=[broker, dict(evidence, drop_counts=[1])]):
+                with self.assertRaisesRegex(ValueError, 'packet loss'):
+                    campaign_native.wifi_hook(profile, root, 'capture_stop')
+            with patch.object(campaign_native, 'fixture_json', side_effect=[broker, dict(evidence, closed_segments={})]):
+                with self.assertRaisesRegex(ValueError, 'pre-overwrite'):
+                    campaign_native.wifi_hook(profile, root, 'capture_stop')
+
+    def test_partial_native_iterations_are_durable_and_cannot_be_rewritten(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'request.json', {'attempt': 'bounded-control'})
+            ledger.atomic(root / 'identity.json', {'worker': 'independent-service'})
+            profile = {'requested_iterations': 10, 'summary_glob': 'qa/summary.json'}
+            document = {'test_summary_record': {'total_number_of_iterations': 10,
+                'number_of_iterations_completed': 1, 'number_of_iterations_passed': 1, 'number_of_iterations_failed': 0},
+                'list_of_iteration_records': [{'iteration_number': 1, 'iteration_data': {'iteration_tc_execution_data': {
+                    'iteration_begin_time': '2026-10-25T20:00:00', 'iteration_end_time': '2026-10-25T20:00:05',
+                    'iteration_result': 'PASS'}}}]}
+            ledger.atomic(root / 'qa/summary.json', document)
+            outcomes = campaign_native.snapshot_iterations(profile, root)
+            self.assertEqual([(row['ordinal'], row['outcome']) for row in outcomes], [(1, 'PASS')])
+            receipt = root / 'iteration-receipts/00001.json'
+            original = ledger.digest(receipt)
+            (root / 'qa/summary.json').write_text('{')
+            self.assertEqual(campaign_native.snapshot_iterations(profile, root), [])
+            self.assertEqual(ledger.digest(receipt), original)
+            document['test_summary_record'].update(number_of_iterations_passed=0, number_of_iterations_failed=1)
+            document['list_of_iteration_records'][0]['iteration_data']['iteration_tc_execution_data']['iteration_result'] = 'FAIL'
+            ledger.atomic(root / 'qa/summary.json', document)
+            with self.assertRaisesRegex(ValueError, 'changed after durable publication'):
+                campaign_native.snapshot_iterations(profile, root)
+
+    def test_native_qualification_has_separate_bounded_ledger_without_faking_admission(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'qualification'
+            cell = settings(['PASS'])['cells'][0]
+            cell.pop('behavior')
+            profile = {'baseline': 'pristine-upstream', 'requested_iterations': 1, 'native_timeout_seconds': 60}
+            service.prepare(root, PLAN, {'mode': 'qualification', 'cells': [cell], 'duration_seconds': 300,
+                                        'native_profile': {cell['id']: profile}})
+            document = service.configuration(root)
+            self.assertEqual(document['mode'], 'qualification')
+            self.assertNotIn('gates', document)
+            self.assertEqual(ledger.status(root)['executed'], 0)
+            with self.assertRaisesRegex(ValueError, 'whole minimum block'):
+                campaign_native.execute(profile, root, threading.Event())
+            with self.assertRaisesRegex(ValueError, 'immutable loaded-source'):
+                campaign_native.execute(profile, root, threading.Event(), qualification=True)
+
+    def test_global_rf_reservation_survives_restart_and_requires_exact_closed_owner(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'ledger'
+            campaign = ledger.initialize(root, PLAN)
+            owner = {'campaign_id': campaign, 'attempt_id': 'first', 'worker': 'remote-job-first',
+                     'machine_id': 'controller-pi', 'boot_id': 'original-boot'}
+            contender = dict(owner, attempt_id='second', worker='ubuntu-worker', machine_id='ubuntu')
+            database = ledger.connection(root)
+            ledger.reserve_resources(database, ['rf:lab'], owner)
+            database.close()
+            database = ledger.connection(root)
+            ledger.reserve_resources(database, ['rf:lab'], owner)
+            with self.assertRaisesRegex(ValueError, 'positive reconciliation'):
+                ledger.reserve_resources(database, ['rf:lab', 'otbr:ubuntu'], contender)
+            self.assertIsNone(database.execute("SELECT * FROM ownership WHERE resource='otbr:ubuntu'").fetchone())
+            closure = {'owner': owner, 'worker_stopped': False, 'fixture_ready': True, 'capture_closed': True}
+            with self.assertRaisesRegex(ValueError, 'closure required'):
+                ledger.release_resources(database, ['rf:lab'], owner, closure)
+            closure['worker_stopped'] = True
+            with self.assertRaises(ValueError):
+                ledger.release_resources(database, ['rf:lab'], contender, dict(closure, owner=contender))
+            ledger.release_resources(database, ['rf:lab'], owner, closure)
+            ledger.reserve_resources(database, ['rf:lab'], contender)
+            self.assertEqual(database.execute("SELECT attempt_id FROM ownership WHERE resource='rf:lab'").fetchone()[0], 'second')
+            database.close()
+
     def test_shared_resource_guard_distinguishes_oom_from_counter_reset(self):
         previous = {'free_bytes': 12 * 1024 ** 3, 'ram_bytes': 1024 ** 3, 'boot_id': 'same', 'oom_kills': 3}
         current = dict(previous, oom_kills=4)
@@ -326,6 +657,7 @@ class ServiceTests(unittest.TestCase):
             configuration['mode'] = 'hardware'
             configuration['duration_seconds'] = 172800
             configuration['cells'][0].pop('behavior')
+            configuration['cells'][0]['target_iterations'] = 15
             service.prepare(root, PLAN, configuration)
             with self.assertRaises(ValueError):
                 service.configuration(root)

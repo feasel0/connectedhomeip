@@ -157,6 +157,55 @@ def record_outcome(database, attempt_id, ordinal, outcome, receipt_hash, integri
     return True
 
 
+def reserve_resources(database, resources, owner):
+    required = {'campaign_id', 'attempt_id', 'worker', 'machine_id', 'boot_id'}
+    if (set(owner) != required or any(not isinstance(value, str) or not value for value in owner.values())
+            or not resources or len(resources) != len(set(resources))
+            or any(not isinstance(resource, str) or not resource for resource in resources)):
+        raise ValueError('Exact campaign, attempt, worker and machine ownership required')
+    identity = json.dumps(owner, sort_keys=True)
+    database.execute('BEGIN IMMEDIATE')
+    try:
+        for resource in resources:
+            previous = database.execute('SELECT * FROM ownership WHERE resource=?', (resource,)).fetchone()
+            if previous and previous['released'] is None and previous['identity'] != identity:
+                raise ValueError('Resource owner requires positive reconciliation: ' + resource)
+        for resource in resources:
+            previous = database.execute('SELECT * FROM ownership WHERE resource=?', (resource,)).fetchone()
+            if previous and previous['released'] is None:
+                continue
+            database.execute('INSERT OR REPLACE INTO ownership VALUES(?,?,?,?,NULL)',
+                             (resource, owner['attempt_id'], identity, time.time()))
+            database.execute('INSERT INTO transitions(wall,entity,kind,detail) VALUES(?,?,?,?)',
+                             (time.time(), resource, 'RESOURCE_RESERVED', identity))
+        database.commit()
+    except Exception:
+        database.rollback()
+        raise
+
+
+def release_resources(database, resources, owner, closure):
+    if (closure.get('owner') != owner or not all(closure.get(field) is True for field in
+            ['worker_stopped', 'fixture_ready', 'capture_closed'])):
+        raise ValueError('Positive exact-owner worker, fixture and capture closure required')
+    identity = json.dumps(owner, sort_keys=True)
+    database.execute('BEGIN IMMEDIATE')
+    try:
+        for resource in resources:
+            previous = database.execute('SELECT * FROM ownership WHERE resource=?', (resource,)).fetchone()
+            if not previous or previous['identity'] != identity:
+                raise ValueError('Cannot release another resource owner: ' + resource)
+        for resource in resources:
+            database.execute('UPDATE ownership SET released=? WHERE resource=? AND released IS NULL',
+                             (time.time(), resource))
+            database.execute('INSERT INTO transitions(wall,entity,kind,detail) VALUES(?,?,?,?)',
+                             (time.time(), resource, 'RESOURCE_RELEASED', json.dumps(closure, sort_keys=True)))
+        database.commit()
+    except Exception:
+        database.rollback()
+        raise
+
+
 def status(root):
     database = connection(root, readonly=True)
     try:
