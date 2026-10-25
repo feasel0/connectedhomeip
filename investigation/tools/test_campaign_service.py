@@ -1,4 +1,5 @@
 import argparse
+import fcntl
 import json
 import os
 import signal
@@ -14,6 +15,7 @@ from unittest.mock import patch
 import campaign_service as service
 import campaign_state as ledger
 import campaign_native
+import campaign_remote_worker as remote
 
 
 PLAN = Path(__file__).resolve().parents[1] / 'WEEKEND_MATRIX_PLAN_2026-10-24.md'
@@ -45,6 +47,198 @@ def terminal(root):
 
 
 class ServiceTests(unittest.TestCase):
+    def test_shared_resource_guard_distinguishes_oom_from_counter_reset(self):
+        previous = {'free_bytes': 12 * 1024 ** 3, 'ram_bytes': 1024 ** 3, 'boot_id': 'same', 'oom_kills': 3}
+        current = dict(previous, oom_kills=4)
+        self.assertEqual(ledger.health_violation(current, previous), 'new-host-oom-kill')
+        current['boot_id'] = 'new'
+        self.assertIsNone(ledger.health_violation(current, previous))
+        current['free_bytes'] = 7 * 1024 ** 3
+        self.assertEqual(ledger.health_violation(current, previous), 'disk-reserve')
+
+    def test_shared_rf_lease_can_be_exclusive_on_read_only_descriptor(self):
+        with tempfile.TemporaryDirectory() as directory:
+            lease = Path(directory) / 'rf.lock'
+            lease.touch()
+            with lease.open('r') as owner, lease.open('r') as contender:
+                fcntl.flock(owner, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                with self.assertRaises(BlockingIOError):
+                    fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+    def test_fixture_smoke_refuses_host_tmp_alias_before_imports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'tmp').symlink_to('/tmp', target_is_directory=True)
+            with patch.dict(os.environ, HOME=str(root / 'home')):
+                with self.assertRaisesRegex(ValueError, 'namespace required before imports'):
+                    campaign_native.fixture_smoke({}, root)
+
+    def test_smoke_capture_rejects_wrong_owner_and_retains_failed_closure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'capture-request.json', {})
+            profile = {'capture_profile': 'dut-mdns', 'capture_id': 'reserved'}
+            reply = {'capture': {'profile': 'dut-mdns', 'run_id': 'different', 'state': 'stopped', 'child_exit_codes': [0]}}
+            with patch.object(campaign_native, 'hook', return_value=reply):
+                with self.assertRaises(ValueError):
+                    campaign_native.close_smoke_capture(profile, root)
+                reply['capture']['run_id'] = 'reserved'
+                reply['capture']['child_exit_codes'] = [1]
+                with self.assertRaises(ValueError):
+                    campaign_native.close_smoke_capture(profile, root)
+                self.assertFalse((root / 'capture-closed.json').exists())
+                reply['capture']['child_exit_codes'] = [0]
+                campaign_native.close_smoke_capture(profile, root)
+            with patch.object(campaign_native, 'hook') as hook:
+                campaign_native.close_smoke_capture(profile, root)
+                hook.assert_not_called()
+
+    def test_smoke_external_close_stops_fixture_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(campaign_native, 'hook', return_value={'no_live_dut': True}) as hook, \
+                    patch.object(campaign_native, 'close_smoke_capture') as capture:
+                campaign_native.close_smoke_fixture({}, root)
+                campaign_native.close_smoke_fixture({}, root)
+            hook.assert_called_once_with({}, 'fixture_stop', root, ['no_live_dut'])
+            self.assertEqual(capture.call_count, 2)
+            self.assertTrue((root / 'fixture-closed.json').exists())
+
+    def test_smoke_external_close_attempts_capture_after_fixture_failure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.object(campaign_native, 'hook', side_effect=ValueError('Fixture still live')), \
+                    patch.object(campaign_native, 'close_smoke_capture') as capture:
+                with self.assertRaisesRegex(ValueError, 'Fixture still live'):
+                    campaign_native.close_smoke_fixture({}, root)
+            capture.assert_called_once_with({}, root)
+            self.assertFalse((root / 'fixture-closed.json').exists())
+
+    def test_dut_external_close_refuses_host_namespace(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'tmp').mkdir()
+            with self.assertRaisesRegex(ValueError, 'exact private single-user namespace'):
+                campaign_native.stop_smoke_dut(root, Path('/usr/bin/true'), '0' * 64)
+
+    def test_smoke_requires_explicit_hashed_paa_store(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            profile = {'paa_trust_store': str(root), 'source_hashes': {}}
+            with self.assertRaisesRegex(ValueError, 'PAA certificates'):
+                campaign_native.smoke_trust_store(profile)
+            certificate = root / 'root.der'
+            certificate.write_bytes(b'public-test-certificate')
+            with self.assertRaisesRegex(ValueError, 'PAA certificates'):
+                campaign_native.smoke_trust_store(profile)
+            profile['source_hashes'][str(certificate)] = ledger.digest(certificate)
+            self.assertEqual(campaign_native.smoke_trust_store(profile), str(root))
+
+    def test_dut_external_close_signals_only_private_namespace_process(self):
+        from campaign_isolation import isolated_command
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            code = ('import json,subprocess,sys;from pathlib import Path;sys.path.insert(0,' +
+                    repr(str(Path(__file__).parent)) + ');import campaign_native as native;'
+                    'from campaign_state import digest;process=subprocess.Popen(["/usr/bin/sleep","60"]);'
+                    'result=native.stop_smoke_dut(Path(' + repr(str(root)) + '),Path("/usr/bin/sleep"),'
+                    'digest(Path("/usr/bin/sleep")));assert result["pids"]==[process.pid];'
+                    'assert process.wait(timeout=5)==-15;print(json.dumps(result))')
+            process = subprocess.run(isolated_command(root, [], [sys.executable, '-B', '-c', code]),
+                                     capture_output=True, text=True, timeout=20, stdin=subprocess.DEVNULL)
+            self.assertEqual(process.returncode, 0, process.stderr)
+            self.assertTrue(json.loads(process.stdout)['no_live_dut'])
+
+    def test_shared_host_health_records_pressure_and_oom_identity(self):
+        with tempfile.TemporaryDirectory() as directory:
+            sample = ledger.host_health(Path(directory))
+        self.assertGreater(sample['ram_bytes'], 0)
+        self.assertGreater(sample['free_bytes'], 0)
+        self.assertEqual(len(sample['load_average']), 3)
+        self.assertEqual(set(sample['pressure']), {'cpu', 'memory', 'io'})
+        self.assertTrue(sample['oom_kills'] is None or sample['oom_kills'] >= 0)
+
+    def test_remote_watchdog_removes_schedule_only_after_both_owners_are_dead(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'request.json', {'attempt_id': 'closed', 'profile': {}})
+            ledger.atomic(root / 'child-identity.json', {'pid': 123})
+            with patch.object(remote, 'status', return_value={'state': 'PASS', 'live': False}), \
+                    patch.object(remote, 'live', return_value=False), patch.object(remote, 'cron_entry') as cron:
+                remote.job_watch(root)
+                cron.assert_called_once_with(root, 'closed', False)
+            self.assertFalse((root / 'watchdog-stop.json').exists())
+
+    def test_remote_cleanup_runs_real_command_once_after_closure(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = Path(__file__).resolve()
+            ledger.atomic(root / 'request.json', {'profile': {'cleanup_argv': [sys.executable, '-c', 'print("closed")'],
+                'source_hashes': {str(source): ledger.digest(source)}}})
+            self.assertTrue(remote.job_cleanup(root))
+            self.assertTrue(remote.job_cleanup(root))
+            self.assertEqual(len(list(root.glob('cleanup-attempt-*.json'))), 1)
+            self.assertTrue((root / 'cleanup-closed.json').exists())
+
+    def test_remote_cleanup_failure_is_bounded_and_not_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = Path(__file__).resolve()
+            ledger.atomic(root / 'request.json', {'profile': {'cleanup_argv': ['/usr/bin/false'],
+                'source_hashes': {str(source): ledger.digest(source)}}})
+            for _ in range(4):
+                self.assertFalse(remote.job_cleanup(root))
+            self.assertEqual(len(list(root.glob('cleanup-attempt-*.json'))), 3)
+            self.assertTrue((root / 'cleanup-exhausted.json').exists())
+            self.assertFalse((root / 'cleanup-closed.json').exists())
+
+    def test_remote_watchdog_retains_schedule_until_cleanup_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'request.json', {'attempt_id': 'pending'})
+            ledger.atomic(root / 'child-identity.json', {'pid': 123})
+            with patch.object(remote, 'status', return_value={'state': 'INCOMPLETE', 'live': False}), \
+                    patch.object(remote, 'live', return_value=False), patch.object(remote, 'job_cleanup', return_value=False), \
+                    patch.object(remote, 'cron_entry') as cron:
+                remote.job_watch(root)
+                cron.assert_not_called()
+
+    def test_remote_watchdog_closes_orphan_before_removing_schedule(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ledger.atomic(root / 'request.json', {'attempt_id': 'owned'})
+            ledger.atomic(root / 'child-identity.json', {'pid': 123, 'deadline': time.time() + 60})
+            with patch.object(remote, 'status', return_value={'state': 'INCOMPLETE', 'live': False}), \
+                    patch.object(remote, 'live', return_value=True), patch.object(remote.os, 'getpgid', return_value=123), \
+                    patch.object(remote.os, 'killpg') as kill, patch.object(remote, 'cron_entry') as cron:
+                remote.job_watch(root)
+                kill.assert_called_once_with(123, signal.SIGTERM)
+                cron.assert_not_called()
+
+    def test_fixture_smoke_refuses_host_native_paths_before_imports(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'tmp').mkdir()
+            with self.assertRaisesRegex(ValueError, 'namespace required before imports'):
+                campaign_native.fixture_smoke({}, root)
+
+    def test_remote_queue_rejects_unbounded_or_changed_program_before_cron(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory) / 'job'
+            machine = Path('/etc/machine-id').read_text().strip()
+            profile = {'kind': 'build', 'timeout_seconds': 172801, 'argv': ['/usr/bin/true'],
+                       'source_hashes': {str(Path(__file__)): ledger.digest(Path(__file__))}}
+            with patch.object(remote, 'cron_entry') as cron:
+                with self.assertRaises(ValueError):
+                    remote.queue(root, machine, 'owned-build', profile)
+                profile['timeout_seconds'] = 60
+                profile['source_hashes'][str(Path(__file__))] = '0' * 64
+                with self.assertRaises(ValueError):
+                    remote.queue(root, machine, 'owned-build', profile)
+                cron.assert_not_called()
+            self.assertFalse(root.exists())
+
     def test_hardware_limits_cannot_inherit_synthetic_short_timeout(self):
         document = {'duration_seconds': 172800, 'checkpoint_seconds': 86400, 'cleanup_margin_seconds': 300,
                     'cells': [{'id': 'cell', 'estimated_seconds': 100, 'timeout_seconds': 10}],

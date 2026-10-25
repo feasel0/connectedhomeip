@@ -1,12 +1,199 @@
+import argparse
+import asyncio
+from contextlib import ExitStack
 import fcntl
 import json
 import os
 import signal
+import shlex
 import subprocess
 import time
 from pathlib import Path
+from types import SimpleNamespace
 
 from campaign_state import atomic, digest
+
+
+def close_smoke_capture(profile, root):
+    if not (root / 'capture-request.json').exists() or (root / 'capture-closed.json').exists():
+        return
+    document = hook(profile, 'capture_stop', root, [])
+    capture = document['capture']
+    if (capture['profile'] != profile['capture_profile'] or capture['run_id'] != profile['capture_id']
+            or capture['state'] != 'stopped' or capture.get('error') is not None
+            or not capture.get('child_exit_codes') or any(code != 0 for code in capture['child_exit_codes'])):
+        raise ValueError('Smoke capture did not close cleanly with its reserved identity')
+    atomic(root / 'capture-closed.json', document)
+
+
+def close_smoke_fixture(profile, root):
+    try:
+        if not (root / 'fixture-closed.json').exists():
+            document = hook(profile, 'fixture_stop', root, ['no_live_dut'])
+            atomic(root / 'fixture-closed.json', document)
+    finally:
+        close_smoke_capture(profile, root)
+
+
+def stop_smoke_dut(root, binary, expected):
+    if ((root / 'tmp').is_symlink() or not os.path.samefile('/tmp', root / 'tmp')
+            or Path('/proc/self/uid_map').read_text().split()[-1:] != ['1']):
+        raise ValueError('DUT closure requires its exact private single-user namespace')
+    binary = binary.resolve(strict=True)
+    if digest(binary) != expected:
+        raise ValueError('DUT closure executable identity changed')
+    process = subprocess.run(['pidof', binary.name], capture_output=True, text=True, timeout=5,
+                             stdin=subprocess.DEVNULL)
+    if process.returncode not in {0, 1}:
+        raise ValueError('Cannot establish namespace-local DUT process ownership')
+    identities = []
+    with ExitStack() as descriptors:
+        for value in process.stdout.split():
+            process_id = int(value)
+            try:
+                descriptor = os.pidfd_open(process_id)
+            except ProcessLookupError:
+                continue
+            descriptors.callback(os.close, descriptor)
+            if Path('/proc/' + str(process_id) + '/exe').resolve(strict=True) != binary:
+                raise ValueError('DUT process executable does not match reserved artifact')
+            identities.append((process_id, descriptor))
+        for _, descriptor in identities:
+            try:
+                signal.pidfd_send_signal(descriptor, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        import select
+        for _, descriptor in identities:
+            if not select.select([descriptor], [], [], 5)[0]:
+                signal.pidfd_send_signal(descriptor, signal.SIGKILL)
+                if not select.select([descriptor], [], [], 5)[0]:
+                    raise ValueError('Exact namespace-local DUT did not exit')
+    return {'no_live_dut': True, 'pids': [process_id for process_id, _ in identities], 'dut_sha256': expected}
+
+
+def smoke_trust_store(profile):
+    directory = Path(profile['paa_trust_store'])
+    certificates = {str(path) for path in directory.glob('*.der') if path.is_file() and not path.is_symlink()}
+    if not directory.is_absolute() or not certificates or not certificates <= profile['source_hashes'].keys():
+        raise ValueError('Smoke requires the pinned source-bound PAA certificates without bypassing attestation')
+    return str(directory)
+
+
+def fixture_smoke(profile, root):
+    if not root.is_dir() or root.stat().st_uid != os.getuid() or root.stat().st_mode & 0o077:
+        raise ValueError('Smoke root must be private and owned')
+    if (any((root / name).is_symlink() for name in ['tmp', 'home'])
+            or not os.path.samefile('/tmp', root / 'tmp') or os.environ.get('HOME') != str(root / 'home')):
+        raise ValueError('Actual private native path namespace required before imports')
+    for filename, expected in profile['source_hashes'].items():
+        if digest(Path(filename)) != expected:
+            raise ValueError('Smoke loaded source or binary identity changed')
+    trust_store = smoke_trust_store(profile)
+    lock = Path(profile['rf_lock']).open('r')
+    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    import matter.native
+    import matter.clusters as Clusters
+    from matter.CertificateAuthority import CertificateAuthorityManager
+    from matter.ChipDeviceCtrl import DiscoveryFilterType
+    from matter.ChipStack import ChipStack
+    from matter.storage import PersistentStorageJSON
+    from matter_qa.library.platform.raspberrypi.raspi import Raspi
+
+    endpoint = profile['fixture']
+    rpi = SimpleNamespace(rpi_hostname=endpoint['address'] + ':' + str(endpoint['port']),
+                          rpi_username=endpoint['user'], rpi_password='', rpi_sudo_password='',
+                          app_config=SimpleNamespace(**{'matter_app': profile['dut_binary'],
+                                                        'discriminator': profile['discriminator'],
+                                                        'interface-id': 'wlan0'}),
+                          factory_reset=SimpleNamespace(clear_wpa_supplicant_state=False, clear_bluetoothd_state=False),
+                          logging=SimpleNamespace(capture_bluez=False, capture_hcidump=False, capture_tcpdump=False,
+                                                  capture_dbus=False, capture_wpasupplicant=False))
+    configuration = SimpleNamespace(dut_config=SimpleNamespace(rpi=rpi), iter_log_path=str(root), current_iteration=0)
+    adapter = Raspi(configuration, None)
+    result = {'scope': 'Bounded real fixture smoke; not a campaign iteration', 'started': time.time(),
+              'result': 'INCOMPLETE', 'stage': 'ssh-start', 'campaign_iterations': 0,
+              'sdk': profile['sdk'], 'qa': profile['qa'], 'source_hashes': profile['source_hashes']}
+    stack = None
+    authorities = None
+    try:
+        atomic(root / 'capture-request.json', {'profile': profile['capture_profile'], 'run_id': profile['capture_id']})
+        capture = hook(profile, 'capture_start', root, [])['capture']
+        if (capture['state'] != 'running' or capture['profile'] != profile['capture_profile']
+            or capture['run_id'] != profile['capture_id']):
+            raise ValueError('Smoke capture did not establish the reserved identity')
+        adapter.start_test()
+        remote_hash = adapter.matter_app_ssh_session.run('sha256sum ' + shlex.quote(profile['dut_binary']), hide=True).stdout.split()[0]
+        if remote_hash != profile['dut_sha256']:
+            raise ValueError('Deployed DUT binary identity changed')
+        adapter.start_logging(file_name=str(root / 'dut.private.log'))
+        result['stage'] = 'upstream-factory-reset'
+        adapter.factory_reset_dut()
+        running = adapter.matter_app_ssh_session.run('pidof ' + shlex.quote(Path(profile['dut_binary']).name),
+                                                   hide=True, warn=True)
+        if not running.ok or not running.stdout.strip() or adapter.stop_log_event.is_set():
+            raise ValueError('Upstream adapter did not leave a live scoped DUT/log channel')
+        result['dut_namespace_pids'] = running.stdout.split()
+        result['stage'] = 'native-initialization'
+        matter.native.Init()
+        stack = ChipStack(persistentStorage=PersistentStorageJSON(str(root / 'controller.private.json')))
+        authorities = CertificateAuthorityManager(chipStack=stack)
+        controller = authorities.NewCertificateAuthority().NewFabricAdmin(vendorId=0xFFF1, fabricId=1).NewController(
+            nodeId=112233, paaTrustStorePath=trust_store)
+
+        async def commission_read_remove():
+            result['stage'] = 'on-network-commissioning'
+            node = await controller.CommissionOnNetwork(nodeId=445566, setupPinCode=20202021,
+                                                       filterType=DiscoveryFilterType.LONG_DISCRIMINATOR,
+                                                       filter=profile['discriminator'], discoveryTimeoutMsec=30000)
+            if node != 445566:
+                raise ValueError('Unexpected commissioned native node identity')
+            result['stage'] = 'case-read'
+            values = await controller.ReadAttribute(445566, [(0, Clusters.BasicInformation.Attributes.VendorID),
+                                                             (0, Clusters.OperationalCredentials.Attributes.CommissionedFabrics)])
+            vendor = values[0][Clusters.BasicInformation][Clusters.BasicInformation.Attributes.VendorID]
+            fabrics = values[0][Clusters.OperationalCredentials][Clusters.OperationalCredentials.Attributes.CommissionedFabrics]
+            if vendor != 0xFFF1 or fabrics != 1:
+                raise ValueError('Fresh CASE attribute values disagree with clean fixture')
+            result.update(vendor_id=vendor, commissioned_fabrics=fabrics, case_read=True)
+            result['stage'] = 'fabric-removal'
+            await controller.UnpairDevice(445566)
+            result['fabric_removed'] = True
+
+        asyncio.run(asyncio.wait_for(commission_read_remove(), timeout=150))
+        result.update(result='PASS', stage='completed')
+    except Exception as error:
+        result.update(result='FAIL', error_kind=type(error).__name__)
+        raise
+    finally:
+        cleanup = []
+        try:
+            adapter._kill_app()
+            adapter.stop_log_event.set()
+            if adapter.log_thread:
+                adapter.log_thread.join(timeout=10)
+                if adapter.log_thread.is_alive():
+                    cleanup.append('upstream-log-thread-live')
+            adapter.matter_app_ssh_session.close()
+        except Exception as error:
+            cleanup.append('adapter-' + type(error).__name__)
+        try:
+            if authorities:
+                authorities.Shutdown()
+            if stack:
+                stack.Shutdown()
+        except Exception as error:
+            cleanup.append('stack-' + type(error).__name__)
+        try:
+            close_smoke_fixture(profile, root)
+        except Exception as error:
+            cleanup.append('fixture-' + type(error).__name__)
+        result.update(ended=time.time(), cleanup_errors=cleanup)
+        if cleanup:
+            result['result'] = 'INCOMPLETE'
+        atomic(root / 'smoke-result.private.json', result)
+        lock.close()
+    return 0 if result['result'] == 'PASS' else 1
 
 
 def native_outcomes(document, requested):
@@ -139,3 +326,23 @@ def execute(profile, root, stop):
             'requested_iterations': int(profile['requested_iterations']), 'complete_block': complete,
             'unexecuted': int(profile['requested_iterations']) - len(outcomes), 'artifacts': artifacts,
             'detail_hash': digest(root / 'detail.log'), 'qualification_only': False}
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Existing native runner: bounded real fixture qualification')
+    parser.add_argument('action', choices=['fixture-smoke', 'capture-close', 'fixture-close', 'dut-close'])
+    parser.add_argument('--root', type=Path, required=True)
+    parser.add_argument('--profile', type=Path)
+    parser.add_argument('--dut-binary', type=Path)
+    parser.add_argument('--dut-sha256')
+    options = parser.parse_args()
+    if options.action == 'dut-close':
+        print(json.dumps(stop_smoke_dut(options.root, options.dut_binary, options.dut_sha256)))
+        raise SystemExit(0)
+    profile = json.loads(options.profile.read_text())
+    if options.action == 'capture-close':
+        close_smoke_capture(profile, options.root)
+    elif options.action == 'fixture-close':
+        close_smoke_fixture(profile, options.root)
+    else:
+        raise SystemExit(fixture_smoke(profile, options.root))

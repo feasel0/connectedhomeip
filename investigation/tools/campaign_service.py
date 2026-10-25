@@ -155,13 +155,7 @@ def install(root):
 
 
 def health(root):
-    available = {}
-    for line in Path('/proc/meminfo').read_text().splitlines():
-        if line.startswith('MemAvailable:'):
-            available['ram_bytes'] = int(line.split()[1]) * 1024
-    available.update(free_bytes=shutil.disk_usage(root).free, wall=time.time(),
-                     boot_id=Path('/proc/sys/kernel/random/boot_id').read_text().strip())
-    return available
+    return ledger.host_health(root)
 
 
 def finish(database, attempt, state, reason):
@@ -337,7 +331,9 @@ def run(root):
         configuration(root)
         reconcile(root, database)
         campaign = database.execute('SELECT * FROM campaign').fetchone()
+        previous_health = database.execute('SELECT document FROM health ORDER BY wall DESC LIMIT 1').fetchone()
         sample = health(root)
+        resource_violation = ledger.health_violation(sample, json.loads(previous_health['document']) if previous_health else None)
         ledger.atomic(root / 'heartbeat.json', sample)
         with database:
             database.execute('INSERT INTO health(wall,host,document) VALUES(?,?,?)',
@@ -351,8 +347,8 @@ def run(root):
                 transition(database, 'campaign', '24H_CHECKPOINT', {'synthetic': manifest['mode'] == 'synthetic'})
             ledger.atomic(root / 'checkpoint-24h.json', ledger.status(root))
         unsafe = database.execute("SELECT 1 FROM attempts WHERE state IN ('INCOMPLETE','BLOCKED')").fetchone()
-        if unsafe or sample['free_bytes'] < 8 * 1024 ** 3 or sample['ram_bytes'] < 256 * 1024 ** 2:
-            close(root, database, manifest, 'BLOCKED', 'Unsafe/ambiguous attempt or resource reserve violation')
+        if unsafe or resource_violation:
+            close(root, database, manifest, 'BLOCKED', 'Unsafe/ambiguous attempt or resource violation: ' + str(resource_violation))
             return
         margin = float(manifest.get('cleanup_margin_seconds', 0))
         if STOP.is_set() or (root / 'stop-request.json').exists() or time.time() >= campaign['deadline'] - margin:

@@ -2,6 +2,7 @@ import argparse
 import hashlib
 import json
 import os
+import shutil
 import re
 import sqlite3
 import tempfile
@@ -14,6 +15,33 @@ from pathlib import Path
 def digest(path):
     with path.open('rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
+
+
+def host_health(root):
+    memory = {line.split(':', 1)[0]: int(line.split()[1]) * 1024
+              for line in Path('/proc/meminfo').read_text().splitlines() if line.startswith('MemAvailable:')}
+    pressure = {}
+    for kind in ['cpu', 'memory', 'io']:
+        path = Path('/proc/pressure') / kind
+        pressure[kind] = {parts[0]: {key: float(value) for key, value in (item.split('=', 1) for item in parts[1:])}
+                          for parts in (line.split() for line in path.read_text().splitlines())} if path.exists() else None
+    vmstat = dict(line.split() for line in Path('/proc/vmstat').read_text().splitlines())
+    return {'ram_bytes': memory['MemAvailable'], 'free_bytes': shutil.disk_usage(root).free,
+            'wall': time.time(), 'boot_id': Path('/proc/sys/kernel/random/boot_id').read_text().strip(),
+            'load_average': list(os.getloadavg()), 'pressure': pressure,
+            'oom_kills': int(vmstat['oom_kill']) if 'oom_kill' in vmstat else None}
+
+
+def health_violation(current, previous=None):
+    if current['free_bytes'] < 8 * 1024 ** 3:
+        return 'disk-reserve'
+    if current['ram_bytes'] < 256 * 1024 ** 2:
+        return 'ram-reserve'
+    if (previous is not None and current['boot_id'] == previous['boot_id']
+            and current.get('oom_kills') is not None and previous.get('oom_kills') is not None
+            and current['oom_kills'] > previous['oom_kills']):
+        return 'new-host-oom-kill'
+    return None
 
 
 def approved_matrix(path):
