@@ -1,5 +1,11 @@
 # Matter 1.7 SVE Mismatch Ledger
 
+## Outstanding Review Follow-ups: Campaign Not Complete
+
+2026-11-04T22:34:52.791495+00:00: all eight original source heads technically qualified;74886/74959 externally merged. Three separate follow-ups75139/75140/75138 are implemented but UNQUALIFIED. Push AV and Step have actual Darwin failures; IDM requires an explicit coverage-policy decision and upstream conflict reconciliation. EAP recovery239/239 passed with16 successful siblings reused; original timing failure remains unexplained, budget1/1spent. No human routing, readiness transition or merge was performed by this campaign.
+
+[Consolidated handoff](../reoprts/2026-11-04_22-34-52.md); [engineering ledger](internal-review-followups-2026-11-04.md); [qualification ledger](pr-qualification-2026-11-04.md). All earlier checkpoints below remain historical, not current campaign-completion claims.
+
 ## Latest Technical Qualification: Seven Ready, One CI Blocked
 
 Live audit 2026-11-04T01:20:09.177799+00:00. Human approvals/PullApprove are separate;
