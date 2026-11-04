@@ -1,5 +1,17 @@
 # Matter 1.7 SVE Mismatch Ledger
 
+## Current Completion Rule: Technical Readiness Only
+
+User clarification recorded 2026-11-04T01:01:10.276279+00:00: stop at READY FOR HUMAN REVIEW
+only after latest-commit green CI and clean completed Copilot AND CodeRabbit
+reviews. Do not request human review from individuals or teams, re-request,
+assign reviewers, or use targeted review/approval pings. Existing requests are
+left unchanged. This supersedes earlier human-routing instructions below.
+Human approval/PullApprove waits are separate from technical readiness; no merge,
+protection bypass or draft/readiness transition is authorized. This policy update
+does not refresh old CI/review snapshots or assert a newly green source head.
+[Full completion rule](../reoprts/2026-11-04_01-01-10.md).
+
 ## Eight-PR Review Campaign
 
 Updated: 2026-11-03T23:59:52.522289+00:00. Six PRs are AWAITING_HUMAN_REVIEW; #74858 and
