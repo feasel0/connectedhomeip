@@ -1,5 +1,7 @@
 # Follow-up Technical Qualification
 
+Latest engineering checkpoint 2026-11-09 04:59 UTC: **NOT TECHNICALLY CLOSED**. Published A/DUT/B/C heads are respectively `4a6277ad568a64e319a925deb7b466fbd0f02e83`, `7387b7ea47913054e5d77737f345e553b6ea9bbc`, `39a6f5bc14f58c7df29e4181ec1f25d534b63a1f` and `1c382d1790f0d917e4f6cd7a4cbf8138b66eed2c`. Fresh current-DUT complete TC passes 68 command and 44 writable strict probes; B/C native, sanitizer, neighbor and resource controls pass. A's upstream-DUT hosted gate remains red; newer-head ESP/Nordic, current hosted completion, dedicated Ambient update/status-dispatch repair, restoration/delegate-installation findings and review dispositions remain. See the [current checkpoint and limits](../reoprts/2026-11-09_04-59-10.md). All dated qualification below remains historical.
+
 Latest cleanup checkpoint 2026-11-06T01:04:13.237612+00:00: **BLOCKED** for the changed #74979/#75139 stack. The dated original qualification below is historical; see the [current source-movement and description report](../reoprts/2026-11-06_01-04-13.md).
 
 Observed 2026-11-05T20:01:09.810534+00:00. Pending/missing/failed records are not passes;humanpoliciesremainseparate.
