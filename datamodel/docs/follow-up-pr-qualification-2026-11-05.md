@@ -81,3 +81,14 @@ Direct verification now establishes both unchanged application builds and all th
 ## IDM Checkpoint: 2026-11-11 01:23 UTC
 
 **NOT TECHNICALLY CLOSED.** Published 75140/75219/75201 heads remain 3d322af4/7387b7ea/4a6277ad. Fresh hosted snapshots are respectively 39/39, 39/39 and 38/39 successful technical definitions. Published diagnostic tests pass 42; local strict cancellation settlement passes 74; the new private diagnostic/strict combination passes 86 plus six real runner controls, with an intended published-checker negative. The spent DUT recovery succeeded with sixteen original job records reused; no new recovery was submitted. The washer parser setup reached the three-attempt repair limit before executing its full matrix: global XML definitions must be supplied. SDK edits remain uncommitted; full integration/audit/reviews/publication remain pending. See the [verified partial checkpoint](../reoprts/2026-11-11_01-23-10.md). All earlier evidence remains historical.
+
+
+## 2026-11-11T22:34:00.274566+00:00 - Source-Bound IDM And EAP Closeout
+
+Scoped fixes published and ordinary private integration `2e231a78d67425bd3e73cb833b19a61b148a544a` qualified locally: 79 standalone / 91 combined / six runner-policy controls; fresh actual-controller 63 command and 44 writable CONSTRAINT_ERROR probes; 8,064 actual XML/parser/PICS cases plus 192 old false failures, exact final washer YAML startup-0 baseline qualification and unchanged rejected-write state; two EAP full production objects and four native/four ASan-UBSan direct tests.
+
+Final source heads: #75140 `3d322af4ea0c2684d13586767dc3388fb77f8300`; #75201 `ac626464eb02a374ecf182b170d0b6b864e4ac74`; #75219 `7870b93659314eafa1b2f3c5842a04115f2412a5`; #74889 `c700defd29e9e8e3248a884631844bfb72fb22cd`.
+
+NOT FULLY QUALIFIED: bounded native-read abort/deadline, callback lifetime and real-controller cancellation/timeout proof remain open. FT-SAE/FILS mapping and current hosted/automated gates remain explicit. Five implemented Karsten/fallback threads resolved, technical dispositions posted, four descriptions updated; no readiness transition, PR merge or human routing. Previously spent DUT recovery not repeated. All earlier ledger bytes and root/Downloads/local EAP-header user changes preserved.
+
+Report: [datamodel/reoprts/2026-11-11_22-34-00.md](../../datamodel/reoprts/2026-11-11_22-34-00.md).
