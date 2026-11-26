@@ -117,29 +117,16 @@ class TypedAttributePath:
             raise ValueError(
                 "Either ClusterType and AttributeType OR Path must be provided.")
 
-        # if ClusterType and AttributeType were provided we can continue onwards to deriving the label.
-        # Otherwise, we'll need to walk the attribute index to find the right type information.
-
-        # If Path is provided, derive ClusterType and AttributeType from it
         if self.Path is not None:
-            for cluster, attribute in _AttributeIndex:
-                attributeType = _AttributeIndex[(cluster, attribute)][0]
-                clusterType = _AttributeIndex[(cluster, attribute)][1]
-
-                if clusterType.id == self.Path.ClusterId and attributeType.attribute_id == self.Path.AttributeId:
-                    self.ClusterType = clusterType
-                    self.AttributeType = attributeType
-                    break
-
-            if self.ClusterType is None or self.AttributeType is None:
+            schema = _AttributeIndex.get((self.Path.ClusterId, self.Path.AttributeId))
+            if schema is None:
                 raise KeyError(f"No Schema found for Attribute {self.Path}")
+            self.AttributeType, self.ClusterType = schema
 
-        # Next, let's figure out the label.
-        for c_field in self.ClusterType.descriptor.Fields:
-            if c_field.Tag != self.AttributeType.attribute_id:
-                continue
-
-            self.AttributeName = c_field.Label
+        names = _AttributeNames.get(self.ClusterType)
+        if names is None:
+            names = {c_field.Tag: c_field.Label for c_field in self.ClusterType.descriptor.Fields}
+        self.AttributeName = names.get(self.AttributeType.attribute_id, self.AttributeName)
 
         if self.AttributeName is None:
             raise KeyError(f"Unable to resolve name for Attribute {self.Path}")
@@ -246,6 +233,7 @@ class EventReadResult(EventStatus):
 
 
 _AttributeIndex = {}
+_AttributeNames = {}
 _EventIndex = {}
 _ClusterIndex = {}
 
@@ -256,6 +244,7 @@ def _BuildAttributeIndex():
         it takes about 300ms for a single query.
         This is acceptable during init, but unacceptable when the server returns lots of attributes at the same time.
     '''
+    _AttributeNames.clear()
     for clusterName, obj in inspect.getmembers(sys.modules['matter.clusters.Objects']):
         if ('matter.clusters.Objects' in str(obj)) and inspect.isclass(obj):
             for objName, subclass in inspect.getmembers(obj):
@@ -269,7 +258,8 @@ def _BuildAttributeIndex():
                                 value for value in base_classes if 'ClusterAttributeDescriptor' in str(value)]
                             if (matched == []):
                                 continue
-
+                            if obj not in _AttributeNames:
+                                _AttributeNames[obj] = {entry.Tag: entry.Label for entry in obj.descriptor.Fields}
                             _AttributeIndex[(attribute.cluster_id, attribute.attribute_id)] = (eval(
                                 'GeneratedObjects.' + clusterName + '.Attributes.' + attributeName), obj)
 
